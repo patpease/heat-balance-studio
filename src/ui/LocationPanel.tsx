@@ -126,9 +126,9 @@ export function LocationPanel({ site, designDay, conditions, onApply }: Location
   return (
     <section className="panel" style={{ padding: '14px 18px', display: 'grid', gap: 12 }}>
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span className="eyebrow" style={{ minWidth: 62 }}>
+        <h2 className="eyebrow" style={{ font: 'inherit', margin: 0, minWidth: 62 }}>
           Location
-        </span>
+        </h2>
         <input
           value={query}
           placeholder="City, State — Boston, Massachusetts"

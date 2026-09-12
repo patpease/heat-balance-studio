@@ -41,9 +41,12 @@ Revisit when a fourth tool needs EPW.
 - [x] **07 EPW and DDY upload** — lifted and trimmed from psychro. 215 tests.
       The DDY supplies the published minimum, the EPW supplies the shape.
       Verified against a real Climate.OneBuilding archive.
-- [ ] **08 Framing, export, deploy** — scope statement, PNG export (two
-      cameras), share link, units toggle, a11y pass, deploy.
-      **Copy for this phase needs a starting point from Patrick.**
+- [x] **08 Framing, export, share, a11y** — 238 tests. Copy centralised in
+      `src/config/copy.ts` for Patrick to edit; scope statement and assumptions
+      on the page; share link; units toggle; headings and field labels.
+- [ ] **Deploy** — everything is built and verified against `preview:worker`.
+      Not run: publishing to heatbalance.peasestudio.com is Patrick's call and
+      needs his Cloudflare account.
 
 ## v2
 

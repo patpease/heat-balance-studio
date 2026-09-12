@@ -3,8 +3,10 @@ import type { CSSProperties } from 'react';
 
 import { BalanceChart } from '../chart/BalanceChart';
 import { BRAND } from '../config/branding';
+import { INTRO, TAGLINE } from '../config/copy';
 import { solve } from '../engine/balance';
 import { downloadBlob, exportPng } from '../io/exportPng';
+import { shareUrl, stateFromLocation } from '../io/share';
 import {
   SAMPLE_CONDITIONS,
   SAMPLE_DESIGN_DAY,
@@ -12,11 +14,12 @@ import {
   SAMPLE_GAINS,
   SAMPLE_SITE,
 } from '../model/sampleProject';
-import type { Conditions, DesignDay, Envelope, Gains, Site } from '../model/types';
+import type { Conditions, DesignDay, Envelope, Gains, Site, UnitSystem } from '../model/types';
 import { EnvelopePanel } from './EnvelopePanel';
 import { GainsPanel } from './GainsPanel';
 import { LocationPanel } from './LocationPanel';
 import { Mark } from './Mark';
+import { ScopePanel } from './ScopePanel';
 import { BalancePointBand, Verdict } from './Verdict';
 
 /**
@@ -33,15 +36,19 @@ import { BalancePointBand, Verdict } from './Verdict';
  * stays and the panel says so.
  */
 export function App() {
-  const [envelope, setEnvelope] = useState<Envelope>(SAMPLE_ENVELOPE);
-  const [gains, setGains] = useState<Gains>(SAMPLE_GAINS);
+  const shared = useMemo(() => stateFromLocation(), []);
+
+  const [units, setUnits] = useState<UnitSystem>(shared?.units ?? 'IP');
+  const [envelope, setEnvelope] = useState<Envelope>(shared?.envelope ?? SAMPLE_ENVELOPE);
+  const [gains, setGains] = useState<Gains>(shared?.gains ?? SAMPLE_GAINS);
   // Site, design day and conditions move together — a design day belongs to a
   // place, and the ground temperature is resolved from that place's record.
-  const [site, setSite] = useState<Site>(SAMPLE_SITE);
-  const [designDay, setDesignDay] = useState<DesignDay>(SAMPLE_DESIGN_DAY);
-  const [conditions, setConditions] = useState<Conditions>(SAMPLE_CONDITIONS);
+  const [site, setSite] = useState<Site>(shared?.site ?? SAMPLE_SITE);
+  const [designDay, setDesignDay] = useState<DesignDay>(shared?.designDay ?? SAMPLE_DESIGN_DAY);
+  const [conditions, setConditions] = useState<Conditions>(shared?.conditions ?? SAMPLE_CONDITIONS);
   const [hoveredHour, setHoveredHour] = useState<number | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
   const chartRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -50,6 +57,20 @@ export function App() {
     () => solve({ envelope, gains, conditions, designDay }),
     [envelope, gains, conditions, designDay],
   );
+
+  const copyLink = async () => {
+    const url = shareUrl({ units, site, designDay, conditions, envelope, gains });
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied('Link copied');
+    } catch {
+      // Clipboard access can be refused; putting the URL in the address bar is
+      // a worse experience but always works.
+      window.history.replaceState(null, '', url);
+      setCopied('Link is in the address bar');
+    }
+    window.setTimeout(() => setCopied(null), 2600);
+  };
 
   const shoot = async (container: HTMLDivElement | null, filename: string, caption: string) => {
     const svg = container?.querySelector('svg');
@@ -69,10 +90,30 @@ export function App() {
         <div style={{ flex: 1 }}>
           <div className="eyebrow">{BRAND.studio}</div>
           <h1 style={{ fontSize: 22 }}>{BRAND.name}</h1>
+          <p style={{ margin: '2px 0 0', fontSize: 11.5, color: 'var(--muted)' }}>{TAGLINE}</p>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'right' }}>
-          <div>Setpoint 70 °F · IP</div>
-          <div style={{ color: 'var(--muted)' }}>Envelope-only screen</div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {copied && <span style={{ fontSize: 11, color: 'var(--gain)' }}>{copied}</span>}
+          <button type="button" onClick={copyLink} style={headerButton}>
+            Copy link
+          </button>
+          <div role="group" aria-label="Unit system" style={{ display: 'flex' }}>
+            {(['IP', 'SI'] as const).map((system) => (
+              <button
+                key={system}
+                type="button"
+                onClick={() => setUnits(system)}
+                aria-pressed={units === system}
+                style={{
+                  ...headerButton,
+                  borderColor: units === system ? 'var(--gain)' : 'var(--border)',
+                  color: units === system ? 'var(--gain)' : 'var(--muted)',
+                }}
+              >
+                {system}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
@@ -87,6 +128,8 @@ export function App() {
         }}
       />
 
+      <p style={{ margin: 0, fontSize: 13, color: 'var(--body)', maxWidth: '74ch', lineHeight: 1.55 }}>{INTRO}</p>
+
       <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' }}>
         <div ref={sectionRef} style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
           <EnvelopePanel
@@ -94,7 +137,7 @@ export function App() {
             gains={gains}
             conditions={conditions}
             designDay={designDay}
-            units="IP"
+            units={units}
             scrubHour={hoveredHour}
             onChange={setEnvelope}
             onExport={() =>
@@ -105,7 +148,7 @@ export function App() {
         </div>
 
         <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
-          <Verdict result={result} units="IP" />
+          <Verdict result={result} units={units} />
 
           <section className="panel" style={{ padding: 0, overflow: 'hidden' }}>
             <header
@@ -118,7 +161,7 @@ export function App() {
                 borderBottom: '1px solid var(--border)',
               }}
             >
-              <span className="eyebrow">24-hour balance</span>
+              <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>24-hour balance</h2>
               <button
                 type="button"
                 onClick={() =>
@@ -134,27 +177,41 @@ export function App() {
               <BalanceChart
                 result={result}
                 floorArea={envelope.floorArea}
-                units="IP"
+                units={units}
                 hoveredHour={hoveredHour}
                 onHoverHour={setHoveredHour}
               />
             </div>
           </section>
 
-          <BalancePointBand result={result} units="IP" />
+          <BalancePointBand result={result} units={units} />
         </div>
       </div>
 
       <GainsPanel
         gains={gains}
         floorArea={envelope.floorArea}
-        units="IP"
+        units={units}
         marker={hoveredHour ?? result.worstHour}
         onChange={setGains}
       />
+
+      <ScopePanel />
     </main>
   );
 }
+
+const headerButton: CSSProperties = {
+  font: 'inherit',
+  fontSize: 10,
+  letterSpacing: '0.14em',
+  textTransform: 'uppercase',
+  padding: '5px 11px',
+  background: 'none',
+  border: '1px solid var(--border)',
+  color: 'var(--gain)',
+  cursor: 'pointer',
+};
 
 const exportButton: CSSProperties = {
   font: 'inherit',

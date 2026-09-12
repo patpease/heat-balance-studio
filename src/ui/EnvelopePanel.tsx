@@ -119,10 +119,10 @@ export function EnvelopePanel({
           borderBottom: '1px solid var(--border)',
         }}
       >
-        <span className="eyebrow">
+        <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>
           Section — {String(shownHour).padStart(2, '0')}:00
           {scrubHour === null ? ', the worst hour' : ''}
-        </span>
+        </h2>
         <button
           type="button"
           onClick={() => setSketch((v) => !v)}
@@ -220,6 +220,7 @@ export function EnvelopePanel({
                   </td>
                   <td style={cell}>
                     <NumberCell
+                      label={`${surface.label} area`}
                       value={units === 'IP' ? toSqFt(surface.area) : surface.area}
                       decimals={0}
                       onCommit={(next) =>
@@ -229,6 +230,7 @@ export function EnvelopePanel({
                   </td>
                   <td style={cell}>
                     <NumberCell
+                      label={`${surface.label} U-value`}
                       value={units === 'IP' ? toBtuU(surface.uValue) : surface.uValue}
                       decimals={3}
                       onCommit={(next) =>
@@ -241,6 +243,7 @@ export function EnvelopePanel({
                       the one place in this tool a unit bug is silent. */}
                   <td style={cell}>
                     <NumberCell
+                      label={`${surface.label} R-value`}
                       value={surface.uValue > 0 ? uToR(surface.uValue, units) : 0}
                       decimals={1}
                       onCommit={(next) => next > 0 && setSurface(surface.id, { uValue: rToU(next, units) })}

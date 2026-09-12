@@ -1,4 +1,4 @@
-import { EXCLUSIONS_STATEMENT, SCOPE_STATEMENT } from '../config/branding';
+import { BALANCE_POINT_NOTE, EXCLUSIONS_STATEMENT, SCOPE_STATEMENT, VERDICT } from '../config/copy';
 import type { BalanceResult } from '../engine/balance';
 import type { UnitSystem } from '../model/types';
 import { LABELS, toBtuHFt2, toF } from '../model/units';
@@ -29,13 +29,14 @@ export function Verdict({ result, units }: VerdictProps) {
   const hour = `${String(result.worstHour).padStart(2, '0')}:00`;
 
   const headline = result.selfHeating
-    ? `Self-heating right through this design day, with ${flux(result.marginPerArea).toFixed(1)} ${labels.heatFlux} in hand at ${hour}.`
-    : `Not self-heating yet — ${flux(result.peakHeatingLoadPerArea).toFixed(1)} ${labels.heatFlux} short at ${hour}.`;
+    ? VERDICT.clear(flux(result.marginPerArea).toFixed(1), labels.heatFlux, hour)
+    : VERDICT.short(flux(result.peakHeatingLoadPerArea).toFixed(1), labels.heatFlux, hour);
 
   const lever = result.lever
-    ? result.selfHeating
-      ? `${result.lever.label} is ${Math.round(result.lever.share * 100)}% of the loss at that hour; that margin is where ventilation will come out of.`
-      : `${result.lever.label} is ${Math.round(result.lever.share * 100)}% of the loss at that hour — that is where the gap closes fastest.`
+    ? (result.selfHeating ? VERDICT.leverClear : VERDICT.leverShort)(
+        result.lever.label,
+        Math.round(result.lever.share * 100),
+      )
     : null;
 
   return (
@@ -43,9 +44,7 @@ export function Verdict({ result, units }: VerdictProps) {
       className="panel"
       style={{ padding: '16px 18px', borderColor: result.selfHeating ? 'var(--gain)' : 'var(--loss)' }}
     >
-      <div className="eyebrow" style={{ marginBottom: 10 }}>
-        Where this stands
-      </div>
+      <h2 className="eyebrow" style={{ font: 'inherit', margin: '0 0 10px' }}>Where this stands</h2>
 
       <p className="display" style={{ fontSize: 20, lineHeight: 1.32, margin: '0 0 10px' }}>
         {headline}
@@ -87,9 +86,7 @@ export function BalancePointBand({ result, units }: VerdictProps) {
 
   return (
     <section className="panel" style={{ padding: '16px 18px' }}>
-      <div className="eyebrow" style={{ marginBottom: 10 }}>
-        Balance point
-      </div>
+      <h2 className="eyebrow" style={{ font: 'inherit', margin: '0 0 10px' }}>Balance point</h2>
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 12 }}>
         <span className="display" style={{ fontSize: 27 }}>
@@ -113,8 +110,7 @@ export function BalancePointBand({ result, units }: VerdictProps) {
       </div>
 
       <p style={{ margin: '10px 0 0', fontSize: 11, color: 'var(--muted)', maxWidth: '52ch' }}>
-        The outdoor temperature below which this building needs heat. Lower is better. A scheduled building has a band
-        rather than a point, and the spread is the finding: self-heating at lunchtime, nowhere near it before dawn.
+        {BALANCE_POINT_NOTE}
       </p>
     </section>
   );

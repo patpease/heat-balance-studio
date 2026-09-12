@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { occupantCount } from '../engine/gains';
 import { IT_PRESETS, setDensity, setOccupancyMode, setScheduleHour } from '../model/editGains';
 import type { DensityField, ScheduleField } from '../model/editGains';
+import { HELP } from '../config/copy';
 import { OFFICE_DENSITIES } from '../model/defaults';
 import type { Gains, UnitSystem } from '../model/types';
 import { fromSqFt, fromWattsPerSqFt, LABELS, toBtuH, toSqFt, toWattsPerSqFt } from '../model/units';
@@ -44,25 +45,25 @@ const ROWS: readonly Row[] = [
     key: 'people',
     label: 'People',
     schedule: 'occupancy',
-    help: 'Sensible heat only — the latent half of a person’s output is not part of this balance.',
+    help: HELP.people,
   },
   {
     key: 'lighting',
     label: 'Lighting',
     schedule: 'lighting',
-    help: 'Installed lighting power density. All of it becomes heat in the space.',
+    help: HELP.lighting,
   },
   {
     key: 'miscEquipment',
     label: 'Misc equipment',
     schedule: 'miscEquipment',
-    help: 'Laptops, workstations, printers, fridges, AV. Follows occupancy with a standby floor.',
+    help: HELP.miscEquipment,
   },
   {
     key: 'itEquipment',
     label: 'IT equipment',
     schedule: 'itEquipment',
-    help: '24/7 loads: server rooms, IDF and telecom closets, data halls. These run at full power overnight, which is when this tool’s verdict is usually decided.',
+    help: HELP.itEquipment,
   },
 ];
 
@@ -73,7 +74,13 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
 
   const people = occupantCount(gains, floorArea);
 
-  const density = (field: DensityField, value: number, decimals: number, convert: 'area' | 'power' | 'heat' | 'raw') => {
+  const density = (
+    field: DensityField,
+    value: number,
+    decimals: number,
+    convert: 'area' | 'power' | 'heat' | 'raw',
+    label: string,
+  ) => {
     const shown =
       convert === 'area' ? (ip ? toSqFt(value) : value)
       : convert === 'power' ? (ip ? toWattsPerSqFt(value) : value)
@@ -86,6 +93,7 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
       : next;
     return (
       <NumberCell
+        label={label}
         value={shown}
         decimals={decimals}
         onCommit={(next) => onChange(setDensity(gains, field, back(next)))}
@@ -106,7 +114,7 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
           flexWrap: 'wrap',
         }}
       >
-        <span className="eyebrow">Internal gains</span>
+        <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>Internal gains</h2>
         {/* The source badge, and the whole reason editGains exists: it must
             never outlive the number it described. */}
         <span
@@ -153,8 +161,8 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
                   {row.key === 'people' && (
                     <>
                       {gains.occupancy.mode === 'density'
-                        ? density('areaPerPerson', gains.occupancy.areaPerPerson, 0, 'area')
-                        : density('count', gains.occupancy.count, 0, 'raw')}
+                        ? density('areaPerPerson', gains.occupancy.areaPerPerson, 0, 'area', 'Area per person')
+                        : density('count', gains.occupancy.count, 0, 'raw', 'Number of people')}
                       <button
                         type="button"
                         onClick={() =>
@@ -171,19 +179,19 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
                   )}
                   {row.key === 'lighting' && (
                     <>
-                      {density('lighting', gains.lighting.powerDensity, 2, 'power')}
+                      {density('lighting', gains.lighting.powerDensity, 2, 'power', 'Lighting power density')}
                       <span style={unit}>{labels.powerDensity}</span>
                     </>
                   )}
                   {row.key === 'miscEquipment' && (
                     <>
-                      {density('miscEquipment', gains.miscEquipment.powerDensity, 2, 'power')}
+                      {density('miscEquipment', gains.miscEquipment.powerDensity, 2, 'power', 'Misc equipment power density')}
                       <span style={unit}>{labels.powerDensity}</span>
                     </>
                   )}
                   {row.key === 'itEquipment' && (
                     <>
-                      {density('itEquipment', gains.itEquipment.powerDensity, 2, 'power')}
+                      {density('itEquipment', gains.itEquipment.powerDensity, 2, 'power', 'IT equipment power density')}
                       <span style={unit}>{labels.powerDensity}</span>
                     </>
                   )}
@@ -199,7 +207,7 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
 
               {row.key === 'people' && gains.occupancy.mode === 'density' && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '8px 0 0 132px' }}>
-                  {density('sensiblePerPerson', gains.occupancy.sensiblePerPerson, 0, 'heat')}
+                  {density('sensiblePerPerson', gains.occupancy.sensiblePerPerson, 0, 'heat', 'Sensible heat per person')}
                   <span style={unit}>{labels.perPersonHeat} sensible per person</span>
                 </div>
               )}

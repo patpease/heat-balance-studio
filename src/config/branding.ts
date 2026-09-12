@@ -12,21 +12,8 @@ export const BRAND = {
 } as const;
 
 /**
- * The standing statement. Permanent page furniture and burned into every
- * export — not a tooltip, and not buried in a docs folder.
- *
- * Two separate claims, both load-bearing:
- *  - what the tool IS NOT (a compliance calculation)
- *  - what it LEAVES OUT (ventilation and infiltration)
+ * The prose lives in copy.ts, which is the file Patrick edits. Re-exported here
+ * so the export path and the Worker keep one import and there is never a second
+ * copy of the same sentence to drift.
  */
-export const SCOPE_STATEMENT =
-  'A theoretical screen built on historic weather data. It does not replace a ' +
-  'formal heat loss calculation performed to ASHRAE standards.';
-
-export const EXCLUSIONS_STATEMENT =
-  'Envelope-only, sensible-heat screen. Ventilation and infiltration are not ' +
-  'counted, so a passing result is optimistic.';
-
-/** Open-Meteo is CC BY 4.0 and the attribution travels with the data. */
-export const WEATHER_ATTRIBUTION =
-  'Weather data © Open-Meteo (ERA5), CC BY 4.0.';
+export { EXCLUSIONS_STATEMENT, SCOPE_STATEMENT, WEATHER_ATTRIBUTION } from './copy';

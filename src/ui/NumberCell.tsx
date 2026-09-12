@@ -21,10 +21,13 @@ export function NumberCell({
   value,
   decimals,
   onCommit,
+  label,
 }: {
   readonly value: number;
   readonly decimals: number;
   readonly onCommit: (next: number) => void;
+  /** Announced to a screen reader. "Windows U-value", not "value". */
+  readonly label: string;
 }) {
   const formatted = value.toFixed(decimals);
   const [draft, setDraft] = useState(formatted);
@@ -43,7 +46,7 @@ export function NumberCell({
     <input
       value={draft}
       inputMode="decimal"
-      aria-label="value"
+      aria-label={label}
       onChange={(event) => setDraft(event.target.value)}
       onBlur={commit}
       onKeyDown={(event) => {

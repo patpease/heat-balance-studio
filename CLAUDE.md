@@ -263,3 +263,22 @@ look equally solid.
 **This is also how the ERA5-versus-published gap got measured** without a
 handbook: the DDY carries the published value. Boston Logan is −13.1 °C against
 our ERA5 −15.3 °C — a 2.2 K gap, ERA5 colder.
+
+## Copy
+
+Every sentence the tool says is in `src/config/copy.ts`. Components import from
+there and nowhere else, so editing the prose never means touching a component —
+and `branding.ts` re-exports the scope statements rather than holding a second
+copy that could drift.
+
+## Share links
+
+The whole state goes in the URL; there is no store and no project file. Encoding
+is compact deliberately: a naive `JSON.stringify` of this state runs past 2,000
+characters, which some mail clients wrap and some chat apps truncate — producing
+a link that looks fine and is broken. base64url, because `+`, `/` and `=` all
+get mangled somewhere along the way.
+
+A link from a future `VERSION` is refused rather than half-read: a plausible
+building that is not the one that was sent is worse than an honest failure. Every
+malformed input returns null and the caller falls back to the sample.
