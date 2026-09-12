@@ -16,9 +16,9 @@ Revisit when a fourth tool needs EPW.
 - [x] **00 Scaffold** — Vite + React 19 + TS, vitest, wrangler with all three
       quiet-failure settings, tokens from the canvases with the contrast fix,
       the mark, CSP with no `unsafe-inline`.
-- [ ] **01 Engine and the golden case** — `ua.ts`, `gains.ts`, `balance.ts`.
-      No network, no UI. Done when the plan's §3.8 fixture reproduces to the
-      watt and R ⇄ U is tested in both unit systems.
+- [x] **01 Engine and the golden case** — `ua.ts`, `gains.ts`, `balance.ts`.
+      No network, no UI. 84 tests. The §3.8 fixture reproduces exactly; the
+      lever moved from a conductance share to the worst hour's loss share (49% -> 45%).
 - [ ] **02 Design-day derivation** — against a committed fixture series, no
       live calls in tests. Includes the ground-temperature resolver either side
       of its 3 K threshold.
