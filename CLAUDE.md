@@ -175,3 +175,27 @@ write of the value already there.
 φ is in the schema and the engine applies it, but nothing in `editGains` can
 move it and no control exists. That is what "in the model, hidden in the UI"
 means here.
+
+## PNG export, and the four traps
+
+One camera per exportable figure — the chart and the section are shot
+separately, because they are two things someone would send rather than one.
+
+Three traps inherited from a sibling as shipped bugs, and one new:
+
+1. **Resolve `var(--token)` against the LIGHT palette, not the live element.**
+   A serialised SVG carries no stylesheet, so every `var()` resolves to nothing
+   and `fill` falls back to opaque black. Resolving against the live element is
+   the other half of the trap: it exports whichever theme the author was in.
+   `resolveTokens` is exported and tested for exactly this.
+2. **Pin the clone's width and height**, or the raster takes the viewport.
+3. **Fonts** must reach the raster; a system fallback is a different figure.
+4. **`feTurbulence` has to survive rasterisation.** Verified in the browser at
+   phase 05 rather than assumed at deploy: rasterising the section with and
+   without the filter gives 8,296 differing pixels, so the displacement map
+   really is applied. Zero black pixels in either, which is the check that trap
+   1 held.
+
+The scope statement, the exclusions, the weather attribution and `BRAND.host`
+are burned into every export. An exported figure outlives the page that
+explained it.

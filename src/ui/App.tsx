@@ -1,32 +1,62 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 
-import { BRAND, SCOPE_STATEMENT } from '../config/branding';
+import { BalanceChart } from '../chart/BalanceChart';
+import { BRAND } from '../config/branding';
 import { solve } from '../engine/balance';
-import { SAMPLE_CONDITIONS, SAMPLE_DESIGN_DAY, SAMPLE_ENVELOPE, SAMPLE_GAINS, SAMPLE_SITE } from '../model/sampleProject';
+import { downloadBlob, exportPng } from '../io/exportPng';
+import {
+  SAMPLE_CONDITIONS,
+  SAMPLE_DESIGN_DAY,
+  SAMPLE_ENVELOPE,
+  SAMPLE_GAINS,
+  SAMPLE_SITE,
+} from '../model/sampleProject';
 import type { Envelope, Gains } from '../model/types';
-import { toBtuHFt2, toF } from '../model/units';
+import { toF } from '../model/units';
 import { EnvelopePanel } from './EnvelopePanel';
 import { GainsPanel } from './GainsPanel';
 import { Mark } from './Mark';
+import { BalancePointBand, Verdict } from './Verdict';
 
 /**
- * Phase 03 shell.
+ * Phase 05.
  *
- * The envelope panel is real; the gains panel, the chart and hover-to-scrub
- * arrive in phases 04–05. It opens on the worked example rather than an empty
- * form, so the first look shows what the tool does.
+ * The chart and the section are one tool rather than two panels sharing a
+ * screen: hovering the chart scrubs the drawing to that hour, so the gain
+ * arrows visibly collapse overnight while the loss arrows grow. At rest both
+ * sit on the worst hour, which is the hour the verdict is decided on.
+ *
+ * It opens on the worked example rather than an empty form, so the first look
+ * shows what the tool does.
  */
 export function App() {
   const [envelope, setEnvelope] = useState<Envelope>(SAMPLE_ENVELOPE);
   const [gains, setGains] = useState<Gains>(SAMPLE_GAINS);
+  const [hoveredHour, setHoveredHour] = useState<number | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const chartRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
 
   const result = useMemo(
     () => solve({ envelope, gains, conditions: SAMPLE_CONDITIONS, designDay: SAMPLE_DESIGN_DAY }),
     [envelope, gains],
   );
 
+  const shoot = async (container: HTMLDivElement | null, filename: string, caption: string) => {
+    const svg = container?.querySelector('svg');
+    if (!svg) return;
+    setBusy(filename);
+    try {
+      downloadBlob(await exportPng(svg as SVGSVGElement, { filename, caption }), filename);
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
-    <main style={{ maxWidth: 1320, margin: '0 auto', padding: '28px 24px 56px', display: 'grid', gap: 18 }}>
+    <main style={{ maxWidth: 1340, margin: '0 auto', padding: '28px 24px 56px', display: 'grid', gap: 18 }}>
       <header className="panel" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', flexWrap: 'wrap' }}>
         <Mark size={40} />
         <div style={{ flex: 1 }}>
@@ -35,57 +65,67 @@ export function App() {
         </div>
         <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'right' }}>
           <div>{SAMPLE_SITE.label}</div>
-          <div style={{ color: 'var(--loss)' }}>ERA5 99.6% · {toF(SAMPLE_DESIGN_DAY.minimum).toFixed(1)} °F · set 70 °F</div>
+          <div style={{ color: 'var(--loss)' }}>
+            ERA5 99.6% · {toF(SAMPLE_DESIGN_DAY.minimum).toFixed(1)} °F · set 70 °F
+          </div>
         </div>
       </header>
 
-      <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)' }}>
-        <EnvelopePanel
-          gains={gains}
-          envelope={envelope}
-          conditions={SAMPLE_CONDITIONS}
-          designDay={SAMPLE_DESIGN_DAY}
-          units="IP"
-          onChange={setEnvelope}
-        />
+      <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' }}>
+        <div ref={sectionRef} style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
+          <EnvelopePanel
+            envelope={envelope}
+            gains={gains}
+            conditions={SAMPLE_CONDITIONS}
+            designDay={SAMPLE_DESIGN_DAY}
+            units="IP"
+            scrubHour={hoveredHour}
+            onChange={setEnvelope}
+            onExport={() =>
+              shoot(sectionRef.current, 'heat-balance-section.png', `${SAMPLE_SITE.label} — envelope section`)
+            }
+            exporting={busy === 'heat-balance-section.png'}
+          />
+        </div>
 
         <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
-          <section className="panel" style={{ padding: '16px 18px', borderColor: result.selfHeating ? 'var(--gain)' : 'var(--loss)' }}>
-            <div className="eyebrow" style={{ marginBottom: 10 }}>Where this stands</div>
-            <p className="display" style={{ fontSize: 19, lineHeight: 1.3, margin: '0 0 10px' }}>
-              {result.selfHeating
-                ? `Self-heating right through this design day, with ${toBtuHFt2(result.marginPerArea).toFixed(1)} Btu/h·ft² in hand at the worst hour.`
-                : `Not self-heating yet — ${toBtuHFt2(result.peakHeatingLoadPerArea).toFixed(1)} Btu/h·ft² short at ${String(result.worstHour).padStart(2, '0')}:00.`}
-            </p>
-            {result.lever && (
-              <p style={{ margin: '0 0 10px', color: 'var(--gain)', fontSize: 12 }}>
-                {result.lever.label} is {Math.round(result.lever.share * 100)}% of the loss at that hour — that is where the gap closes fastest.
-              </p>
-            )}
-            <p style={{ margin: 0, fontSize: 11, color: 'var(--muted)' }}>{SCOPE_STATEMENT}</p>
+          <Verdict result={result} units="IP" />
+
+          <section className="panel" style={{ padding: 0, overflow: 'hidden' }}>
+            <header
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 12,
+                padding: '14px 18px',
+                borderBottom: '1px solid var(--border)',
+              }}
+            >
+              <span className="eyebrow">24-hour balance</span>
+              <button
+                type="button"
+                onClick={() =>
+                  shoot(chartRef.current, 'heat-balance-chart.png', `${SAMPLE_SITE.label} — 24-hour balance`)
+                }
+                disabled={busy !== null}
+                style={exportButton}
+              >
+                {busy === 'heat-balance-chart.png' ? 'Exporting…' : 'Export PNG'}
+              </button>
+            </header>
+            <div ref={chartRef} style={{ padding: '12px 16px 16px' }}>
+              <BalanceChart
+                result={result}
+                floorArea={envelope.floorArea}
+                units="IP"
+                hoveredHour={hoveredHour}
+                onHoverHour={setHoveredHour}
+              />
+            </div>
           </section>
 
-          <section className="panel" style={{ padding: '16px 18px', display: 'grid', gap: 11 }}>
-            <div className="eyebrow">Headline metrics</div>
-            {([
-              ['Balance point', `${toF(result.balancePoint.onMeanGain).toFixed(1)} °F`],
-              ['Wall-to-floor ratio', result.wallToFloorRatio.toFixed(2)],
-              ['Hours needing heat', `${result.deficitHours} of 24`],
-              ['Peak heating load', `${toBtuHFt2(result.peakHeatingLoadPerArea).toFixed(2)} Btu/h·ft²`],
-            ] as const).map(([label, value]) => (
-              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 13 }}>
-                <span style={{ color: 'var(--body)' }}>{label}</span>
-                <span className="display" style={{ fontSize: 16 }}>{value}</span>
-              </div>
-            ))}
-          </section>
-
-          <section className="panel" style={{ padding: '16px 18px' }}>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>Next</div>
-            <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>
-              Phase 05 brings the 24-hour chart, the three-part verdict, and hover-to-scrub driving the section.
-            </p>
-          </section>
+          <BalancePointBand result={result} units="IP" />
         </div>
       </div>
 
@@ -93,9 +133,21 @@ export function App() {
         gains={gains}
         floorArea={envelope.floorArea}
         units="IP"
-        marker={result.worstHour}
+        marker={hoveredHour ?? result.worstHour}
         onChange={setGains}
       />
     </main>
   );
 }
+
+const exportButton: CSSProperties = {
+  font: 'inherit',
+  fontSize: 10,
+  letterSpacing: '0.14em',
+  textTransform: 'uppercase',
+  padding: '4px 10px',
+  background: 'none',
+  border: '1px solid var(--border)',
+  color: 'var(--gain)',
+  cursor: 'pointer',
+};

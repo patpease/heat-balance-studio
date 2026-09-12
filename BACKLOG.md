@@ -29,9 +29,11 @@ Revisit when a fourth tool needs EPW.
 - [x] **04 Gains panel** — four rows, source chips, draggable schedule bars,
       IT presets. 158 tests. No advanced field on screen: φ stays at 1 and
       `editGains` has no path to it.
-- [ ] **05 Chart, verdict, balance point** — three-part verdict with the
-      computed lever line; hover-to-scrub. Verify `feTurbulence` through the
-      PNG export **here**, not at phase 08.
+- [x] **05 Chart, verdict, balance point** — 178 tests. Hover-to-scrub drives
+      the section. `feTurbulence` VERIFIED through the PNG export: 8,296 pixels
+      differ between a filtered and an unfiltered raster, so the filter renders
+      rather than being silently dropped, and zero black pixels means no
+      `var()` fell back.
 - [ ] **06 Live weather** — Worker routes, geocoder, relay, edge cache.
       Done when the tool still answers with the relay switched off.
 - [ ] **07 EPW and DDY upload** — lift and trim psychro's parsers.

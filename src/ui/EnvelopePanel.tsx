@@ -33,10 +33,24 @@ export interface EnvelopePanelProps {
   readonly conditions: Conditions;
   readonly designDay: DesignDay;
   readonly units: UnitSystem;
+  /** The hour the chart is being hovered over, or null to sit on the worst. */
+  readonly scrubHour: number | null;
   readonly onChange: (envelope: Envelope) => void;
+  readonly onExport: () => void;
+  readonly exporting: boolean;
 }
 
-export function EnvelopePanel({ envelope, gains, conditions, designDay, units, onChange }: EnvelopePanelProps) {
+export function EnvelopePanel({
+  envelope,
+  gains,
+  conditions,
+  designDay,
+  units,
+  scrubHour,
+  onChange,
+  onExport,
+  exporting,
+}: EnvelopePanelProps) {
   const [selected, setSelected] = useState<SurfaceSlot | null>(null);
   const [box, setBox] = useState<BoxDimensions>(DEFAULT_BOX);
   const [sketch, setSketch] = useState(true);
@@ -53,7 +67,8 @@ export function EnvelopePanel({ envelope, gains, conditions, designDay, units, o
     [result],
   );
 
-  const worst = result.hours[result.worstHour]!;
+  const shownHour = scrubHour ?? result.worstHour;
+  const worst = result.hours[shownHour]!;
   const terms: SectionTerm[] = [...worst.lossTerms, ...worst.gainTerms];
   const labels = LABELS[units];
 
@@ -97,13 +112,17 @@ export function EnvelopePanel({ envelope, gains, conditions, designDay, units, o
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'baseline',
-          gap: 16,
+          alignItems: 'center',
+          gap: 10,
+          flexWrap: 'wrap',
           padding: '14px 18px',
           borderBottom: '1px solid var(--border)',
         }}
       >
-        <span className="eyebrow">Section — worst hour {String(result.worstHour).padStart(2, '0')}:00</span>
+        <span className="eyebrow">
+          Section — {String(shownHour).padStart(2, '0')}:00
+          {scrubHour === null ? ', the worst hour' : ''}
+        </span>
         <button
           type="button"
           onClick={() => setSketch((v) => !v)}
@@ -120,6 +139,24 @@ export function EnvelopePanel({ envelope, gains, conditions, designDay, units, o
           }}
         >
           Sketch {sketch ? 'on' : 'off'}
+        </button>
+        <button
+          type="button"
+          onClick={onExport}
+          disabled={exporting}
+          style={{
+            font: 'inherit',
+            fontSize: 11,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: 'var(--gain)',
+            background: 'none',
+            border: '1px solid var(--border)',
+            padding: '4px 10px',
+            cursor: 'pointer',
+          }}
+        >
+          {exporting ? 'Exporting…' : 'Export PNG'}
         </button>
       </header>
 
