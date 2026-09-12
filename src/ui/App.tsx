@@ -3,9 +3,10 @@ import { useMemo, useState } from 'react';
 import { BRAND, SCOPE_STATEMENT } from '../config/branding';
 import { solve } from '../engine/balance';
 import { SAMPLE_CONDITIONS, SAMPLE_DESIGN_DAY, SAMPLE_ENVELOPE, SAMPLE_GAINS, SAMPLE_SITE } from '../model/sampleProject';
-import type { Envelope } from '../model/types';
+import type { Envelope, Gains } from '../model/types';
 import { toBtuHFt2, toF } from '../model/units';
 import { EnvelopePanel } from './EnvelopePanel';
+import { GainsPanel } from './GainsPanel';
 import { Mark } from './Mark';
 
 /**
@@ -17,10 +18,11 @@ import { Mark } from './Mark';
  */
 export function App() {
   const [envelope, setEnvelope] = useState<Envelope>(SAMPLE_ENVELOPE);
+  const [gains, setGains] = useState<Gains>(SAMPLE_GAINS);
 
   const result = useMemo(
-    () => solve({ envelope, gains: SAMPLE_GAINS, conditions: SAMPLE_CONDITIONS, designDay: SAMPLE_DESIGN_DAY }),
-    [envelope],
+    () => solve({ envelope, gains, conditions: SAMPLE_CONDITIONS, designDay: SAMPLE_DESIGN_DAY }),
+    [envelope, gains],
   );
 
   return (
@@ -39,6 +41,7 @@ export function App() {
 
       <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)' }}>
         <EnvelopePanel
+          gains={gains}
           envelope={envelope}
           conditions={SAMPLE_CONDITIONS}
           designDay={SAMPLE_DESIGN_DAY}
@@ -80,12 +83,19 @@ export function App() {
           <section className="panel" style={{ padding: '16px 18px' }}>
             <div className="eyebrow" style={{ marginBottom: 8 }}>Next</div>
             <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>
-              Phase 04 brings the gains panel and its schedule bars; phase 05 the 24-hour chart,
-              the three-part verdict, and hover-to-scrub driving this section.
+              Phase 05 brings the 24-hour chart, the three-part verdict, and hover-to-scrub driving the section.
             </p>
           </section>
         </div>
       </div>
+
+      <GainsPanel
+        gains={gains}
+        floorArea={envelope.floorArea}
+        units="IP"
+        marker={result.worstHour}
+        onChange={setGains}
+      />
     </main>
   );
 }

@@ -157,3 +157,21 @@ Three departures from the canvas, each of which only shows up on real numbers:
 `useId` per instance for the filter and pattern ids: the PNG export mounts a
 second copy of this drawing, and duplicate ids would have one clone steal the
 other's filter.
+
+## Why gain edits go through `model/editGains.ts`
+
+Not a convenience layer. It enforces one correctness rule the UI must not be
+able to bypass: **the source badge never outlives the number it described.** A
+density that came from a standard and has since been typed over is no longer
+that standard's value, and keeping the badge on it silently attributes the
+user's number to ASHRAE. Every edit drops `preset` to null, and an edited
+schedule becomes `custom` even when 23 of its 24 hours still match the preset
+it came from.
+
+Two things deliberately do *not* count as edits: switching occupancy between a
+density and a headcount (the same statement, said differently), and a no-op
+write of the value already there.
+
+φ is in the schema and the engine applies it, but nothing in `editGains` can
+move it and no control exists. That is what "in the model, hidden in the UI"
+means here.

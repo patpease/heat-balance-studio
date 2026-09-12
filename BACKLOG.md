@@ -26,7 +26,9 @@ Revisit when a fourth tool needs EPW.
 - [x] **03 Envelope panel and the section drawing** — rendered from a
       `BuildingType` record, not inline JSX. 136 tests. Editable area/U/R cells,
       click-to-select both ways, sketch-a-box, per-project arrow reference.
-- [ ] **04 Gains panel** — four rows, source chips, schedule bars.
+- [x] **04 Gains panel** — four rows, source chips, draggable schedule bars,
+      IT presets. 158 tests. No advanced field on screen: φ stays at 1 and
+      `editGains` has no path to it.
 - [ ] **05 Chart, verdict, balance point** — three-part verdict with the
       computed lever line; hover-to-scrub. Verify `feTurbulence` through the
       PNG export **here**, not at phase 08.

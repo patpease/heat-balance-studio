@@ -8,8 +8,7 @@ import { areasFromBox, DEFAULT_BOX } from '../engine/sketchBox';
 import type { BoxDimensions } from '../engine/sketchBox';
 import { wallToFloorRatio } from '../engine/ua';
 import { OFFICE } from '../model/buildingTypes';
-import { DEFAULT_GAINS } from '../model/defaults';
-import type { Conditions, DesignDay, Envelope, Surface, SurfaceSlot, UnitSystem } from '../model/types';
+import type { Conditions, DesignDay, Envelope, Gains, Surface, SurfaceSlot, UnitSystem } from '../model/types';
 import { fromBtuU, fromSqFt, LABELS, rToU, toBtuU, toSqFt, uToR } from '../model/units';
 import { cellStyle as cell, NumberCell } from './NumberCell';
 
@@ -28,20 +27,23 @@ import { cellStyle as cell, NumberCell } from './NumberCell';
 
 export interface EnvelopePanelProps {
   readonly envelope: Envelope;
+  /** The LIVE gains — solving with a default here would make these arrows
+   *  disagree with the verdict sitting beside them. */
+  readonly gains: Gains;
   readonly conditions: Conditions;
   readonly designDay: DesignDay;
   readonly units: UnitSystem;
   readonly onChange: (envelope: Envelope) => void;
 }
 
-export function EnvelopePanel({ envelope, conditions, designDay, units, onChange }: EnvelopePanelProps) {
+export function EnvelopePanel({ envelope, gains, conditions, designDay, units, onChange }: EnvelopePanelProps) {
   const [selected, setSelected] = useState<SurfaceSlot | null>(null);
   const [box, setBox] = useState<BoxDimensions>(DEFAULT_BOX);
   const [sketch, setSketch] = useState(true);
 
   const result = useMemo(
-    () => solve({ envelope, gains: DEFAULT_GAINS, conditions, designDay }),
-    [envelope, conditions, designDay],
+    () => solve({ envelope, gains, conditions, designDay }),
+    [envelope, gains, conditions, designDay],
   );
 
   // ONE reference across all 24 hours, so scrubbing later shows the gains
