@@ -29,9 +29,16 @@ interface Env {
 }
 
 /**
- * `connect-src 'self'` is true and stays true because the browser never talks
- * to Open-Meteo directly — it talks to our own /api/*. The policy therefore has
- * no third-party origin in it at all.
+ * The browser never talks to Open-Meteo directly — it talks to our own /api/*
+ * — so the relay buys a policy with no weather origin in it.
+ *
+ * **It is not third-party-free, and the plan's claim that it was is now wrong.**
+ * Cloudflare injects its Web Analytics beacon into the response itself, from
+ * `static.cloudflareinsights.com`, and posts back to `cloudflareinsights.com`.
+ * Nothing in this repo asks for it; blocking it did not disable analytics, it
+ * just made analytics silently report nothing while logging a CSP error on
+ * every page view. Allowed explicitly, and these two are the ONLY third-party
+ * origins in the policy — the same resolution peasestudio.com reached.
  *
  * `style-src` has NO 'unsafe-inline'. React writes the style prop through the
  * CSSOM rather than as a style attribute, which CSP does not govern, so this
@@ -41,11 +48,11 @@ interface Env {
 const HEADERS: Record<string, string> = {
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self'",
+    "script-src 'self' https://static.cloudflareinsights.com",
     "style-src 'self'",
     "img-src 'self' data: blob:",
     "font-src 'self'",
-    "connect-src 'self'",
+    "connect-src 'self' https://cloudflareinsights.com",
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",

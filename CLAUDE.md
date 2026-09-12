@@ -208,10 +208,18 @@ what makes "the logic running at the edge is the logic exercised locally" true
 rather than aspirational. There is no second implementation.
 
 **Why relay at all, when Open-Meteo sends CORS headers?** Three things a direct
-browser fetch cannot buy: a CSP with `connect-src 'self'` and no third-party
-origin; an edge cache shared across everyone asking about the same city; and the
-derivation running server-side, so ~1 MB of hourly archive never crosses the
-wire. Measured: a 1 MB upstream response becomes a 2 KB design day.
+browser fetch cannot buy: a CSP with no weather origin in it; an edge cache
+shared across everyone asking about the same city; and the derivation running
+server-side, so ~1 MB of hourly archive never crosses the wire. Measured: a 1 MB
+upstream response becomes a 2 KB design day.
+
+**The CSP is not third-party-free**, despite what the plan claimed before the
+first deploy. Cloudflare injects its Web Analytics beacon into the response
+itself, from `static.cloudflareinsights.com`, posting back to
+`cloudflareinsights.com`. Blocking it did not disable analytics — it made
+analytics silently report nothing while logging a CSP error on every page view.
+Both are allowed explicitly and they are the only third-party origins in the
+policy, which is the same resolution peasestudio.com reached.
 
 **The cache key is coordinates rounded to 2 dp plus the years plus
 `DERIVATION_VERSION`.** Rounding (~1.1 km, far finer than ERA5's grid) is what
