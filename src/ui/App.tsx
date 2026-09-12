@@ -12,15 +12,15 @@ import {
   SAMPLE_GAINS,
   SAMPLE_SITE,
 } from '../model/sampleProject';
-import type { Envelope, Gains } from '../model/types';
-import { toF } from '../model/units';
+import type { Conditions, DesignDay, Envelope, Gains, Site } from '../model/types';
 import { EnvelopePanel } from './EnvelopePanel';
 import { GainsPanel } from './GainsPanel';
+import { LocationPanel } from './LocationPanel';
 import { Mark } from './Mark';
 import { BalancePointBand, Verdict } from './Verdict';
 
 /**
- * Phase 05.
+ * Phase 06.
  *
  * The chart and the section are one tool rather than two panels sharing a
  * screen: hovering the chart scrubs the drawing to that hour, so the gain
@@ -28,11 +28,18 @@ import { BalancePointBand, Verdict } from './Verdict';
  * sit on the worst hour, which is the hour the verdict is decided on.
  *
  * It opens on the worked example rather than an empty form, so the first look
- * shows what the tool does.
+ * shows what the tool does — and that sample is also the floor the fallback
+ * ladder lands on: if the relay is unreachable, the design day already loaded
+ * stays and the panel says so.
  */
 export function App() {
   const [envelope, setEnvelope] = useState<Envelope>(SAMPLE_ENVELOPE);
   const [gains, setGains] = useState<Gains>(SAMPLE_GAINS);
+  // Site, design day and conditions move together — a design day belongs to a
+  // place, and the ground temperature is resolved from that place's record.
+  const [site, setSite] = useState<Site>(SAMPLE_SITE);
+  const [designDay, setDesignDay] = useState<DesignDay>(SAMPLE_DESIGN_DAY);
+  const [conditions, setConditions] = useState<Conditions>(SAMPLE_CONDITIONS);
   const [hoveredHour, setHoveredHour] = useState<number | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -40,8 +47,8 @@ export function App() {
   const sectionRef = useRef<HTMLDivElement>(null);
 
   const result = useMemo(
-    () => solve({ envelope, gains, conditions: SAMPLE_CONDITIONS, designDay: SAMPLE_DESIGN_DAY }),
-    [envelope, gains],
+    () => solve({ envelope, gains, conditions, designDay }),
+    [envelope, gains, conditions, designDay],
   );
 
   const shoot = async (container: HTMLDivElement | null, filename: string, caption: string) => {
@@ -64,25 +71,34 @@ export function App() {
           <h1 style={{ fontSize: 22 }}>{BRAND.name}</h1>
         </div>
         <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'right' }}>
-          <div>{SAMPLE_SITE.label}</div>
-          <div style={{ color: 'var(--loss)' }}>
-            ERA5 99.6% · {toF(SAMPLE_DESIGN_DAY.minimum).toFixed(1)} °F · set 70 °F
-          </div>
+          <div>Setpoint 70 °F · IP</div>
+          <div style={{ color: 'var(--muted)' }}>Envelope-only screen</div>
         </div>
       </header>
+
+      <LocationPanel
+        site={site}
+        designDay={designDay}
+        conditions={conditions}
+        onApply={(nextSite, nextDay, nextConditions) => {
+          setSite(nextSite);
+          setDesignDay(nextDay);
+          setConditions(nextConditions);
+        }}
+      />
 
       <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' }}>
         <div ref={sectionRef} style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
           <EnvelopePanel
             envelope={envelope}
             gains={gains}
-            conditions={SAMPLE_CONDITIONS}
-            designDay={SAMPLE_DESIGN_DAY}
+            conditions={conditions}
+            designDay={designDay}
             units="IP"
             scrubHour={hoveredHour}
             onChange={setEnvelope}
             onExport={() =>
-              shoot(sectionRef.current, 'heat-balance-section.png', `${SAMPLE_SITE.label} — envelope section`)
+              shoot(sectionRef.current, 'heat-balance-section.png', `${site.label} — envelope section`)
             }
             exporting={busy === 'heat-balance-section.png'}
           />
@@ -106,7 +122,7 @@ export function App() {
               <button
                 type="button"
                 onClick={() =>
-                  shoot(chartRef.current, 'heat-balance-chart.png', `${SAMPLE_SITE.label} — 24-hour balance`)
+                  shoot(chartRef.current, 'heat-balance-chart.png', `${site.label} — 24-hour balance`)
                 }
                 disabled={busy !== null}
                 style={exportButton}

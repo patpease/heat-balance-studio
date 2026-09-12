@@ -199,3 +199,35 @@ Three traps inherited from a sibling as shipped bugs, and one new:
 The scope statement, the exclusions, the weather attribution and `BRAND.host`
 are burned into every export. An exported figure outlives the page that
 explained it.
+
+## The weather relay
+
+All the judgement is in `src/climate/relay.ts`. `worker/index.ts` and the Vite
+middleware in `vite.config.ts` are both ten-line adapters over it — which is
+what makes "the logic running at the edge is the logic exercised locally" true
+rather than aspirational. There is no second implementation.
+
+**Why relay at all, when Open-Meteo sends CORS headers?** Three things a direct
+browser fetch cannot buy: a CSP with `connect-src 'self'` and no third-party
+origin; an edge cache shared across everyone asking about the same city; and the
+derivation running server-side, so ~1 MB of hourly archive never crosses the
+wire. Measured: a 1 MB upstream response becomes a 2 KB design day.
+
+**The cache key is coordinates rounded to 2 dp plus the years plus
+`DERIVATION_VERSION`.** Rounding (~1.1 km, far finer than ERA5's grid) is what
+makes near-identical requests share one upstream call — verified: coordinates
+differing in the fourth decimal hit the same entry in 6 ms against 1.65 s cold.
+The version segment is the part that is easy to leave out and expensive to miss:
+without it, changing the derivation keeps serving results computed by the old
+algorithm.
+
+**Host pinning lives in the adapters, not the relay**, so there is exactly one
+function in each runtime that can reach the network and it refuses anything that
+is not an exact Open-Meteo host over https. Exact, never a suffix —
+`open-meteo.com.example.com` ends with the allowed string, and a relay that
+fetches whatever URL it is handed is an open proxy on our own domain.
+
+**The tool works with the relay down, structurally.** It boots on the bundled
+sample and makes no network call at all until someone searches; a failed search
+leaves the loaded design day in place and says so. Verified both ways in the
+browser.

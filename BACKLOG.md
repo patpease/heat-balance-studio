@@ -34,8 +34,10 @@ Revisit when a fourth tool needs EPW.
       differ between a filtered and an unfiltered raster, so the filter renders
       rather than being silently dropped, and zero black pixels means no
       `var()` fell back.
-- [ ] **06 Live weather** — Worker routes, geocoder, relay, edge cache.
-      Done when the tool still answers with the relay switched off.
+- [x] **06 Live weather** — Worker routes, geocoder, relay, edge cache, the
+      same handlers mounted on the dev server. 199 tests. The tool makes ZERO
+      network calls at boot and a failed search leaves the loaded design day in
+      place, so "works with the relay down" is structural rather than handled.
 - [ ] **07 EPW and DDY upload** — lift and trim psychro's parsers.
 - [ ] **08 Framing, export, deploy** — scope statement, PNG export (two
       cameras), share link, units toggle, a11y pass, deploy.
