@@ -23,5 +23,14 @@
     "not_found_handling": "none",
     "run_worker_first": true
   },
+  // The custom domain. This and BRAND.host in src/config/branding.ts must move
+  // together — an exported PNG carries the hostname and outlives the deploy
+  // that produced it.
+  //
+  // `custom_domain: true` makes Cloudflare create and manage the DNS record on
+  // the peasestudio.com zone, rather than expecting one to exist already.
+  "routes": [
+    { "pattern": "heatbalance.peasestudio.com", "custom_domain": true }
+  ],
   "observability": { "enabled": true }
 }
