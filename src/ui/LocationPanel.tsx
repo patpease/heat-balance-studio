@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 
 import { fetchDesignDay, searchPlaces } from '../climate/weatherClient';
+import { readWeatherFile } from '../climate/weatherFile';
 import type { GeocodeMatch } from '../climate/openMeteo';
 import { resolveGroundTemperature } from '../engine/ua';
 import { GROUND_DRIFT_LIMIT_K } from '../model/defaults';
@@ -35,6 +36,8 @@ export function LocationPanel({ site, designDay, conditions, onApply }: Location
   const [matches, setMatches] = useState<readonly GeocodeMatch[] | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
 
   const search = async () => {
@@ -90,6 +93,29 @@ export function LocationPanel({ site, designDay, conditions, onApply }: Location
     setMatches(null);
     setQuery('');
     setStatus(null);
+  };
+
+  const takeFile = async (file: File) => {
+    setBusy(true);
+    setStatus(null);
+    setNote(null);
+    const outcome = await readWeatherFile(file);
+    setBusy(false);
+
+    if (!outcome.ok) {
+      setStatus(outcome.message);
+      return;
+    }
+    const { designDay: day, site: fileSite, problems, summary } = outcome.value;
+    const ground = resolveGroundTemperature(day.annualMeanTemperature);
+    onApply(fileSite, day, {
+      ...conditions,
+      groundTemperature: ground.value,
+      groundTemperatureBasis: ground.basis,
+    });
+    setMatches(null);
+    setNote(summary);
+    if (problems.length > 0) setStatus(problems.join(' '));
   };
 
   const groundNote =
@@ -163,6 +189,56 @@ export function LocationPanel({ site, designDay, conditions, onApply }: Location
         <span style={{ color: 'var(--muted)' }}>{groundNote}</span>
         <span style={{ color: 'var(--muted)', marginLeft: 'auto' }}>{designDay.provenance}</span>
       </div>
+
+      <div
+        onDragOver={(event) => {
+          event.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(event) => {
+          event.preventDefault();
+          setDragging(false);
+          const file = event.dataTransfer.files[0];
+          if (file) void takeFile(file);
+        }}
+        style={{
+          border: `1px dashed ${dragging ? 'var(--gain)' : 'var(--border)'}`,
+          background: dragging ? 'var(--page)' : 'transparent',
+          padding: '10px 12px',
+          display: 'flex',
+          gap: 12,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          fontSize: 11,
+          color: 'var(--muted)',
+        }}
+      >
+        <label style={{ ...button, display: 'inline-block' }}>
+          Open .epw or .zip
+          <input
+            type="file"
+            accept=".epw,.zip"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void takeFile(file);
+              event.target.value = '';
+            }}
+            style={{ display: 'none' }}
+          />
+        </label>
+        <span>
+          Or drop one here. A <code>.ddy</code> beside the <code>.epw</code> supplies the published ASHRAE minimum;
+          the shape still comes from the file's own cold days, because the ASHRAE heating design day is flat.
+        </span>
+        <span style={{ marginLeft: 'auto' }}>Read in your browser — nothing is uploaded.</span>
+      </div>
+
+      {note && (
+        <p style={{ margin: 0, fontSize: 11.5, color: 'var(--gain)', borderLeft: '2px solid var(--gain)', paddingLeft: 9 }}>
+          {note}
+        </p>
+      )}
 
       {status && (
         <p

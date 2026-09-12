@@ -231,3 +231,35 @@ fetches whatever URL it is handed is an open proxy on our own domain.
 sample and makes no network call at all until someone searches; a failed search
 leaves the loaded design day in place and says so. Verified both ways in the
 browser.
+
+## The weather-file path
+
+`epw.ts` and `ddy.ts` are lifted from psychrometric-studio — ours, MIT — and cut
+hard. That tool reads dry bulb, humidity and station pressure to compute a
+humidity ratio per hour; this one is sensible-only and needs **dry bulb alone**,
+so PsychroLib and the altitude handling went with the cut.
+
+Two things that did NOT get cut, because both are real bugs the sibling paid for:
+
+- **EPW's `99.9` is a VALUE, not a blank.** A 99.9 °C hour read as real sits at
+  the top of every percentile and drags the design minimum with it.
+- **The DDY regex is anchored.** A DDY also contains
+  `Ann Htg Wind 99.6% Condns WS=>MCDB`, and a looser match on "Htg 99.6%" picks
+  it up and reports a **wind speed as a temperature**. The pattern ends at
+  `condns db$` for exactly this, and there is a test with the wind object
+  present.
+
+**The DDY supplies the level, the EPW supplies the shape** — deliberately
+against the DDY's own convention. The ASHRAE heating design day is *isothermal*:
+daily range zero, because equipment is sized against a steady worst case. Used
+as drawn it would fail every building by more and for the wrong reason, since a
+flat day at the design minimum is colder for 23 hours than any real day is.
+
+**A TMY is one year, not ten.** The real Boston archive yields **six** cold days
+inside the +2 K window against the ten-year archive's eighty, so the shape is
+much less well supported. The panel says so rather than letting the two paths
+look equally solid.
+
+**This is also how the ERA5-versus-published gap got measured** without a
+handbook: the DDY carries the published value. Boston Logan is −13.1 °C against
+our ERA5 −15.3 °C — a 2.2 K gap, ERA5 colder.

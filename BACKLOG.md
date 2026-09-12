@@ -38,7 +38,9 @@ Revisit when a fourth tool needs EPW.
       same handlers mounted on the dev server. 199 tests. The tool makes ZERO
       network calls at boot and a failed search leaves the loaded design day in
       place, so "works with the relay down" is structural rather than handled.
-- [ ] **07 EPW and DDY upload** — lift and trim psychro's parsers.
+- [x] **07 EPW and DDY upload** — lifted and trimmed from psychro. 215 tests.
+      The DDY supplies the published minimum, the EPW supplies the shape.
+      Verified against a real Climate.OneBuilding archive.
 - [ ] **08 Framing, export, deploy** — scope statement, PNG export (two
       cameras), share link, units toggle, a11y pass, deploy.
       **Copy for this phase needs a starting point from Patrick.**
