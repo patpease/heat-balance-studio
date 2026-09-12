@@ -2,17 +2,24 @@
  * The golden case: a 500 m² single-storey office in Boston.
  *
  * 25 × 20 m, 3.5 m high, 30% window-to-wall ratio, at the default 70 °F
- * setpoint. Every figure the engine produces from this was computed
- * independently before the engine existed, and `boston-office.test.ts` checks
- * against those numbers rather than against whatever the code happens to say.
+ * setpoint. Every figure here was computed independently of the engine, and
+ * `balance.test.ts` checks against those numbers rather than against whatever
+ * the code happens to say.
  *
  * The design day is the real one: ten years of ERA5 for 42.36 N, 71.06 W,
  * 2015–2024, run through the derivation the plan specifies — percentile over
- * all 87,672 hours for the minimum, mean normalised shape of the 76 cold days
+ * all 87,672 hours for the minimum, mean normalised shape of the 80 cold days
  * for the profile, median cold-day range for the stretch.
  *
  * It is committed as data so that phase 01 and phase 02 can both be verified
- * without a live call.
+ * without a live call. `designDay.test.ts` regenerates this profile from the
+ * raw record and asserts it matches, so the two cannot drift apart.
+ *
+ * **The profile is in LOCAL STANDARD TIME.** It was an hour later than this
+ * until phase 02: Open-Meteo stamps a whole series with whichever UTC offset is
+ * in force when the request is made, so a winter record pulled in September
+ * came back labelled EDT rather than EST. Correcting that moved the minimum
+ * from hour 7 to hour 6 and changed the answer — see `designDay.ts`.
  */
 
 import { ALWAYS_ON, OFFICE_LIGHTING, OFFICE_MISC_EQUIPMENT, OFFICE_OCCUPANCY } from '../../src/model/schedules';
@@ -21,9 +28,9 @@ import type { Conditions, DesignDay, Envelope, Gains, Surface } from '../../src/
 
 /** ERA5-derived hourly dry bulb for the Boston design day, °C. */
 export const BOSTON_PROFILE_C = [
-  -10.67, -11.59, -12.47, -13.02, -13.60, -14.10, -14.72, -15.30,
-  -14.72, -13.89, -11.92, -9.73, -7.66, -5.84, -4.51, -3.58,
-  -3.50, -4.37, -6.23, -7.72, -7.88, -8.43, -9.08, -9.72,
+  -11.37, -12.27, -12.82, -13.41, -13.96, -14.65, -15.30, -14.77,
+  -13.93, -11.97, -9.82, -7.74, -5.91, -4.57, -3.65, -3.60,
+  -4.44, -6.33, -7.89, -8.11, -8.74, -9.57, -10.34, -10.85,
 ] as const;
 
 export const BOSTON_DESIGN_DAY: DesignDay = {
@@ -31,7 +38,7 @@ export const BOSTON_DESIGN_DAY: DesignDay = {
   percentile: 0.4,
   yearsOfRecord: [2015, 2024],
   minimum: -15.3,
-  dailyRange: 11.8,
+  dailyRange: 11.7,
   hours: BOSTON_PROFILE_C.map((tdb, hour) => ({
     hour,
     tdb,
@@ -71,7 +78,8 @@ export const BOSTON_ENVELOPE: Envelope = {
 export const BOSTON_GAINS: Gains = {
   occupancy: {
     mode: 'density',
-    areaPerPerson: 500 / 27, // 27 people exactly, so the fixture is not sensitive to rounding
+    // 27 people exactly, so the fixture is not sensitive to rounding.
+    areaPerPerson: 500 / 27,
     count: 0,
     sensiblePerPerson: 75,
   },
@@ -101,35 +109,35 @@ export const BOSTON_CASE = {
 } as const;
 
 /**
- * Expected results, computed independently of the engine.
- *
  * Hourly loss and gain in W, at a 21.111 °C setpoint with a constant 750 W
- * ground loss. If the engine and this table disagree, one of them is wrong and
- * the test does not care which.
+ * ground loss, against the committed two-decimal profile above.
+ *
+ * If the engine and this table disagree, one of them is wrong and the test does
+ * not care which.
  */
 export const EXPECTED_HOURLY: readonly { hour: number; loss: number; gain: number }[] = [
-  { hour: 0, loss: 8139, gain: 1887 },
-  { hour: 1, loss: 8353, gain: 1887 },
-  { hour: 2, loss: 8558, gain: 1887 },
-  { hour: 3, loss: 8685, gain: 1887 },
-  { hour: 4, loss: 8820, gain: 1887 },
-  { hour: 5, loss: 8937, gain: 1887 },
-  { hour: 6, loss: 9081, gain: 1887 },
-  { hour: 7, loss: 9216, gain: 3778 },
-  { hour: 8, loss: 9081, gain: 7588 },
-  { hour: 9, loss: 8888, gain: 8499 },
-  { hour: 10, loss: 8430, gain: 8499 },
-  { hour: 11, loss: 7921, gain: 8499 },
-  { hour: 12, loss: 7439, gain: 7588 },
-  { hour: 13, loss: 7016, gain: 8499 },
-  { hour: 14, loss: 6707, gain: 8499 },
-  { hour: 15, loss: 6491, gain: 8499 },
-  { hour: 16, loss: 6472, gain: 8499 },
-  { hour: 17, loss: 6674, gain: 7588 },
-  { hour: 18, loss: 7107, gain: 4428 },
-  { hour: 19, loss: 7453, gain: 3151 },
-  { hour: 20, loss: 7490, gain: 1887 },
-  { hour: 21, loss: 7618, gain: 1887 },
-  { hour: 22, loss: 7769, gain: 1887 },
-  { hour: 23, loss: 7918, gain: 1887 },
+  { hour: 0, loss: 8302, gain: 1888 },
+  { hour: 1, loss: 8511, gain: 1888 },
+  { hour: 2, loss: 8639, gain: 1888 },
+  { hour: 3, loss: 8776, gain: 1888 },
+  { hour: 4, loss: 8904, gain: 1888 },
+  { hour: 5, loss: 9064, gain: 1888 },
+  { hour: 6, loss: 9216, gain: 1888 },
+  { hour: 7, loss: 9092, gain: 3778 },
+  { hour: 8, loss: 8897, gain: 7588 },
+  { hour: 9, loss: 8441, gain: 8499 },
+  { hour: 10, loss: 7941, gain: 8499 },
+  { hour: 11, loss: 7458, gain: 8499 },
+  { hour: 12, loss: 7032, gain: 7588 },
+  { hour: 13, loss: 6721, gain: 8499 },
+  { hour: 14, loss: 6507, gain: 8499 },
+  { hour: 15, loss: 6495, gain: 8499 },
+  { hour: 16, loss: 6691, gain: 8499 },
+  { hour: 17, loss: 7130, gain: 7588 },
+  { hour: 18, loss: 7493, gain: 4428 },
+  { hour: 19, loss: 7544, gain: 3151 },
+  { hour: 20, loss: 7690, gain: 1888 },
+  { hour: 21, loss: 7883, gain: 1888 },
+  { hour: 22, loss: 8062, gain: 1888 },
+  { hour: 23, loss: 8181, gain: 1888 },
 ];

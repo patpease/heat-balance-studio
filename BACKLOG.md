@@ -19,9 +19,10 @@ Revisit when a fourth tool needs EPW.
 - [x] **01 Engine and the golden case** — `ua.ts`, `gains.ts`, `balance.ts`.
       No network, no UI. 84 tests. The §3.8 fixture reproduces exactly; the
       lever moved from a conductance share to the worst hour's loss share (49% -> 45%).
-- [ ] **02 Design-day derivation** — against a committed fixture series, no
-      live calls in tests. Includes the ground-temperature resolver either side
-      of its 3 K threshold.
+- [x] **02 Design-day derivation** — against a committed fixture series, no
+      live calls in tests. 117 tests. Found and fixed the archive timezone bug
+      (see CLAUDE.md); the ground resolver is tested either side of its 3 K
+      threshold; six climates derived and tabulated in the plan.
 - [ ] **03 Envelope panel and the section drawing** — rendered from a
       `BuildingType` record, not inline JSX.
 - [ ] **04 Gains panel** — four rows, source chips, schedule bars.

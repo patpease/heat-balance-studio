@@ -107,3 +107,28 @@ number that no user ever had.
 | The three Worker settings that fail quietly | `wrangler.jsonc` |
 | The palette, both themes, and the contrast correction | `src/ui/tokens.css` |
 | The standing scope statements | `src/config/branding.ts` |
+
+## The timezone bug, and why it is worth knowing about
+
+Open-Meteo's archive **applies one fixed UTC offset to an entire response —
+whichever is in force when the request is made, not whichever applied on the
+data's own date.** Ask for January 2024 in September and every timestamp comes
+back labelled GMT−4 rather than GMT−5. There is no DST discontinuity to notice:
+every day has exactly 24 hours, so nothing looks wrong.
+
+Left alone, a winter profile is labelled an hour late *and the size of the error
+depends on the month the tool is used in* — the same building in the same city
+would derive a different design day in January than in July.
+
+So `archiveUrl` asks for `timezone=UTC` and `standardOffsetSeconds` supplies the
+site's standard-time offset from its IANA zone. Standard, never daylight: a
+heating design day is a winter condition. The offset is the smaller of a zone's
+January/July pair, which is also correct in the southern hemisphere and for
+zones without DST.
+
+It changed the answer. Boston's minimum moved from hour 7 to hour 6, cold days
+from 76 to 80, the worked example from 16 deficit hours to 15 and from 14.4 to
+14.7 W/m² short. **It also cost a finding**: the claim that the worst hour fell
+an hour *before* the coldest hour was an artefact of the mislabelling. The two
+coincide. What survives is the real point — 07:00 is only 0.5 K milder than
+06:00 but its net is 2,000 W better, because occupancy starts.

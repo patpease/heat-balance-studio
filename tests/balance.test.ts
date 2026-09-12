@@ -91,28 +91,39 @@ describe('the hourly balance reproduces the fixture to the watt', () => {
 });
 
 describe('the verdict', () => {
-  it('needs heating on 16 of 24 hours', () => {
-    expect(result.deficitHours).toBe(16);
+  it('needs heating on 15 of 24 hours', () => {
+    expect(result.deficitHours).toBe(15);
     expect(result.selfHeating).toBe(false);
   });
 
-  it('is decided at 06:00 — an hour BEFORE the coldest hour', () => {
-    // The whole point of the tool. Loss peaks at 07:00 with the temperature
-    // minimum, but the worst NET hour is 06:00, because the occupancy schedule
-    // has not started yet.
+  it('is decided at 06:00, in the pre-occupancy window', () => {
+    // On the corrected local-standard clock the worst NET hour and the coldest
+    // hour coincide at 06:00. They did not before phase 02 — the profile was an
+    // hour late and the worst hour appeared to fall before the coldest one,
+    // which was an artefact of the timezone bug and not a property of the
+    // building.
     expect(result.worstHour).toBe(6);
-
     const coldest = result.hours.reduce((a, h) =>
       h.outdoorTemperature < a.outdoorTemperature ? h : a,
     );
-    expect(coldest.hour).toBe(7);
-    expect(Math.round(result.hours[7]!.loss)).toBeGreaterThan(Math.round(result.hours[6]!.loss));
+    expect(coldest.hour).toBe(6);
   });
 
-  it('is short 14.4 W/m² at the worst hour', () => {
-    expect(Math.round(result.peakHeatingLoad)).toBe(7193);
-    expect(result.peakHeatingLoadPerArea).toBeCloseTo(14.4, 1);
-    expect(result.marginPerArea).toBeCloseTo(-14.4, 1);
+  it('shows the schedule mattering as much as the weather', () => {
+    // The real finding, and it survives the correction. 07:00 is only 0.65 K
+    // milder than 06:00, but its net is 1,800 W better — almost all of that is
+    // occupancy starting, not the weather easing.
+    const six = result.hours[6]!;
+    const seven = result.hours[7]!;
+    expect(seven.outdoorTemperature - six.outdoorTemperature).toBeLessThan(1);
+    expect(seven.net - six.net).toBeGreaterThan(1500);
+    expect(seven.gain - six.gain).toBeGreaterThan(seven.loss - six.loss);
+  });
+
+  it('is short 14.7 W/m² at the worst hour', () => {
+    expect(Math.round(result.peakHeatingLoad)).toBe(7328);
+    expect(result.peakHeatingLoadPerArea).toBeCloseTo(14.7, 1);
+    expect(result.marginPerArea).toBeCloseTo(-14.7, 1);
   });
 
   it('misses the Passive House benchmark, which is a reference and not a gate', () => {
@@ -123,8 +134,8 @@ describe('the verdict', () => {
 describe('the lever', () => {
   it('names glazing, the largest loss term at the worst hour', () => {
     expect(result.lever?.slot).toBe('loss-windows');
-    // 4,063 W of a 9,081 W loss.
-    expect(result.lever?.share).toBeCloseTo(0.447, 2);
+    // 4,129 W of a 9,216 W loss.
+    expect(result.lever?.share).toBeCloseTo(0.448, 3);
   });
 
   it('is null when there is nothing to point at', () => {
@@ -199,7 +210,7 @@ describe('gain summary', () => {
 
 describe('the design condition converts for display without changing', () => {
   it('reports the worst-hour shortfall in IP as 4.6 Btu/h·ft²', () => {
-    expect(toBtuHFt2(result.peakHeatingLoadPerArea)).toBeCloseTo(4.56, 2);
+    expect(toBtuHFt2(result.peakHeatingLoadPerArea)).toBeCloseTo(4.65, 2);
   });
 
   it('puts the Passive House line at 3.2 Btu/h·ft² under IP', () => {
