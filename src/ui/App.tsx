@@ -1,78 +1,91 @@
+import { useMemo, useState } from 'react';
+
 import { BRAND, SCOPE_STATEMENT } from '../config/branding';
+import { solve } from '../engine/balance';
+import { SAMPLE_CONDITIONS, SAMPLE_DESIGN_DAY, SAMPLE_ENVELOPE, SAMPLE_GAINS, SAMPLE_SITE } from '../model/sampleProject';
+import type { Envelope } from '../model/types';
+import { toBtuHFt2, toF } from '../model/units';
+import { EnvelopePanel } from './EnvelopePanel';
 import { Mark } from './Mark';
 
 /**
- * Phase 00 shell.
+ * Phase 03 shell.
  *
- * Deliberately almost empty: this phase exists to prove the scaffold serves,
- * the tokens resolve in all three theme states, the fonts load, and the CSP is
- * clean. The engine arrives in phase 01 with no UI at all, and the panels here
- * are replaced wholesale in phases 03–05.
+ * The envelope panel is real; the gains panel, the chart and hover-to-scrub
+ * arrive in phases 04–05. It opens on the worked example rather than an empty
+ * form, so the first look shows what the tool does.
  */
 export function App() {
+  const [envelope, setEnvelope] = useState<Envelope>(SAMPLE_ENVELOPE);
+
+  const result = useMemo(
+    () => solve({ envelope, gains: SAMPLE_GAINS, conditions: SAMPLE_CONDITIONS, designDay: SAMPLE_DESIGN_DAY }),
+    [envelope],
+  );
+
   return (
-    <main style={{ maxWidth: 1280, margin: '0 auto', padding: '40px 32px 56px' }}>
-      <header
-        className="panel"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-          padding: '14px 18px',
-          marginBottom: 24,
-        }}
-      >
-        <Mark size={44} />
-        <div>
+    <main style={{ maxWidth: 1320, margin: '0 auto', padding: '28px 24px 56px', display: 'grid', gap: 18 }}>
+      <header className="panel" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', flexWrap: 'wrap' }}>
+        <Mark size={40} />
+        <div style={{ flex: 1 }}>
           <div className="eyebrow">{BRAND.studio}</div>
-          <h1 style={{ fontSize: 26 }}>{BRAND.name}</h1>
+          <h1 style={{ fontSize: 22 }}>{BRAND.name}</h1>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'right' }}>
+          <div>{SAMPLE_SITE.label}</div>
+          <div style={{ color: 'var(--loss)' }}>ERA5 99.6% · {toF(SAMPLE_DESIGN_DAY.minimum).toFixed(1)} °F · set 70 °F</div>
         </div>
       </header>
 
-      <section className="panel" style={{ padding: '18px 20px' }}>
-        <div className="eyebrow" style={{ marginBottom: 10 }}>
-          Phase 00 — scaffold
-        </div>
-        <p style={{ margin: '0 0 12px', color: 'var(--body)', maxWidth: '62ch' }}>
-          Can this building be designed to need no heating at all? Five envelope
-          surfaces, ASHRAE-style internal gains, and a 24-hour balance against a
-          derived cold design day.
-        </p>
-        <p style={{ margin: 0, color: 'var(--muted)', fontSize: 12, maxWidth: '70ch' }}>
-          {SCOPE_STATEMENT}
-        </p>
-      </section>
+      <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)' }}>
+        <EnvelopePanel
+          envelope={envelope}
+          conditions={SAMPLE_CONDITIONS}
+          designDay={SAMPLE_DESIGN_DAY}
+          units="IP"
+          onChange={setEnvelope}
+        />
 
-      <section
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-          gap: 1,
-          background: 'var(--border)',
-          border: '1px solid var(--border)',
-          marginTop: 24,
-        }}
-      >
-        {/* Token check: every one of these must resolve in all three theme
-            states. A colour that exists only inside one block is the classic
-            unreadable-artifact bug, and tests/theme.test.ts guards it. */}
-        {(
-          [
-            ['Loss', 'var(--loss)'],
-            ['Gain', 'var(--gain)'],
-            ['Ink', 'var(--ink)'],
-            ['Body', 'var(--body)'],
-            ['Muted', 'var(--muted)'],
-          ] as const
-        ).map(([label, token]) => (
-          <div key={label} className="panel" style={{ padding: '12px 14px', border: 0 }}>
-            <div className="eyebrow" style={{ marginBottom: 6 }}>
-              {label}
-            </div>
-            <div style={{ color: token, fontSize: 18 }}>0.00</div>
-          </div>
-        ))}
-      </section>
+        <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
+          <section className="panel" style={{ padding: '16px 18px', borderColor: result.selfHeating ? 'var(--gain)' : 'var(--loss)' }}>
+            <div className="eyebrow" style={{ marginBottom: 10 }}>Where this stands</div>
+            <p className="display" style={{ fontSize: 19, lineHeight: 1.3, margin: '0 0 10px' }}>
+              {result.selfHeating
+                ? `Self-heating right through this design day, with ${toBtuHFt2(result.marginPerArea).toFixed(1)} Btu/h·ft² in hand at the worst hour.`
+                : `Not self-heating yet — ${toBtuHFt2(result.peakHeatingLoadPerArea).toFixed(1)} Btu/h·ft² short at ${String(result.worstHour).padStart(2, '0')}:00.`}
+            </p>
+            {result.lever && (
+              <p style={{ margin: '0 0 10px', color: 'var(--gain)', fontSize: 12 }}>
+                {result.lever.label} is {Math.round(result.lever.share * 100)}% of the loss at that hour — that is where the gap closes fastest.
+              </p>
+            )}
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--muted)' }}>{SCOPE_STATEMENT}</p>
+          </section>
+
+          <section className="panel" style={{ padding: '16px 18px', display: 'grid', gap: 11 }}>
+            <div className="eyebrow">Headline metrics</div>
+            {([
+              ['Balance point', `${toF(result.balancePoint.onMeanGain).toFixed(1)} °F`],
+              ['Wall-to-floor ratio', result.wallToFloorRatio.toFixed(2)],
+              ['Hours needing heat', `${result.deficitHours} of 24`],
+              ['Peak heating load', `${toBtuHFt2(result.peakHeatingLoadPerArea).toFixed(2)} Btu/h·ft²`],
+            ] as const).map(([label, value]) => (
+              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 13 }}>
+                <span style={{ color: 'var(--body)' }}>{label}</span>
+                <span className="display" style={{ fontSize: 16 }}>{value}</span>
+              </div>
+            ))}
+          </section>
+
+          <section className="panel" style={{ padding: '16px 18px' }}>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>Next</div>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>
+              Phase 04 brings the gains panel and its schedule bars; phase 05 the 24-hour chart,
+              the three-part verdict, and hover-to-scrub driving this section.
+            </p>
+          </section>
+        </div>
+      </div>
     </main>
   );
 }

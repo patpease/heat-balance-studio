@@ -57,3 +57,8 @@ h1, .display {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* The editable table cells sit flush until touched — a grid of boxes would
+   read as a spreadsheet, which is the thing this panel exists not to be. */
+.numbercell:hover { border-color: var(--border) !important; }
+.numbercell:focus { border-color: var(--gain) !important; outline: none; }

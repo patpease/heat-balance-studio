@@ -23,8 +23,9 @@ Revisit when a fourth tool needs EPW.
       live calls in tests. 117 tests. Found and fixed the archive timezone bug
       (see CLAUDE.md); the ground resolver is tested either side of its 3 K
       threshold; six climates derived and tabulated in the plan.
-- [ ] **03 Envelope panel and the section drawing** — rendered from a
-      `BuildingType` record, not inline JSX.
+- [x] **03 Envelope panel and the section drawing** — rendered from a
+      `BuildingType` record, not inline JSX. 136 tests. Editable area/U/R cells,
+      click-to-select both ways, sketch-a-box, per-project arrow reference.
 - [ ] **04 Gains panel** — four rows, source chips, schedule bars.
 - [ ] **05 Chart, verdict, balance point** — three-part verdict with the
       computed lever line; hover-to-scrub. Verify `feTurbulence` through the

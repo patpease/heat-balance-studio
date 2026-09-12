@@ -132,3 +132,28 @@ from 76 to 80, the worked example from 16 deficit hours to 15 and from 14.4 to
 an hour *before* the coldest hour was an artefact of the mislabelling. The two
 coincide. What survives is the real point — 07:00 is only 0.5 K milder than
 06:00 but its net is 2,000 W better, because occupancy starts.
+
+## The section drawing
+
+`SectionDrawing` renders whichever `BuildingType` record it is handed. v2's five
+extra massings are five more records and a picker; this component does not
+change. `data-surface` names in the canvas and `SurfaceSlot` in the model are
+the same strings on purpose — that is the contract.
+
+Three departures from the canvas, each of which only shows up on real numbers:
+
+- **The arrow reference is derived per project, not fixed at 800 W.** The
+  canvas clamps at about 1,840 W, and the worked example's windows term is
+  4,129 W — windows and roof would both peg at the ceiling and render
+  identically despite a 1.5× difference. The reference is set from the largest
+  term so that arrow lands exactly at the top of the range.
+- **It is computed once over all 24 hours, never per hour.** Per-hour
+  normalisation would rescale the drawing as you scrub and hide the gains
+  collapsing overnight, which is the thing scrubbing is for.
+- **The sketch filter is on the shell only, not the arrows.** The canvas filters
+  the whole artwork, which would re-run a displacement map over everything on
+  every frame of a drag.
+
+`useId` per instance for the filter and pattern ids: the PNG export mounts a
+second copy of this drawing, and duplicate ids would have one clone steal the
+other's filter.
