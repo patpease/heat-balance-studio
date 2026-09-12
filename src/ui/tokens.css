@@ -1,0 +1,92 @@
+/*
+ * Tokens.
+ *
+ * Taken from the Claude Design canvases `Heat Balance Diagram.dc.html` and
+ * `Heat Balance Diagram Dark.dc.html` — both grounds are DRAWN, so the theme is
+ * a token swap over identical geometry rather than an inversion invented here.
+ * The massing path data is byte-identical between the two canvases; only the
+ * strokes and fills differ.
+ *
+ * Declared in THREE places, the mechanism psychrometric-studio arrived at:
+ *
+ *   :root, [data-theme='light']                        the light palette
+ *   @media (prefers-color-scheme: dark) :root:not(...)  a viewer whose OS asks
+ *   [data-theme='dark']                                 a viewer who pressed it
+ *
+ * The two dark blocks are byte-identical by necessity — plain CSS cannot share
+ * one declaration block between a media query and a bare selector — and
+ * tests/theme.test.ts asserts they stay token-for-token equal. Add a colour to
+ * all three or exports and forced themes fall back to an initial value, which
+ * for `fill` is opaque black.
+ *
+ * One correction applied to the canvas on the way in: `--muted` is #5B6E66 and
+ * not the canvas's #6B7F77, which measures 4.05:1 on the panel and fails WCAG
+ * AA at the 11px label sizes it is used at. #5B6E66 is 5.16:1 and is already in
+ * the palette as the ground line. The dark palette needed no such fix.
+ */
+
+:root,
+[data-theme='light'] {
+  --page: #F2EFE7;
+  --panel: #FBF9F3;
+  --border: #D8DED6;
+  --border-strong: #CBD3CB;
+
+  --ink: #0C2A24;
+  --body: #3C534B;
+  --muted: #5B6E66;
+
+  --loss: #A8462E;
+  --gain: #2F7D6E;
+
+  --massing-fill: #FFFFFF;
+  --massing-fill-opacity: 0.72;
+  --soil: #9DAAA2;
+  --ground-line: #5B6E66;
+  --label-halo: #FBF9F3;
+  --grid: #E4E0D6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --page: #15181B;
+    --panel: #23272B;
+    --border: #343A40;
+    --border-strong: #3D444B;
+
+    --ink: #D8DEE3;
+    --body: #AAB3B9;
+    --muted: #8A949B;
+
+    --loss: #E4805A;
+    --gain: #55C0A5;
+
+    --massing-fill: #2C3238;
+    --massing-fill-opacity: 0.7;
+    --soil: #4C565D;
+    --ground-line: #78848C;
+    --label-halo: #2B3137;
+    --grid: #1E2226;
+  }
+}
+
+[data-theme='dark'] {
+  --page: #15181B;
+  --panel: #23272B;
+  --border: #343A40;
+  --border-strong: #3D444B;
+
+  --ink: #D8DEE3;
+  --body: #AAB3B9;
+  --muted: #8A949B;
+
+  --loss: #E4805A;
+  --gain: #55C0A5;
+
+  --massing-fill: #2C3238;
+  --massing-fill-opacity: 0.7;
+  --soil: #4C565D;
+  --ground-line: #78848C;
+  --label-halo: #2B3137;
+  --grid: #1E2226;
+}

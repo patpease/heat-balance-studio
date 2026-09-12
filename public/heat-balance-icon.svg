@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" xmlns:c2pa="http://c2pa.org/manifest">
+  <title>Heat Balance Studio</title>
+  <rect width="96" height="96" fill="#FBF9F3"></rect>
+  <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <g id="massing" stroke="#0C2A24" stroke-width="4">
+      <path d="M28 70 C 27 62 29 52 28 44 C 35 38 42 32 48 30 C 54 33 61 38 68 44 C 67 53 69 62 68 70 C 61 71 54 69 48 70 C 41 71 35 69 28 70 Z" fill="#FFFFFF" fill-opacity="0.7"></path>
+      <path d="M24 46 C 32 39 41 32 48 29 C 56 33 64 40 72 46"></path>
+    </g>
+    <g id="loss" stroke="#A8462E" fill="#A8462E" stroke-width="4">
+      <path d="M62 38 C 68 33 72 29 77 24"></path>
+      <path d="M78 23 L 70 24 L 77 30 Z" stroke="none"></path>
+      <path d="M70 58 C 76 59 81 57 87 58"></path>
+      <path d="M89 58 L 81 53 L 81 63 Z" stroke="none"></path>
+      <path d="M40 74 C 41 79 39 83 40 88"></path>
+      <path d="M40 90 L 35 82 L 45 82 Z" stroke="none"></path>
+    </g>
+    <g id="gain" stroke="#2F7D6E" fill="#2F7D6E" stroke-width="4">
+      <path d="M56 64 C 57 59 55 55 56 50"></path>
+      <path d="M56 48 L 51 56 L 61 56 Z" stroke="none"></path>
+    </g>
+  </g>
+</svg>

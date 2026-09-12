@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 860" width="1240" height="860" font-family="IBM Plex Mono, ui-monospace, monospace" xmlns:c2pa="http://c2pa.org/manifest">
+  <title>Heat Balance Studio — envelope heat loss vs internal heat gain</title>
+  <desc>Generic building section. Five named envelope heat-loss arrows and three named internal heat-gain arrows, at neutral size (k = 1). Scale each arrow by setting transform=&#34;scale(k,1)&#34; on its .hb-shaft group and transform=&#34;translate(88*(k-1),0)&#34; on its .hb-tip group; optionally set stroke-width on the shaft path.</desc>
+  <defs>
+    <filter id="hb-sketch" x="-12%" y="-12%" width="124%" height="124%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.016" numOctaves="3" seed="9" result="hbnoise"></feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="hbnoise" scale="3.4" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+    </filter>
+    <pattern id="hb-soil" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+      <line x1="0" y1="0" x2="0" y2="16" stroke="#9DAAA2" stroke-width="1.1"></line>
+    </pattern>
+  </defs>
+
+  <rect width="1240" height="860" fill="#FBF9F3"></rect>
+
+  <g id="hb-artwork" filter="url(#hb-sketch)" stroke-linecap="round" stroke-linejoin="round">
+    <g id="context">
+      <rect x="520" y="560" width="720" height="300" fill="url(#hb-soil)" opacity="0.85"></rect>
+      <rect x="0" y="740" width="520" height="120" fill="url(#hb-soil)" opacity="0.85"></rect>
+      <path d="M1240 561 C 1120 558 1000 563 880 560 C 760 557 640 562 521 560 L 520 620 C 523 672 517 706 520 741 C 400 738 280 743 160 740 C 108 739 54 742 0 740" fill="none" stroke="#5B6E66" stroke-width="2.4"></path>
+    </g>
+
+    <g id="massing" fill="#FFFFFF" fill-opacity="0.72">
+      <path d="M340 560 C 337 480 343 400 340 302 C 430 246 528 192 620 181 C 712 194 810 248 900 302 C 897 392 903 478 900 560 C 806 563 712 557 620 560 C 526 563 434 557 340 560 Z" stroke="#0C2A24" stroke-width="3.2"></path>
+      <path d="M318 312 C 420 252 520 196 620 178 C 722 198 822 254 922 312" fill="none" stroke="#0C2A24" stroke-width="3.2"></path>
+      <path d="M340 302 C 432 300 528 306 620 302 C 714 298 808 305 900 302" fill="none" stroke="#0C2A24" stroke-width="1.6" opacity="0.5"></path>
+      <path d="M340 560 C 434 557 526 563 620 560 C 712 557 806 563 900 560" fill="none" stroke="#0C2A24" stroke-width="3.2"></path>
+      <path d="M341 574 C 436 571 528 577 620 574 C 712 571 806 577 899 574" fill="none" stroke="#0C2A24" stroke-width="1.6" opacity="0.5"></path>
+    </g>
+
+    <g id="apertures" fill="none" stroke="#0C2A24" stroke-width="2.6">
+      <path d="M340 372 C 356 369 372 375 388 372 C 391 404 385 436 388 468 C 372 471 356 465 340 468"></path>
+      <path d="M900 368 C 884 365 868 371 852 368 C 849 400 855 434 852 466 C 868 469 884 463 900 466"></path>
+      <path d="M364 372 L 364 468" stroke-width="1.4" opacity="0.55"></path>
+      <path d="M876 368 L 876 466" stroke-width="1.4" opacity="0.55"></path>
+    </g>
+
+    <g id="occupants" stroke="#0C2A24" fill="none" stroke-width="2.4">
+      <g id="glyph-people">
+        <circle cx="430" cy="496" r="9"></circle>
+        <path d="M430 505 C 431 518 429 528 430 540"></path>
+        <path d="M414 516 C 422 512 438 512 446 516"></path>
+        <path d="M430 540 L 419 556 M430 540 L 442 556"></path>
+      </g>
+      <g id="glyph-lighting">
+        <path d="M560 220 C 562 250 558 274 560 292" stroke-width="1.6"></path>
+        <path d="M540 314 C 544 300 552 292 560 292 C 568 292 576 300 580 314 C 567 317 553 311 540 314 Z"></path>
+      </g>
+      <g id="glyph-equipment">
+        <path d="M694 508 C 712 505 730 511 748 508 C 745 520 751 532 748 544 C 730 547 712 541 694 544 C 697 532 691 520 694 508 Z"></path>
+        <path d="M704 520 L 720 520 M704 532 L 734 532" stroke-width="1.6" opacity="0.6"></path>
+      </g>
+    </g>
+
+    <g id="loss-walls" stroke="#A8462E" fill="#A8462E" stroke-width="3.4">
+      <g transform="translate(340,336) rotate(180)">
+        <g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke"></path></g>
+        <g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none"></path></g></g>
+      </g>
+      <g transform="translate(900,512)">
+        <g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke"></path></g>
+        <g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none"></path></g></g>
+      </g>
+    </g>
+
+    <g id="loss-windows" stroke="#A8462E" fill="#A8462E" stroke-width="3.4" transform="translate(900,416)">
+      <g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke"></path></g>
+      <g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none"></path></g></g>
+    </g>
+
+    <g id="loss-roof" stroke="#A8462E" fill="#A8462E" stroke-width="3.4">
+      <g transform="translate(462,254) rotate(-112)">
+        <g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke"></path></g>
+        <g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none"></path></g></g>
+      </g>
+      <g transform="translate(778,254) rotate(-68)">
+        <g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke"></path></g>
+        <g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none"></path></g></g>
+      </g>
+    </g>
+
+    <g id="loss-ground-floor" stroke="#A8462E" fill="#A8462E" stroke-width="3.4" transform="translate(712,578) rotate(90)">
+      <g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke"></path></g>
+      <g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none"></path></g></g>
+    </g>
+
+    <g id="loss-exposed-floor" stroke="#A8462E" fill="#A8462E" stroke-width="3.4" transform="translate(424,578) rotate(90)">
+      <g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke"></path></g>
+      <g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none"></path></g></g>
+    </g>
+
+    <g id="gain-people" stroke="#2F7D6E" fill="#2F7D6E" stroke-width="3.4" transform="translate(430,482) rotate(-118)">
+      <g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke"></path></g>
+      <g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none"></path></g></g>
+    </g>
+
+    <g id="gain-lighting" stroke="#2F7D6E" fill="#2F7D6E" stroke-width="3.4" transform="translate(560,322) rotate(86)">
+      <g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke"></path></g>
+      <g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none"></path></g></g>
+    </g>
+
+    <g id="gain-equipment" stroke="#2F7D6E" fill="#2F7D6E" stroke-width="3.4" transform="translate(722,500) rotate(-52)">
+      <g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke"></path></g>
+      <g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none"></path></g></g>
+    </g>
+  </g>
+
+  <g id="annotation" font-size="15" letter-spacing="1.4" stroke="#FBF9F3" stroke-width="5" paint-order="stroke">
+    <g fill="#A8462E">
+      <text x="118" y="332" text-anchor="end">WALLS</text>
+      <text x="118" y="352" text-anchor="end" fill="#8D6154" letter-spacing="0.6" id="val-loss-walls">1200 W</text>
+      <text x="1122" y="412">WINDOWS</text>
+      <text x="1122" y="432" fill="#8D6154" letter-spacing="0.6" id="val-loss-windows">900 W</text>
+      <text x="352" y="36" text-anchor="end">ROOF</text>
+      <text x="352" y="56" text-anchor="end" fill="#8D6154" letter-spacing="0.6" id="val-loss-roof">700 W</text>
+      <text x="712" y="804" text-anchor="middle">GROUND FLOOR</text>
+      <text x="712" y="824" text-anchor="middle" fill="#8D6154" letter-spacing="0.6" id="val-loss-ground-floor">400 W</text>
+      <text x="424" y="804" text-anchor="middle">EXPOSED FLOOR</text>
+      <text x="424" y="824" text-anchor="middle" fill="#8D6154" letter-spacing="0.6" id="val-loss-exposed-floor">300 W</text>
+    </g>
+    <g fill="#2F7D6E" font-size="14">
+      <text x="466" y="534">PEOPLE</text>
+      <text x="466" y="552" fill="#4E7C72" letter-spacing="0.6" id="val-gain-people">900 W</text>
+      <text x="596" y="258">LIGHTING</text>
+      <text x="596" y="276" fill="#4E7C72" letter-spacing="0.6" id="val-gain-lighting">500 W</text>
+      <text x="756" y="538">EQUIPMENT</text>
+      <text x="756" y="556" fill="#4E7C72" letter-spacing="0.6" id="val-gain-equipment">700 W</text>
+    </g>
+    <g fill="#6B7F77" font-size="13" letter-spacing="1.8">
+      <text x="40" y="60">HEAT LOSS — ENVELOPE</text>
+      <text x="1200" y="60" text-anchor="end">HEAT GAIN — INTERNAL</text>
+    </g>
+  </g>
+</svg>

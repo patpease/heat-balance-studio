@@ -1,0 +1,27 @@
+{
+  // Cloudflare Workers, with the built site as static assets.
+  //
+  // Three settings here fail QUIETLY if omitted. Each has cost a shipped bug
+  // on a sibling tool; none of them announces itself in a spot check.
+  //
+  //  - `main`      without a script every request is served straight from
+  //                assets, so an unknown path falls through to index.html and
+  //                a relay that was never deployed answers 200 text/html.
+  //  - `run_worker_first`  without it an asset request never reaches the
+  //                script, so security headers appear only on the 404 — which
+  //                passes a spot check of a bad URL and is wrong everywhere.
+  //  - `not_found_handling: "none"`  there is no client-side router here, so
+  //                the single-page-application setting would turn every typo
+  //                into a 200.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "heat-balance-studio",
+  "compatibility_date": "2026-09-01",
+  "main": "worker/index.ts",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "none",
+    "run_worker_first": true
+  },
+  "observability": { "enabled": true }
+}
