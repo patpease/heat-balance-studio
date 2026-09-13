@@ -10,7 +10,8 @@ import { wallToFloorRatio } from '../engine/ua';
 import { buildingType } from '../model/buildingTypes';
 import { GAIN_PRESETS } from '../model/gainPresets';
 import type { Conditions, DesignDay, Envelope, Gains, Surface, SurfaceSlot, UnitSystem } from '../model/types';
-import { fromBtuU, fromFt, fromSqFt, LABELS, rToU, toBtuU, toFt, toSqFt, uToR } from '../model/units';
+import { fromBtuU, fromFt, fromSqFt, LABELS, rToU, toBtuH, toBtuU, toFt, toSqFt, uToR } from '../model/units';
+import { grouped } from './format';
 import { cellStyle as cell, NumberCell } from './NumberCell';
 
 /**
@@ -84,6 +85,11 @@ export function EnvelopePanel({
   const terms: SectionTerm[] = [...worst.lossTerms, ...worst.gainTerms];
   const labels = LABELS[units];
   const ip = units === 'IP';
+
+  // A heat FLOW, not a flux. The column carries the whole loss through a
+  // surface, so IP wants Btu/h — the chart's Btu/h·ft² is the same quantity
+  // divided by an area and would be off by four orders of magnitude here.
+  const heatFlow = (watts: number) => (ip ? toBtuH(watts) : watts);
 
   // The drawing follows the building type the gains came FROM, read off
   // `sourceId` rather than off the badge. Reading the badge meant the first
@@ -284,7 +290,7 @@ export function EnvelopePanel({
                     />
                   </td>
                   <td style={{ textAlign: 'right', padding: '4px 0', borderBottom: '1px solid var(--border)', fontVariantNumeric: 'tabular-nums', color: empty ? undefined : 'var(--loss)' }}>
-                    {empty ? '—' : `${Math.round(term?.watts ?? 0).toLocaleString('en-US')} W`}
+                    {empty ? '—' : `${grouped(heatFlow(term?.watts ?? 0))} ${labels.heatFlow}`}
                   </td>
                 </tr>
               );
@@ -327,7 +333,7 @@ export function EnvelopePanel({
 
         {grossFloorTooSmall && (
           <p style={{ margin: '6px 0 0', fontSize: 11, color: 'var(--loss)' }}>
-            Gross floor area is below the {Math.round(units === 'IP' ? toSqFt(floorOnGround) : floorOnGround).toLocaleString('en-US')} {labels.area}{' '}
+            Gross floor area is below the {grouped(units === 'IP' ? toSqFt(floorOnGround) : floorOnGround)} {labels.area}{' '}
             of ground and exposed floor, which are part of it. The balance below still uses the figure entered.
           </p>
         )}

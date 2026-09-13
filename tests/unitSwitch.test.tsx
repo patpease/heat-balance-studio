@@ -15,7 +15,7 @@ import {
   SAMPLE_SITE,
 } from '../src/model/sampleProject';
 import type { Envelope } from '../src/model/types';
-import { deltaToF, LABELS, toF, toFt, toSqFt } from '../src/model/units';
+import { BTU_H_PER_WATT, deltaToF, LABELS, toF, toFt, toSqFt } from '../src/model/units';
 
 /**
  * The IP/SI switch has to reach EVERY number on the page.
@@ -264,5 +264,53 @@ describe('the accessible name contains the visible caption', () => {
       );
       expect(named, `no input's accessible name contains “${caption}”`).toHaveLength(1);
     }
+  });
+});
+
+/**
+ * The loss column was the last number on the page still stuck in watts.
+ *
+ * It is a heat FLOW — the whole loss through one surface — so IP wants Btu/h.
+ * The chart beside it plots Btu/h·ft², the same quantity over an area, and the
+ * two being different by a factor of the floor area is exactly why reading one
+ * against the other in mixed units was a trap worth closing.
+ */
+describe('the loss column follows the unit switch', () => {
+  const lossCells = () =>
+    Array.from(document.querySelectorAll('tbody tr'))
+      .map((row) => row.lastElementChild?.textContent ?? '')
+      .filter((text) => /\d/.test(text));
+
+  it('reports Btu/h under IP', () => {
+    envelope('IP');
+    const cells = lossCells();
+    expect(cells.length).toBeGreaterThan(0);
+    for (const cell of cells) expect(cell).toMatch(/Btu\/h$/);
+  });
+
+  it('reports W under SI', () => {
+    envelope('SI');
+    for (const cell of lossCells()) expect(cell).toMatch(/ W$/);
+  });
+
+  it('puts the two systems a factor of 3.412 apart, not on top of each other', () => {
+    // The silent failure this catches is a relabelled column: the unit swapped
+    // to Btu/h while the number stayed in watts.
+    const read = (units: UnitSystem) => {
+      cleanup();
+      envelope(units);
+      return Number(lossCells()[0]!.replace(/[^\d.]/g, ''));
+    };
+    const si = read('SI');
+    const ip = read('IP');
+
+    expect(si).toBeGreaterThan(0);
+    expect(ip / si).toBeCloseTo(BTU_H_PER_WATT, 1);
+  });
+
+  it('groups the digits, so a five-figure loss is readable', () => {
+    envelope('IP');
+    // Every loss in the worked example clears a thousand Btu/h.
+    for (const cell of lossCells()) expect(cell).toMatch(/^\d{1,3}(,\d{3})+ Btu\/h$/);
   });
 });

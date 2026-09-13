@@ -94,3 +94,56 @@ describe('NumberCell commits what is on screen', () => {
     expect(input.value).toBe('1.200');
   });
 });
+
+/**
+ * Thousands separators.
+ *
+ * The field is grouped at rest and plain while it has focus. The swap matters:
+ * formatting mid-edit moves the caret under the typist, and it means every
+ * keystroke has to be parsed back through a half-formed string.
+ */
+describe('NumberCell groups digits', () => {
+  it('groups above a thousand when nobody is typing', () => {
+    render(<NumberCell label="area" value={64583} decimals={0} onCommit={vi.fn()} />);
+    expect((screen.getByLabelText('area') as HTMLInputElement).value).toBe('64,583');
+  });
+
+  it('leaves small numbers alone', () => {
+    render(<NumberCell label="u" value={0.211} decimals={3} onCommit={vi.fn()} />);
+    expect((screen.getByLabelText('u') as HTMLInputElement).value).toBe('0.211');
+  });
+
+  it('drops the separators on focus so the caret does not jump', () => {
+    render(<NumberCell label="area" value={6000} decimals={0} onCommit={vi.fn()} />);
+    const input = screen.getByLabelText('area') as HTMLInputElement;
+
+    fireEvent.focus(input);
+    expect(input.value).toBe('6000');
+  });
+
+  it('accepts a pasted figure that still carries its commas', () => {
+    // Refusing it would look like nothing happened: the field would snap back.
+    const onCommit = vi.fn();
+    render(<NumberCell label="area" value={100} decimals={0} onCommit={onCommit} />);
+    const input = screen.getByLabelText('area') as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: '12,500' } });
+    fireEvent.blur(input);
+
+    expect(onCommit).toHaveBeenCalledWith(12500);
+  });
+
+  it('puts the separators back after the edit commits', () => {
+    const onCommit = vi.fn();
+    const { rerender } = render(<NumberCell label="area" value={100} decimals={0} onCommit={onCommit} />);
+    const input = screen.getByLabelText('area') as HTMLInputElement;
+
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '7500' } });
+    fireEvent.blur(input);
+    // The parent is what moves the value; this stands in for that round trip.
+    rerender(<NumberCell label="area" value={7500} decimals={0} onCommit={onCommit} />);
+
+    expect(input.value).toBe('7,500');
+  });
+});

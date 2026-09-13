@@ -12,6 +12,7 @@ import {
   SAMPLE_GAINS,
 } from '../src/model/sampleProject';
 import { toSqFt } from '../src/model/units';
+import { grouped } from '../src/ui/format';
 
 /**
  * Gross floor area is the denominator under every per-area figure the tool
@@ -49,13 +50,14 @@ describe('the gross floor area row', () => {
   it('is on the page and carries the envelope value', () => {
     panel(DEFAULT_ENVELOPE);
     const field = screen.getByLabelText('Gross floor area') as HTMLInputElement;
-    expect(field.value).toBe(String(DEFAULT_ENVELOPE.floorArea));
+    // Grouped, not raw: 6,000 rather than 6000. See ui/format.ts.
+    expect(field.value).toBe(grouped(DEFAULT_ENVELOPE.floorArea));
   });
 
   it('converts with the unit switch like every other area', () => {
     panel(DEFAULT_ENVELOPE, 'IP');
     const field = screen.getByLabelText('Gross floor area') as HTMLInputElement;
-    expect(field.value).toBe(toSqFt(DEFAULT_ENVELOPE.floorArea).toFixed(0));
+    expect(field.value).toBe(grouped(toSqFt(DEFAULT_ENVELOPE.floorArea)));
   });
 
   it('edits the envelope rather than the surfaces', () => {

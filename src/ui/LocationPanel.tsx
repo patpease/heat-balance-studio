@@ -7,6 +7,7 @@ import { resolveGroundTemperature } from '../engine/ua';
 import { GROUND_DRIFT_LIMIT_K } from '../model/defaults';
 import type { Conditions, DesignDay, Site, UnitSystem } from '../model/types';
 import { deltaToF, LABELS, toF, toFt } from '../model/units';
+import { grouped } from './format';
 
 /**
  * Location, and the weather that follows from it.
@@ -196,7 +197,7 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
               {match.label}
               <span style={{ color: 'var(--muted)' }}>
                 {' '}· {match.latitude.toFixed(2)}, {match.longitude.toFixed(2)} ·{' '}
-                {Math.round(ip ? toFt(match.elevation) : match.elevation).toLocaleString('en-US')} {labels.length}
+                {grouped(ip ? toFt(match.elevation) : match.elevation)} {labels.length}
               </span>
             </button>
           ))}

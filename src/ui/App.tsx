@@ -19,6 +19,9 @@ import { GainsPanel } from './GainsPanel';
 import { LocationPanel } from './LocationPanel';
 import { Mark } from './Mark';
 import { ScopePanel } from './ScopePanel';
+import { ThemeIcon } from './ThemeIcon';
+import { useTheme } from './theme';
+import type { ThemeChoice } from './theme';
 import { BalancePointBand, Verdict } from './Verdict';
 
 /**
@@ -42,6 +45,7 @@ import { BalancePointBand, Verdict } from './Verdict';
  */
 export function App() {
   const shared = useMemo(() => stateFromLocation(), []);
+  const theme = useTheme();
 
   const [units, setUnits] = useState<UnitSystem>(shared?.units ?? 'IP');
   // DEFAULT_ENVELOPE, not SAMPLE_ENVELOPE: the worked example is 500 m² on one
@@ -125,6 +129,36 @@ export function App() {
                 }}
               >
                 {system}
+              </button>
+            ))}
+          </div>
+
+          {/* Two buttons for three states: with nothing stored the operating
+              system decides, and pressing either pins it. The palette for all
+              three already exists in tokens.css — this only chooses between
+              them. See ui/theme.ts. */}
+          <div role="group" aria-label="Appearance" style={{ display: 'flex' }}>
+            {([
+              { choice: 'light' as ThemeChoice, icon: 'sun' as const, label: 'Light' },
+              { choice: 'dark' as ThemeChoice, icon: 'moon' as const, label: 'Dark' },
+            ]).map(({ choice, icon, label }) => (
+              <button
+                key={choice}
+                type="button"
+                onClick={() => theme.setPreference(choice)}
+                aria-pressed={theme.resolved === choice}
+                aria-label={`${label} appearance`}
+                title={`${label} appearance`}
+                style={{
+                  ...headerButton,
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px 9px',
+                  borderColor: theme.resolved === choice ? 'var(--gain)' : 'var(--border)',
+                  color: theme.resolved === choice ? 'var(--gain)' : 'var(--muted)',
+                }}
+              >
+                <ThemeIcon name={icon} />
               </button>
             ))}
           </div>
