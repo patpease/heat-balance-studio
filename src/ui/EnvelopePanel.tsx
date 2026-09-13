@@ -41,6 +41,18 @@ export interface EnvelopePanelProps {
   readonly exporting: boolean;
 }
 
+const overlayButton: React.CSSProperties = {
+  font: 'inherit',
+  fontSize: 10,
+  letterSpacing: '0.16em',
+  textTransform: 'uppercase',
+  color: 'var(--gain)',
+  background: 'var(--panel)',
+  border: '1px solid var(--border)',
+  padding: '3px 8px',
+  cursor: 'pointer',
+};
+
 export function EnvelopePanel({
   envelope,
   gains,
@@ -54,7 +66,6 @@ export function EnvelopePanel({
 }: EnvelopePanelProps) {
   const [selected, setSelected] = useState<SurfaceSlot | null>(null);
   const [box, setBox] = useState<BoxDimensions>(DEFAULT_BOX);
-  const [sketch, setSketch] = useState(true);
 
   const result = useMemo(
     () => solve({ envelope, gains, conditions, designDay }),
@@ -142,71 +153,47 @@ export function EnvelopePanel({
     } as const)[s.category];
 
   return (
-    <section className="panel" style={{ padding: 0, overflow: 'hidden' }}>
-      <header
+    <section className="panel" style={{ padding: 0, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+      {/* Title and actions float over the drawing instead of sitting in a bar
+          above it. The bar cost 56 px and the drawing needs them more; the
+          drawing's own margins are empty at the top, so nothing is covered. */}
+      <div
         style={{
+          position: 'absolute',
+          top: 8,
+          left: 14,
+          right: 10,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          gap: 10,
+          gap: 8,
           flexWrap: 'wrap',
-          padding: '14px 18px',
-          borderBottom: '1px solid var(--border)',
+          pointerEvents: 'none',
+          zIndex: 1,
         }}
       >
         <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>
           Section — {String(shownHour).padStart(2, '0')}:00
           {scrubHour === null ? ', the worst hour' : ''}
         </h2>
-        <button
-          type="button"
-          onClick={() => setSketch((v) => !v)}
-          style={{
-            font: 'inherit',
-            fontSize: 11,
-            letterSpacing: '0.18em',
-            textTransform: 'uppercase',
-            color: 'var(--gain)',
-            background: 'none',
-            border: '1px solid var(--border)',
-            padding: '4px 10px',
-            cursor: 'pointer',
-          }}
-        >
-          Sketch {sketch ? 'on' : 'off'}
-        </button>
-        <button
-          type="button"
-          onClick={onExport}
-          disabled={exporting}
-          style={{
-            font: 'inherit',
-            fontSize: 11,
-            letterSpacing: '0.18em',
-            textTransform: 'uppercase',
-            color: 'var(--gain)',
-            background: 'none',
-            border: '1px solid var(--border)',
-            padding: '4px 10px',
-            cursor: 'pointer',
-          }}
-        >
-          {exporting ? 'Exporting…' : 'Export PNG'}
-        </button>
-      </header>
+        <span style={{ display: 'flex', gap: 6, pointerEvents: 'auto' }}>
+          <button type="button" onClick={onExport} disabled={exporting} style={overlayButton}>
+            {exporting ? 'Exporting…' : 'PNG'}
+          </button>
+        </span>
+      </div>
 
-      <div style={{ padding: '8px 8px 0' }}>
+      <div style={{ padding: '26px 8px 0' }}>
         <SectionDrawing
           type={massing}
           terms={terms}
           reference={reference}
-          sketch={sketch}
           selected={selected}
           onSelect={(slot) => setSelected((current) => (current === slot ? null : slot))}
         />
       </div>
 
-      <div style={{ padding: '4px 18px 18px' }}>
+      <div style={{ padding: '2px 16px 12px', display: 'flex', flexDirection: 'column', flex: 1 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
@@ -220,7 +207,7 @@ export function EnvelopePanel({
                     textTransform: 'uppercase',
                     color: 'var(--muted)',
                     fontWeight: 500,
-                    padding: '8px 0',
+                    padding: '5px 0',
                     borderBottom: '1px solid var(--border)',
                   }}
                 >
@@ -245,7 +232,7 @@ export function EnvelopePanel({
                     opacity: empty ? 0.55 : 1,
                   }}
                 >
-                  <td style={{ padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
                     {surface.label}
                     {/* This read "ground at 55 °F" as a literal: the wrong
                         system under SI, and the wrong NUMBER on any site whose
@@ -287,7 +274,7 @@ export function EnvelopePanel({
                       onCommit={(next) => next > 0 && setSurface(surface.id, { uValue: rToU(next, units) })}
                     />
                   </td>
-                  <td style={{ textAlign: 'right', padding: '7px 0', borderBottom: '1px solid var(--border)', fontVariantNumeric: 'tabular-nums', color: empty ? undefined : 'var(--loss)' }}>
+                  <td style={{ textAlign: 'right', padding: '4px 0', borderBottom: '1px solid var(--border)', fontVariantNumeric: 'tabular-nums', color: empty ? undefined : 'var(--loss)' }}>
                     {empty ? '—' : `${Math.round(term?.watts ?? 0).toLocaleString('en-US')} W`}
                   </td>
                 </tr>
@@ -296,14 +283,9 @@ export function EnvelopePanel({
           </tbody>
         </table>
 
-        <p style={{ margin: '10px 0 0', fontSize: 11, color: 'var(--muted)' }}>
-          U-values are assembly averages including thermal bridges — the tool has no bridge model.
-          Every surface faces outdoor air or the ground; there is no buffer boundary in v1.
-        </p>
-
-        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 14, alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 10, alignItems: 'flex-end' }}>
           {boxFields.map(({ key, caption, aria, decimals }) => (
-            <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11 }}>
+            <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 2, fontSize: 11 }}>
               <span className="eyebrow">{caption}</span>
               <NumberCell
                 label={aria}
@@ -311,9 +293,9 @@ export function EnvelopePanel({
                 decimals={decimals}
                 onCommit={(next) => takeBox(key, next)}
                 style={{
-                  width: 74,
+                  width: 66,
                   textAlign: 'left',
-                  padding: '5px 7px',
+                  padding: '3px 6px',
                   background: 'var(--page)',
                   border: '1px solid var(--border)',
                 }}
@@ -325,8 +307,8 @@ export function EnvelopePanel({
             onClick={applyBox}
             style={{
               font: 'inherit',
-              fontSize: 12,
-              padding: '7px 14px',
+              fontSize: 11,
+              padding: '5px 12px',
               background: 'var(--gain)',
               color: 'var(--panel)',
               border: 'none',

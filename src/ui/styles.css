@@ -62,3 +62,32 @@ h1, .display {
    read as a spreadsheet, which is the thing this panel exists not to be. */
 .numbercell:hover { border-color: var(--border) !important; }
 .numbercell:focus { border-color: var(--gain) !important; outline: none; }
+
+/* --------------------------------------------------------------- layout ---
+ * Two-column rows, and where they give up.
+ *
+ * The whole point of the arrangement is that the inputs and the answer sit on
+ * one 1440x900 screen: location beside the weather file, the section drawing
+ * beside the chart, the verdict beside the balance point. Below 1100px the
+ * section column gets too narrow for the five-column surface table and it
+ * starts clipping the loss figures, so the pairs stack instead. Stacking scrolls
+ * — which was the old behaviour, and is the right trade on a small screen.
+ */
+.pair {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
+}
+
+/* The verdict carries the longer sentence, so it takes the wider half. */
+.pair-verdict {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+}
+
+@media (max-width: 1100px) {
+  .pair,
+  .pair-verdict {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -43,6 +43,10 @@ const html = fs.readFileSync(CANVAS, 'utf8');
 const attr = (tag, name) => tag.match(new RegExp(`${name}="([^"]*)"`))?.[1];
 
 const IT_OFFSET = 68;
+/** SHAFT_LENGTH x MAX_SCALE from src/chart/arrowScale.ts, plus the label past it. */
+const ARROW_REACH = 88 * 2.3 + 22;
+/** Room for the longest label text running outward from its radius. */
+const LABEL_ALLOWANCE = 130;
 
 /**
  * Shift a path in x. Absolute M/L/C/Z only — anything else returns null and the
@@ -145,8 +149,15 @@ function extract(label) {
     ...points(attr(groundLine, 'd')),
     [personHead.cx - personHead.r, personHead.cy - personHead.r],
     [personHead.cx + personHead.r, personHead.cy + personHead.r],
-    // An arrow reaches 88 units from its anchor, in whatever direction it points.
-    ...anchors.flatMap((a) => [[a.x - 96, a.y - 96], [a.x + 96, a.y + 96]]),
+    // An arrow reaches SHAFT_LENGTH x MAX_SCALE = 202 units from its anchor,
+    // and a loss label sits just beyond that with its text running outward. The
+    // old allowance was 96 — less than half the real reach — so a long arrow and
+    // its label were simply cut off by the crop. That is what made the text
+    // unreadable exactly when the arrow was biggest.
+    ...anchors.flatMap((a) => [
+      [a.x - ARROW_REACH - LABEL_ALLOWANCE, a.y - ARROW_REACH],
+      [a.x + ARROW_REACH + LABEL_ALLOWANCE, a.y + ARROW_REACH],
+    ]),
   ];
   const xs = all.map((p) => p[0]), ys = all.map((p) => p[1]);
   const pad = 14;

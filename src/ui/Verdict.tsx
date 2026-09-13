@@ -1,4 +1,4 @@
-import { BALANCE_POINT_NOTE, EXCLUSIONS_STATEMENT, SCOPE_STATEMENT, VERDICT } from '../config/copy';
+import { VERDICT } from '../config/copy';
 import type { BalanceResult } from '../engine/balance';
 import type { UnitSystem } from '../model/types';
 import { LABELS, toBtuHFt2, toF } from '../model/units';
@@ -15,6 +15,11 @@ import { LABELS, toBtuHFt2, toF } from '../model/units';
  * The lever line is computed, not written: sort the worst hour's loss terms and
  * name the largest with its share. When a later version links to guidance, the
  * links hang off this line.
+ *
+ * The scope statement used to sit here as a third paragraph. It moved to the
+ * scope panel, which already carried it verbatim, when this became a strip
+ * under the drawing rather than a column beside it — the duplicate was costing
+ * fold space to say something twice.
  */
 
 export interface VerdictProps {
@@ -42,21 +47,17 @@ export function Verdict({ result, units }: VerdictProps) {
   return (
     <section
       className="panel"
-      style={{ padding: '16px 18px', borderColor: result.selfHeating ? 'var(--gain)' : 'var(--loss)' }}
+      style={{ padding: '8px 14px', borderColor: result.selfHeating ? 'var(--gain)' : 'var(--loss)' }}
     >
-      <h2 className="eyebrow" style={{ font: 'inherit', margin: '0 0 10px' }}>Where this stands</h2>
+      <h2 className="eyebrow" style={{ font: 'inherit', margin: '0 0 6px' }}>Where this stands</h2>
 
-      <p className="display" style={{ fontSize: 20, lineHeight: 1.32, margin: '0 0 10px' }}>
+      <p className="display" style={{ fontSize: 16, lineHeight: 1.25, margin: '0 0 5px' }}>
         {headline}
       </p>
 
       {lever && (
-        <p style={{ margin: '0 0 12px', fontSize: 12.5, color: 'var(--gain)', maxWidth: '54ch' }}>{lever}</p>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--gain)', maxWidth: '62ch', lineHeight: 1.45 }}>{lever}</p>
       )}
-
-      <p style={{ margin: 0, fontSize: 11, color: 'var(--muted)', maxWidth: '58ch', lineHeight: 1.5 }}>
-        {SCOPE_STATEMENT} {EXCLUSIONS_STATEMENT}
-      </p>
     </section>
   );
 }
@@ -72,6 +73,10 @@ export function Verdict({ result, units }: VerdictProps) {
  * Lower is better, which is the opposite of what the sign invites you to think:
  * a lower balance point means the building needs heat only at colder outdoor
  * temperatures.
+ *
+ * The four-line explanation that used to close this panel is gone; the band and
+ * its two labelled ends carry the same point without the prose, and the panel
+ * now has to share a row with the verdict.
  */
 export function BalancePointBand({ result, units }: VerdictProps) {
   const temp = (celsius: number) => (units === 'IP' ? toF(celsius) : celsius);
@@ -85,33 +90,41 @@ export function BalancePointBand({ result, units }: VerdictProps) {
   const position = span > 0 ? Math.min(1, Math.max(0, (mean - low) / span)) : 0.5;
 
   return (
-    <section className="panel" style={{ padding: '16px 18px' }}>
-      <h2 className="eyebrow" style={{ font: 'inherit', margin: '0 0 10px' }}>Balance point</h2>
+    <section className="panel" style={{ padding: '8px 14px' }}>
+      <h2 className="eyebrow" style={{ font: 'inherit', margin: '0 0 4px' }}>Balance point</h2>
 
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 12 }}>
-        <span className="display" style={{ fontSize: 27 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, marginBottom: 7 }}>
+        <span className="display" style={{ fontSize: 22 }}>
           {mean.toFixed(1)} {labels.temperature}
         </span>
         <span style={{ fontSize: 11, color: 'var(--muted)' }}>on 24-hour mean gain</span>
       </div>
 
-      <svg viewBox="0 0 300 26" role="img" aria-label="Balance point band" style={{ display: 'block', width: '100%', height: 'auto' }}>
-        <line x1="6" y1="13" x2="294" y2="13" stroke="var(--border-strong)" strokeWidth="2" />
-        <line x1="6" y1="6" x2="6" y2="20" stroke="var(--loss)" strokeWidth="2" />
-        <line x1="294" y1="6" x2="294" y2="20" stroke="var(--loss)" strokeWidth="2" />
-        <circle cx={6 + position * 288} cy="13" r="5" fill="var(--gain)" />
+      {/*
+        The viewBox is wide and shallow on purpose.
+        
+        At 300x26 it scaled with the column and rendered 49 px tall for what is
+        a rule and a dot — and since this was the taller half of the strip, it
+        set the height of the verdict beside it too. Stretching it with
+        preserveAspectRatio="none" would have flattened the marker into an
+        ellipse, so the box matches the shape it is drawn at instead.
+      */}
+      <svg
+        viewBox="0 0 640 26"
+        role="img"
+        aria-label="Balance point band"
+        style={{ display: 'block', width: '100%', height: 'auto' }}
+      >
+        <line x1="8" y1="13" x2="632" y2="13" stroke="var(--border-strong)" strokeWidth="2" />
+        <line x1="8" y1="6" x2="8" y2="20" stroke="var(--loss)" strokeWidth="2" />
+        <line x1="632" y1="6" x2="632" y2="20" stroke="var(--loss)" strokeWidth="2" />
+        <circle cx={8 + position * 624} cy="13" r="6" fill="var(--gain)" />
       </svg>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: 'var(--muted)', marginTop: 4 }}>
-        <span>
-          {low.toFixed(1)} at peak gain
-        </span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: 'var(--muted)', marginTop: 2 }}>
+        <span>{low.toFixed(1)} at peak gain</span>
         <span>{high.toFixed(1)} overnight</span>
       </div>
-
-      <p style={{ margin: '10px 0 0', fontSize: 11, color: 'var(--muted)', maxWidth: '52ch' }}>
-        {BALANCE_POINT_NOTE}
-      </p>
     </section>
   );
 }

@@ -19,7 +19,16 @@ import { crossing, linearScale, niceCeiling, ticksUpTo } from './scales';
  */
 
 const WIDTH = 880;
-const HEIGHT = 380;
+/**
+ * 560, not 380.
+ *
+ * The chart shares a row with the section drawing and stretches to its height.
+ * At the old aspect it rendered 266 px tall in a 549 px panel and left half the
+ * box empty. Taller is also simply better here: the reading is the GAP between
+ * two curves, and vertical resolution is what makes that gap legible. Text is
+ * unaffected — the horizontal scale sets the type size, and that has not moved.
+ */
+const HEIGHT = 560;
 const PAD = { top: 22, right: 20, bottom: 46, left: 54 };
 
 export interface BalanceChartProps {
@@ -102,7 +111,11 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
         role="img"
         aria-label={`Hourly envelope loss against internal gain. ${result.deficitHours} of 24 hours need heating.`}
         tabIndex={0}
-        style={{ display: 'block', width: '100%', height: 'auto', touchAction: 'none' }}
+        preserveAspectRatio="xMidYMid meet"
+        /* The chart shares a row with the section and stretches to match it, so
+           it takes whatever height is going rather than staying at its own
+           aspect ratio and leaving a gap. */
+        style={{ display: 'block', width: '100%', height: 'auto', maxHeight: 420, touchAction: 'none' }}
         onPointerMove={(event) => onHoverHour(hourFromEvent(event.clientX))}
         onPointerLeave={() => onHoverHour(null)}
         onFocus={() => setFocusHour(result.worstHour)}

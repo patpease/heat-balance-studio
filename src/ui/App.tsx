@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 
 import { BalanceChart } from '../chart/BalanceChart';
 import { BRAND } from '../config/branding';
-import { INTRO, TAGLINE } from '../config/copy';
+import { TAGLINE } from '../config/copy';
 import { solve } from '../engine/balance';
 import { downloadBlob, exportPng } from '../io/exportPng';
 import { shareUrl, stateFromLocation } from '../io/share';
@@ -95,14 +95,15 @@ export function App() {
   };
 
   return (
-    <main style={{ maxWidth: 1340, margin: '0 auto', padding: '28px 24px 56px', display: 'grid', gap: 18 }}>
-      <header className="panel" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', flexWrap: 'wrap' }}>
-        <Mark size={40} />
-        <div style={{ flex: 1 }}>
-          <div className="eyebrow">{BRAND.studio}</div>
-          <h1 style={{ fontSize: 22 }}>{BRAND.name}</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 11.5, color: 'var(--muted)' }}>{TAGLINE}</p>
-        </div>
+    <main style={{ maxWidth: 1340, margin: '0 auto', padding: '10px 20px 40px', display: 'grid', gap: 8 }}>
+      {/* One bar. The studio eyebrow, name and the tool's question sit on a
+          single line so the fold budget goes to the drawing and the chart. */}
+      <header className="panel" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '7px 14px', flexWrap: 'wrap' }}>
+        <Mark size={26} />
+        <h1 style={{ fontSize: 18, margin: 0 }}>{BRAND.name}</h1>
+        <span className="eyebrow" style={{ fontSize: 9.5 }}>{BRAND.studio}</span>
+        <p style={{ margin: 0, fontSize: 11.5, color: 'var(--muted)' }}>{TAGLINE}</p>
+        <div style={{ flex: 1 }} />
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           {copied && <span style={{ fontSize: 11, color: 'var(--gain)' }}>{copied}</span>}
           <button type="button" onClick={copyLink} style={headerButton}>
@@ -140,10 +141,11 @@ export function App() {
         }}
       />
 
-      <p style={{ margin: 0, fontSize: 13, color: 'var(--body)', maxWidth: '74ch', lineHeight: 1.55 }}>{INTRO}</p>
-
-      <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' }}>
-        <div ref={sectionRef} style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
+      {/* The drawing and the chart are the two things a user reads together, so
+          they sit side by side and stretch to the same height. The verdict used
+          to live above the chart and pushed it out of alignment. */}
+      <div className="pair">
+        <div ref={sectionRef} style={{ display: 'grid', alignContent: 'stretch' }}>
           <EnvelopePanel
             envelope={envelope}
             gains={gains}
@@ -159,45 +161,52 @@ export function App() {
           />
         </div>
 
-        <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
-          <Verdict result={result} units={units} />
-
-          <section className="panel" style={{ padding: 0, overflow: 'hidden' }}>
-            <header
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: 12,
-                padding: '14px 18px',
-                borderBottom: '1px solid var(--border)',
-              }}
+        {/* The title and the export button float over the chart rather than
+            sitting in a bar above it. That bar cost 56 px on both panels, and
+            the pixels are worth more to the drawing. */}
+        <section className="panel" style={{ padding: 0, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+          <div
+            style={{
+              position: 'absolute',
+              top: 8,
+              left: 14,
+              right: 10,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 10,
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          >
+            <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>24-hour balance</h2>
+            <button
+              type="button"
+              onClick={() =>
+                shoot(chartRef.current, 'heat-balance-chart.png', `${site.label} — 24-hour balance`)
+              }
+              disabled={busy !== null}
+              style={{ ...exportButton, pointerEvents: 'auto' }}
             >
-              <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>24-hour balance</h2>
-              <button
-                type="button"
-                onClick={() =>
-                  shoot(chartRef.current, 'heat-balance-chart.png', `${site.label} — 24-hour balance`)
-                }
-                disabled={busy !== null}
-                style={exportButton}
-              >
-                {busy === 'heat-balance-chart.png' ? 'Exporting…' : 'Export PNG'}
-              </button>
-            </header>
-            <div ref={chartRef} style={{ padding: '12px 16px 16px' }}>
-              <BalanceChart
-                result={result}
-                floorArea={envelope.floorArea}
-                units={units}
-                hoveredHour={hoveredHour}
-                onHoverHour={setHoveredHour}
-              />
-            </div>
-          </section>
+              {busy === 'heat-balance-chart.png' ? 'Exporting…' : 'PNG'}
+            </button>
+          </div>
+          <div ref={chartRef} style={{ padding: '30px 14px 12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <BalanceChart
+              result={result}
+              floorArea={envelope.floorArea}
+              units={units}
+              hoveredHour={hoveredHour}
+              onHoverHour={setHoveredHour}
+            />
+          </div>
+        </section>
+      </div>
 
-          <BalancePointBand result={result} units={units} />
-        </div>
+      {/* The answer, condensed onto one row under the two things it reads from. */}
+      <div className="pair pair-verdict">
+        <Verdict result={result} units={units} />
+        <BalancePointBand result={result} units={units} />
       </div>
 
       <GainsPanel

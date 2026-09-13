@@ -2,7 +2,7 @@ import { useId } from 'react';
 
 import { GROUND_LINES, PERSON_HEADS } from '../model/buildingTypes';
 import type { BuildingType, SurfaceSlot } from '../model/types';
-import { arrowGeometry, SHAFT_LENGTH } from './arrowScale';
+import { arrowGeometry, MAX_SCALE, SHAFT_LENGTH } from './arrowScale';
 
 /**
  * The section drawing.
@@ -10,10 +10,13 @@ import { arrowGeometry, SHAFT_LENGTH } from './arrowScale';
  * Renders whichever `BuildingType` record it is handed — that indirection is
  * the whole point, because v2's five extra massings then need no change here.
  *
- * Every colour is a token, so the light and dark canvases are one drawing. The
- * sketch filter is applied to the SHELL ONLY and not to the arrows: the canvas
- * filters the whole artwork, which would re-run a displacement map over the
- * entire drawing on every frame of a slider drag.
+ * Every colour is a token, so the light and dark canvases are one drawing.
+ *
+ * The sketch filter — feTurbulence into feDisplacementMap, roughening the shell
+ * to look hand-drawn — is off by default and has no control. Patrick used it
+ * for a few days and every massing reads better without it. The filter stays in
+ * the code because it still works and the prop still switches it; nothing in
+ * the UI turns it on.
  */
 
 export interface SectionTerm {
@@ -41,6 +44,34 @@ const LOSS_SLOTS = new Set<SurfaceSlot>([
   'loss-exposed-floor',
 ]);
 
+/**
+ * Where a label sits, and why it does not follow its arrow.
+ *
+ * It used to be parked past the arrowhead at `SHAFT_LENGTH * scale + 18`, so it
+ * swung 44 to 220 units outward as the value changed. Two things went wrong at
+ * the far end: the label ran past the massing's crop and was cut off, and on a
+ * building whose loss is lopsided the long arrow's label collided with its
+ * neighbours. Either way the text became unreadable exactly when the arrow was
+ * most worth reading.
+ *
+ * Now nothing moves. A LOSS label sits at a fixed radius just beyond the
+ * longest arrow the scale can produce, so an arrow grows toward its label and
+ * never reaches it. A GAIN label sits beside its glyph — left of the person,
+ * right of the lamp — because a gain arrow points up into the space and there
+ * is no room above it for a label at any radius.
+ */
+const LOSS_LABEL_RADIUS = SHAFT_LENGTH * MAX_SCALE + 22;
+
+/** Offsets in drawing units from the anchor, and which way the text runs. */
+const GAIN_LABEL: Record<string, { dx: number; dy: number; anchor: 'start' | 'middle' | 'end' }> = {
+  'gain-people': { dx: -30, dy: 6, anchor: 'end' },
+  'gain-lighting': { dx: 28, dy: 5, anchor: 'start' },
+  // Misc above its box and IT below its rack: the two glyphs sit side by side
+  // and their labels are long, so they are separated vertically or not at all.
+  'gain-misc-equipment': { dx: 0, dy: -26, anchor: 'middle' },
+  'gain-it-equipment': { dx: 0, dy: 42, anchor: 'middle' },
+};
+
 /** The 88-unit shaft, drawn twice with opposite curvature so arrows alternate. */
 const SHAFT_A = 'M0 0 C 22 -5 44 4 64 -2 L 88 0';
 const SHAFT_B = 'M0 0 C 22 4 44 -5 64 2 L 88 0';
@@ -50,7 +81,7 @@ export function SectionDrawing({
   type,
   terms,
   reference,
-  sketch = true,
+  sketch = false,
   showLabels = true,
   selected = null,
   onSelect,
@@ -69,7 +100,12 @@ export function SectionDrawing({
       viewBox={type.viewBox}
       role="img"
       aria-label={`${type.label} section: envelope heat loss against internal heat gain`}
-      style={{ display: 'block', width: '100%', height: 'auto' }}
+      preserveAspectRatio="xMidYMid meet"
+      /* Without a cap the drawing is sized by the panel's width — 626 px wide
+         made it 297 px tall, which on a 900 px screen pushed the verdict below
+         the fold. 184 leaves the fold about 27 px of slack for a long location
+         name or a wrapped verdict sentence. It scales down inside the box and stays centred. */
+      style={{ display: 'block', width: '100%', height: 'auto', maxHeight: 232 }}
     >
       <defs>
         <filter id={sketchId} x="-12%" y="-12%" width="124%" height="124%">
@@ -180,13 +216,15 @@ export function SectionDrawing({
             const term = bySlot.get(anchor.slot);
             if (!term || !arrowGeometry(term.watts, reference).visible) return null;
             const isLoss = LOSS_SLOTS.has(anchor.slot);
-            const geometry = arrowGeometry(term.watts, reference);
-            // Park the label past the arrowhead, in the arrow's own direction.
-            const distance = SHAFT_LENGTH * geometry.scale + 18;
+
+            const gain = GAIN_LABEL[anchor.slot];
             const radians = (anchor.rotate * Math.PI) / 180;
-            const x = anchor.x + distance * Math.cos(radians);
-            const y = anchor.y + distance * Math.sin(radians);
-            const anchorPoint = Math.cos(radians) < -0.3 ? 'end' : Math.cos(radians) > 0.3 ? 'start' : 'middle';
+            // Fixed either way — nothing here reads the arrow's length.
+            const x = gain ? anchor.x + gain.dx : anchor.x + LOSS_LABEL_RADIUS * Math.cos(radians);
+            const y = gain ? anchor.y + gain.dy : anchor.y + LOSS_LABEL_RADIUS * Math.sin(radians);
+            const anchorPoint = gain
+              ? gain.anchor
+              : Math.cos(radians) < -0.3 ? 'end' : Math.cos(radians) > 0.3 ? 'start' : 'middle';
             return (
               <text
                 key={anchor.slot}

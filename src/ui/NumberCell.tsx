@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 
 export const cellStyle: CSSProperties = {
   textAlign: 'right',
-  padding: '4px 0',
+  padding: '2px 0',
   borderBottom: '1px solid var(--border)',
   fontVariantNumeric: 'tabular-nums',
 };
@@ -66,7 +66,7 @@ export function NumberCell({
         fontVariantNumeric: 'tabular-nums',
         width: 92,
         textAlign: 'right',
-        padding: '4px 6px',
+        padding: '2px 6px',
         background: 'transparent',
         color: 'var(--ink)',
         border: '1px solid transparent',

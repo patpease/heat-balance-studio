@@ -22,8 +22,7 @@
 /** Where I am least confident, and would most like your eye. */
 export const DRAFT_NOTES = [
   'TAGLINE — the plan opens with this question, so it is the obvious tagline, but it may read as too long for a card.',
-  'INTRO — currently three sentences. A tool card on peasestudio.com may want one.',
-  'ASSUMPTIONS — these are complete but flat. Worth deciding whether the UI shows all seven or the three that bite.',
+  'ASSUMPTIONS — now twelve. The panel shows three and hides the rest; worth checking the three shown are still the three that bite now that the data provenance ones exist.',
   'CARD_LONG — written for the site\'s tool detail page; I have not seen how ZEEL\'s reads, so the length may be off.',
 ] as const;
 
@@ -42,18 +41,28 @@ export const CARD_SHORT =
 
 /** The tool detail page. Longer, but still not a brochure. */
 export const CARD_LONG =
-  'Enter five envelope surfaces and your internal gains, pick a US city, and see hour by hour whether ' +
-  'the heat a building makes covers the heat it loses on a cold design day. It is a screen for the ' +
-  'stage where the massing is still moving — not a load calculation, and not a certification path. ' +
-  'Everything runs in your browser: no account, no upload, nothing kept.';
+  'Pick a building type and a US city, enter five envelope surfaces, and see hour by hour whether the ' +
+  'heat a building makes covers the heat it loses on a cold design day. Eighteen types carry their own ' +
+  'occupancy, lighting, equipment and schedules from the PNNL prototype models, and every one of them ' +
+  'stays editable. It is a screen for the stage where the massing is still moving — not a load ' +
+  'calculation, and not a certification path. Everything runs in your browser: no account, no upload, ' +
+  'nothing kept.';
 
 // ---------------------------------------------------------------------------
 // The framing block
 // ---------------------------------------------------------------------------
 
-export const INTRO =
-  'Floor area makes heat. Envelope loses it. This tool puts the two against each other hour by hour on a ' +
-  'cold design day and tells you where the gap is — or what you have in hand if there is not one.';
+/**
+ * Where the gain numbers come from, shown under the building-type picker.
+ *
+ * The lighting exception is stated because it is the one place the tool
+ * deliberately departs from its own source, and a user comparing against the
+ * PNNL models would otherwise find the difference and not know why.
+ */
+export const GAINS_SOURCE_NOTE =
+  'Densities and all four schedules are the PNNL prototype for this building type, weekday profiles. ' +
+  'Lighting is the exception — those models are the 90.1-2004 vintage, so lighting comes from the 90.1 ' +
+  'Building Area Method instead.';
 
 /**
  * The standing statement. Permanent page furniture and burned into every
@@ -99,6 +108,9 @@ export const ASSUMPTIONS = [
   'Every surface faces outdoor air or the ground. A wall to an unheated garage has to be entered as an outdoor wall, which overstates its loss.',
   'All IT heat reaches the space. A separately-cooled server room that rejects its heat outdoors is counted here as if it warmed the building.',
   'Floor area is gross conditioned area, not Passive House Treated Floor Area — the more generous of the two, including in the comparison to 10 W/m².',
+  'Gains come from the PNNL prototype models, which are the 90.1-2004 vintage. Their lighting runs well above current code, so this tool takes lighting from the 90.1 Building Area Method and everything else from the prototypes.',
+  'Kitchens, laundries and machine rooms are left out of the equipment density. Their load is cooking and washing, most of which leaves through an exhaust hood, and this tool has no exhaust to send it up.',
+  'Schedules are weekday profiles. A heating design day is a cold weekday, so the weekend profiles the source publishes are not used.',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -156,6 +168,8 @@ export const HELP = {
     'A .ddy beside the .epw supplies the published ASHRAE minimum; the shape still comes from the file’s own cold days, because the ASHRAE heating design day is flat. Read in your browser — nothing is uploaded.',
   geocoder:
     'Pick the right one — the geocoder ranks by relevance but does not filter by state, so the second and third results are sometimes nowhere near.',
+  buildingType:
+    'Sets all four densities and all four schedules at once, from that type\u2019s PNNL prototype. The schedules are the half that moves the answer: an apartment sits near full occupancy at 05:00 where an office sits at zero, and the verdict is decided between 04:00 and 07:00. Everything it fills in stays editable — change any number and the badge drops, because it is no longer that model\u2019s value.',
 } as const;
 
 // ---------------------------------------------------------------------------

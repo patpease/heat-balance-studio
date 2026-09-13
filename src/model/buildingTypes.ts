@@ -51,7 +51,7 @@ const OFFICE_ANCHORS: ArrowAnchor[] = [
 export const OFFICE: BuildingType = {
   id: 'office',
   label: 'Office',
-  viewBox: '-134 92 1028 488',
+  viewBox: '-193 -37 1198 746',
   shell: OFFICE_SHELL,
   glyphs: OFFICE_GLYPHS,
   soil: [
@@ -97,7 +97,7 @@ const SCHOOL_ANCHORS: ArrowAnchor[] = [
 export const SCHOOL: BuildingType = {
   id: 'school',
   label: 'School',
-  viewBox: '-134 198 1028 390',
+  viewBox: '-211 113 1184 604',
   shell: SCHOOL_SHELL,
   glyphs: SCHOOL_GLYPHS,
   soil: [
@@ -145,7 +145,7 @@ const LAB_ANCHORS: ArrowAnchor[] = [
 export const LAB: BuildingType = {
   id: 'lab',
   label: 'Laboratory',
-  viewBox: '-134 108 1028 476',
+  viewBox: '-183 -21 1166 734',
   shell: LAB_SHELL,
   glyphs: LAB_GLYPHS,
   soil: [
@@ -191,7 +191,7 @@ const CIVIC_ANCHORS: ArrowAnchor[] = [
 export const CIVIC: BuildingType = {
   id: 'civic',
   label: 'Civic',
-  viewBox: '-134 86 1028 510',
+  viewBox: '-199 -43 1198 768',
   shell: CIVIC_SHELL,
   glyphs: CIVIC_GLYPHS,
   soil: [
@@ -235,7 +235,7 @@ const MULTIFAMILY_ANCHORS: ArrowAnchor[] = [
 export const MULTIFAMILY: BuildingType = {
   id: 'multifamily',
   label: 'Multi-family',
-  viewBox: '-134 48 1028 548',
+  viewBox: '-157 -81 1126 806',
   shell: MULTIFAMILY_SHELL,
   glyphs: MULTIFAMILY_GLYPHS,
   soil: [
@@ -278,7 +278,7 @@ const HOME_ANCHORS: ArrowAnchor[] = [
 export const HOME: BuildingType = {
   id: 'home',
   label: 'Single-family home',
-  viewBox: '-134 96 1028 477',
+  viewBox: '-179 -33 1118 718',
   shell: HOME_SHELL,
   glyphs: HOME_GLYPHS,
   soil: [

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { occupantCount } from '../engine/gains';
 import { applyGainPreset, IT_PRESETS, setDensity, setOccupancyMode, setScheduleHour } from '../model/editGains';
 import type { DensityField, ScheduleField } from '../model/editGains';
-import { HELP } from '../config/copy';
+import { GAINS_SOURCE_NOTE, HELP } from '../config/copy';
 import { OFFICE_DENSITIES } from '../model/defaults';
 import { GAIN_PRESETS } from '../model/gainPresets';
 import type { Gains, UnitSystem } from '../model/types';
@@ -188,12 +188,7 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
             </option>
           ))}
         </select>
-        <span style={{ fontSize: 10.5, color: 'var(--muted)', maxWidth: '60ch' }}>
-          Densities and all four schedules come from the PNNL prototype for this type,
-          weekday profiles. Lighting is the exception: it is the 90.1 Building Area Method
-          value, because the prototypes are the 2004 vintage and their lighting runs well
-          above current code.
-        </span>
+        <span style={{ fontSize: 10.5, color: 'var(--muted)', maxWidth: '64ch' }}>{GAINS_SOURCE_NOTE}</span>
       </div>
 
       <div style={{ padding: '6px 18px 16px' }}>

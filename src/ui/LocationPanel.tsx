@@ -23,6 +23,11 @@ import { deltaToF, LABELS, toF, toFt } from '../model/units';
  * invisibly, and a design day derived for the wrong town never announces
  * itself.
  *
+ * **The search and the weather file sit side by side, not stacked.** They are
+ * two ways to answer the same question, and stacking them spent 220 px of a
+ * 900 px screen on an either/or. The matches list and any message appear below
+ * both, full width, because either column can produce them.
+ *
  * **This panel prints temperatures, so it needs `units`.** It shipped without
  * them and stayed in Fahrenheit under SI — a number that is still plausible,
  * still has a unit beside it, and is simply the other system's answer. Note
@@ -138,9 +143,11 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
       : `ground ${temp(conditions.groundTemperature).toFixed(1)} ${labels.temperature}, this site’s annual mean — more than ${drift} ${labels.temperatureDelta} from the rule of thumb`;
 
   return (
-    <section className="panel" style={{ padding: '14px 18px', display: 'grid', gap: 12 }}>
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <h2 className="eyebrow" style={{ font: 'inherit', margin: 0, minWidth: 62 }}>
+    <div style={{ display: 'grid', gap: 10 }}>
+      <div className="pair">
+      <section className="panel" style={{ padding: '9px 14px', display: 'grid', gap: 6, alignContent: 'start' }}>
+      <div style={{ display: 'flex', gap: 9, alignItems: 'center', flexWrap: 'wrap' }}>
+        <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>
           Location
         </h2>
         <input
@@ -152,8 +159,8 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
           style={{
             font: 'inherit',
             flex: 1,
-            minWidth: 220,
-            padding: '6px 9px',
+            minWidth: 150,
+            padding: '4px 8px',
             background: 'var(--page)',
             color: 'var(--ink)',
             border: '1px solid var(--border)',
@@ -196,14 +203,17 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'baseline', fontSize: 11 }}>
-        <span style={{ color: 'var(--ink)', fontSize: 13 }}>{site.label}</span>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'baseline', fontSize: 10.5 }}>
+        <span style={{ color: 'var(--ink)', fontSize: 12 }}>{site.label}</span>
         <span style={{ color: 'var(--loss)' }}>
           99.6% design {temp(designDay.minimum).toFixed(1)} {labels.temperature}
         </span>
         <span style={{ color: 'var(--muted)' }}>{groundNote}</span>
-        <span style={{ color: 'var(--muted)', marginLeft: 'auto' }}>{designDay.provenance}</span>
       </div>
+      {/* Its own line: inlined into the strip above it wrapped to a third line
+          in a 645 px column and cost more than it saved. */}
+      <span style={{ fontSize: 10, color: 'var(--muted)' }}>{designDay.provenance}</span>
+      </section>
 
       <div
         onDragOver={(event) => {
@@ -217,18 +227,24 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
           const file = event.dataTransfer.files[0];
           if (file) void takeFile(file);
         }}
+        className="panel"
         style={{
-          border: `1px dashed ${dragging ? 'var(--gain)' : 'var(--border)'}`,
-          background: dragging ? 'var(--page)' : 'transparent',
-          padding: '10px 12px',
+          borderStyle: 'dashed',
+          borderColor: dragging ? 'var(--gain)' : 'var(--border)',
+          background: dragging ? 'var(--page)' : 'var(--panel)',
+          padding: '9px 14px',
           display: 'flex',
-          gap: 12,
+          gap: 9,
           alignItems: 'center',
+          alignContent: 'center',
           flexWrap: 'wrap',
-          fontSize: 11,
+          fontSize: 10.5,
           color: 'var(--muted)',
         }}
       >
+        <h2 className="eyebrow" style={{ font: 'inherit', margin: 0, flexBasis: '100%' }}>
+          Weather file
+        </h2>
         <label style={{ ...button, display: 'inline-block' }}>
           Open .epw or .zip
           <input
@@ -242,11 +258,11 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
             style={{ display: 'none' }}
           />
         </label>
-        <span>
-          Or drop one here. A <code>.ddy</code> beside the <code>.epw</code> supplies the published ASHRAE minimum;
-          the shape still comes from the file's own cold days, because the ASHRAE heating design day is flat.
+        <span style={{ flex: 1, minWidth: 170 }}>
+          Or drop one here — read in your browser, nothing uploaded. A <code>.ddy</code> beside the{' '}
+          <code>.epw</code> supplies the published ASHRAE minimum.
         </span>
-        <span style={{ marginLeft: 'auto' }}>Read in your browser — nothing is uploaded.</span>
+      </div>
       </div>
 
       {note && (
@@ -268,7 +284,7 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
           {status}
         </p>
       )}
-    </section>
+    </div>
   );
 }
 
