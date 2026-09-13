@@ -88,6 +88,9 @@ export const SAMPLE_GAINS: Gains = {
     itEquipment: ALWAYS_ON,
   },
   preset: 'Office (provisional)',
+  // The worked example is not one of the building types, so it has no massing
+  // of its own and the drawing falls back to the office.
+  sourceId: null,
 };
 
 export const SAMPLE_CONDITIONS: Conditions = {

@@ -103,6 +103,7 @@ export const DEFAULT_GAINS: Gains = {
   // those stay in schedules.ts for the frozen worked example.
   schedules: presetSchedules(OFFICE_PRESET),
   preset: OFFICE_PRESET.label,
+  sourceId: OFFICE_PRESET.id,
 };
 
 /**

@@ -10,6 +10,12 @@
  *
  * So every edit here drops `preset` to null, and the panel has no way to change
  * a value without going through one of them.
+ *
+ * `sourceId` deliberately SURVIVES an edit. The badge must not claim the
+ * numbers are still ASHRAE's, but the building is still the building: a
+ * warehouse with one density typed over is a warehouse, and the drawing should
+ * stay a warehouse. The panel renders "Warehouse — edited" from the two fields
+ * together.
  */
 
 import type { GainPreset } from './gainPresets';
@@ -27,7 +33,7 @@ export type DensityField =
 
 export type ScheduleField = keyof Gains['schedules'];
 
-/** Drop the preset badge. Every edit path goes through this. */
+/** Drop the preset badge — but not the building it came from. */
 function edited(gains: Gains): Gains {
   return gains.preset === null ? gains : { ...gains, preset: null };
 }
@@ -166,5 +172,6 @@ export function applyGainPreset(gains: Gains, preset: GainPreset): Gains {
     itEquipment: { ...gains.itEquipment, powerDensity: preset.itEquipment.value ?? 0 },
     schedules: presetSchedules(preset),
     preset: preset.label,
+    sourceId: preset.id,
   };
 }

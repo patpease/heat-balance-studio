@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { lossPlacement } from '../src/chart/SectionDrawing';
 
-import { arrowGeometry, MAX_SCALE, MAX_WIDTH, MIN_WIDTH, referenceWatts, SHAFT_LENGTH } from '../src/chart/arrowScale';
+import { MAX_HEAD_SCALE, MAX_SCALE, MAX_WIDTH, MIN_WIDTH, SHAFT_LENGTH, arrowGeometry, referenceWatts } from '../src/chart/arrowScale';
 import { areasFromBox, DEFAULT_BOX } from '../src/engine/sketchBox';
 import { BUILDING_TYPES, GROUND_LINES, OFFICE, PERSON_HEADS, buildingType } from '../src/model/buildingTypes';
 import { solve } from '../src/engine/balance';
@@ -214,5 +215,87 @@ describe('sketch a box', () => {
     const empty = areasFromBox({ ...DEFAULT_BOX, length: 0, width: 0 });
     expect(empty.floorArea).toBe(0);
     expect(empty.wallToFloorRatio).toBe(0);
+  });
+});
+
+describe('the arrowhead keeps up with the shaft', () => {
+  /**
+   * The head was a fixed 22-unit shape while the stroke ran 2.2 to 6.2, so the
+   * heaviest arrow — the one carrying the biggest number — wore the same small
+   * head as the lightest and read as a blunt bar.
+   */
+  const light = arrowGeometry(1, 100);
+  const heavy = arrowGeometry(100, 100);
+
+  it('grows the head as the stroke thickens', () => {
+    expect(heavy.strokeWidth).toBeGreaterThan(light.strokeWidth);
+    expect(heavy.headScale).toBeGreaterThan(light.headScale);
+  });
+
+  it('holds the head-to-stroke ratio roughly constant', () => {
+    // That IS the requirement: a similar proportion at every value.
+    const ratio = (g: { headScale: number; strokeWidth: number }) => g.headScale / g.strokeWidth;
+    expect(ratio(heavy)).toBeCloseTo(ratio(light), 1);
+  });
+
+  it('starts at 1 so the lightest arrow is unchanged', () => {
+    // Not exactly 1: the WIDTH reads the raw ratio while the LENGTH is floored
+    // at MIN_SCALE, so a term far below the floor still carries a hair more
+    // stroke than the minimum. Within a percent is the honest claim.
+    expect(light.headScale).toBeGreaterThanOrEqual(1);
+    expect(light.headScale).toBeLessThan(1.01);
+  });
+
+  it('caps, so the longest arrow is still an arrow and not a triangle', () => {
+    expect(heavy.headScale).toBeLessThanOrEqual(MAX_HEAD_SCALE);
+    for (const watts of [0.1, 1, 25, 60, 100, 1000]) {
+      const g = arrowGeometry(watts, 100);
+      expect(g.headScale, `${watts} W`).toBeGreaterThanOrEqual(1);
+      expect(g.headScale, `${watts} W`).toBeLessThanOrEqual(MAX_HEAD_SCALE);
+    }
+  });
+
+  it('draws no head at all for a zero term', () => {
+    expect(arrowGeometry(0, 100).visible).toBe(false);
+  });
+});
+
+describe('a loss label goes to the side its arrow actually leaves from', () => {
+  /**
+   * This was keyed on the slot name, which looked right on the office and was
+   * wrong on the school — that massing mirrors it, so its wall arrow leaves to
+   * the RIGHT and its window arrow to the LEFT. Both labels went to the wrong
+   * side and landed on top of the building. The direction is in the data; read
+   * it from there.
+   */
+  it('follows the rotation, not the slot', () => {
+    expect(lossPlacement(0, 'loss-walls').dx).toBeGreaterThan(0);
+    expect(lossPlacement(180, 'loss-walls').dx).toBeLessThan(0);
+    expect(lossPlacement(0, 'loss-windows').dx).toBeGreaterThan(0);
+    expect(lossPlacement(180, 'loss-windows').dx).toBeLessThan(0);
+  });
+
+  it('sends the text outward, away from the building', () => {
+    expect(lossPlacement(0, 'loss-walls').anchor).toBe('start');
+    expect(lossPlacement(180, 'loss-walls').anchor).toBe('end');
+  });
+
+  it('separates the two down-pointing floor arrows', () => {
+    const ground = lossPlacement(90, 'loss-ground-floor');
+    const exposed = lossPlacement(90, 'loss-exposed-floor');
+    expect(Math.sign(ground.dx)).toBe(-Math.sign(exposed.dx));
+  });
+
+  it('holds every label within a short reach of its own anchor', () => {
+    // The point of the change: a small loss draws a stub of an arrow and its
+    // name must still be attached to the surface, not stranded 200 units out
+    // where the longest possible arrow would have ended.
+    for (const type of BUILDING_TYPES) {
+      for (const anchor of type.anchors) {
+        if (!anchor.slot.startsWith('loss-')) continue;
+        const { dx, dy } = lossPlacement(anchor.rotate, anchor.slot);
+        expect(Math.hypot(dx, dy), `${type.id}/${anchor.slot}`).toBeLessThan(40);
+      }
+    }
   });
 });

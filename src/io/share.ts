@@ -89,6 +89,7 @@ export function encodeState(state: ShareState): string {
       m: r(state.gains.miscEquipment.powerDensity, 3),
       i: [r(state.gains.itEquipment.powerDensity, 3), r(state.gains.itEquipment.spaceFraction, 3)],
       p: state.gains.preset,
+      sid: state.gains.sourceId,
       k: [
         packSchedule(state.gains.schedules.occupancy.fractions),
         packSchedule(state.gains.schedules.lighting.fractions),
@@ -151,6 +152,7 @@ export function decodeState(encoded: string): ShareState | null {
         itEquipment: customSchedule(schedules[3]!),
       },
       preset: payload.g.p ?? null,
+      sourceId: payload.g.sid ?? null,
     };
 
     return {

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { GainsPanel } from '../src/ui/GainsPanel';
 import { DEFAULT_GAINS } from '../src/model/defaults';
-import { applyGainPreset } from '../src/model/editGains';
+import { applyGainPreset, setDensity } from '../src/model/editGains';
 import { GAIN_PRESETS, presetById } from '../src/model/gainPresets';
 import type { Gains } from '../src/model/types';
 import { SAMPLE_GAINS } from '../src/model/sampleProject';
@@ -45,8 +45,39 @@ describe('the building-type picker', () => {
     expect(select.selectedOptions[0]!.text).toContain('not a listed type');
   });
 
-  it('does not fall through for edited gains either', () => {
-    const { select } = panel({ ...DEFAULT_GAINS, preset: null });
+  it('KEEPS the building type when a value is edited', () => {
+    // Editing a density does not change what building this is. Reading the
+    // selection off the badge meant the first edit snapped the picker — and the
+    // section drawing with it — back to the office.
+    const edited = setDensity(applyGainPreset(DEFAULT_GAINS, presetById('warehouse')!), 'lighting', 9);
+    expect(edited.preset).toBeNull();
+    expect(edited.sourceId).toBe('warehouse');
+    const { select } = panel(edited);
+    expect(select.value).toBe('warehouse');
+  });
+
+  it('says the numbers are edited without losing the name', () => {
+    const edited = setDensity(applyGainPreset(DEFAULT_GAINS, presetById('warehouse')!), 'lighting', 9);
+    const { container } = render(
+      <GainsPanel gains={edited} floorArea={500} units="IP" marker={6} onChange={vi.fn()} />,
+    );
+    expect(container.textContent).toContain('Warehouse — edited');
+  });
+
+  it('offers a way back, because re-picking the same option fires nothing', () => {
+    const warehouse = presetById('warehouse')!;
+    const edited = setDensity(applyGainPreset(DEFAULT_GAINS, warehouse), 'lighting', 9);
+    const onChange = vi.fn();
+    render(<GainsPanel gains={edited} floorArea={500} units="IP" marker={6} onChange={onChange} />);
+
+    fireEvent.click(screen.getByText(/Reset to Warehouse/));
+    const back = onChange.mock.calls.at(-1)![0] as Gains;
+    expect(back.preset).toBe('Warehouse');
+    expect(back.lighting.powerDensity).toBeCloseTo(warehouse.lighting.value!, 9);
+  });
+
+  it('still refuses to fall through when there is no source at all', () => {
+    const { select } = panel({ ...DEFAULT_GAINS, preset: null, sourceId: null });
     expect(select.value).toBe('');
     expect(select.selectedOptions[0]!.text).toContain('Edited');
   });

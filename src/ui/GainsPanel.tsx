@@ -82,16 +82,21 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
   const people = occupantCount(gains, floorArea);
 
   /**
-   * Which type the picker is showing, or null when the gains are not one.
+   * Which type the picker is showing.
    *
-   * An unmatched preset MUST render its own option. A bare `value=""` with no
-   * matching option makes the browser fall back to the FIRST one, so the
-   * control sat on "Assembly" while the page showed the office worked example —
-   * a select that confidently names the wrong building type is worse than one
-   * that admits it does not know. This happens for the worked example, for any
-   * edited state, and for a share link from a build with different presets.
+   * Read off `sourceId`, so it survives an edit: the numbers may no longer be
+   * the published ones but the building is still the building. `preset` going
+   * null is what turns the badge into "Warehouse — edited"; it does not change
+   * the selection or the drawing.
+   *
+   * An unmatched source MUST still render its own option. A bare `value=""`
+   * with no matching option makes the browser fall back to the FIRST one, so
+   * the control sat on "Assembly" while the page showed the office worked
+   * example — a select that confidently names the wrong building type is worse
+   * than one that admits it does not know.
    */
-  const selected = GAIN_PRESETS.find((preset) => preset.label === gains.preset) ?? null;
+  const selected = GAIN_PRESETS.find((preset) => preset.id === gains.sourceId) ?? null;
+  const isEdited = gains.preset === null;
 
   const density = (
     field: DensityField,
@@ -146,7 +151,7 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
             color: gains.preset ? 'var(--gain)' : 'var(--muted)',
           }}
         >
-          {gains.preset ?? 'Edited'}
+          {gains.preset ?? (selected ? `${selected.label} — edited` : 'Edited')}
         </span>
       </header>
 
@@ -188,6 +193,28 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
             </option>
           ))}
         </select>
+        {/* Choosing the type you are already on fires no change event, so an
+            edited project would otherwise have no way back to the published
+            numbers. */}
+        {isEdited && selected && (
+          <button
+            type="button"
+            onClick={() => onChange(applyGainPreset(gains, selected))}
+            style={{
+              font: 'inherit',
+              fontSize: 10,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              padding: '4px 9px',
+              background: 'none',
+              border: '1px solid var(--border)',
+              color: 'var(--gain)',
+              cursor: 'pointer',
+            }}
+          >
+            Reset to {selected.label}
+          </button>
+        )}
         <span style={{ fontSize: 10.5, color: 'var(--muted)', maxWidth: '64ch' }}>{GAINS_SOURCE_NOTE}</span>
       </div>
 

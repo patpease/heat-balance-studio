@@ -2,7 +2,7 @@ import { useId } from 'react';
 
 import { GROUND_LINES, PERSON_HEADS } from '../model/buildingTypes';
 import type { BuildingType, SurfaceSlot } from '../model/types';
-import { arrowGeometry, MAX_SCALE, SHAFT_LENGTH } from './arrowScale';
+import { arrowGeometry, SHAFT_LENGTH } from './arrowScale';
 
 /**
  * The section drawing.
@@ -45,31 +45,74 @@ const LOSS_SLOTS = new Set<SurfaceSlot>([
 ]);
 
 /**
- * Where a label sits, and why it does not follow its arrow.
+ * Where every label sits, as a fixed offset from its own anchor.
  *
  * It used to be parked past the arrowhead at `SHAFT_LENGTH * scale + 18`, so it
- * swung 44 to 220 units outward as the value changed. Two things went wrong at
- * the far end: the label ran past the massing's crop and was cut off, and on a
- * building whose loss is lopsided the long arrow's label collided with its
- * neighbours. Either way the text became unreadable exactly when the arrow was
- * most worth reading.
+ * swung 44 to 220 units outward as the value changed and was cut off by the
+ * massing's crop exactly when the arrow was biggest. Pinning it at the far end
+ * instead fixed the clipping but broke the connection: a small loss drew a
+ * stub of an arrow with its name stranded 200 units away.
  *
- * Now nothing moves. A LOSS label sits at a fixed radius just beyond the
- * longest arrow the scale can produce, so an arrow grows toward its label and
- * never reaches it. A GAIN label sits beside its glyph — left of the person,
- * right of the lamp — because a gain arrow points up into the space and there
- * is no room above it for a label at any radius.
+ * So every label now sits at the arrow's START, against the building, below or
+ * beside the line. The arrow grows away from its label rather than towards it,
+ * the name stays attached to the surface it belongs to at any value, and the
+ * drawing stays tight instead of sprawling to its longest possible arrow.
+ *
+ * The offsets are the same for all six massings because the slot, not the
+ * building, decides which side is clear: a wall arrow always leaves to the
+ * left, a roof arrow always leaves upward.
  */
-const LOSS_LABEL_RADIUS = SHAFT_LENGTH * MAX_SCALE + 22;
+export type Placement = { dx: number; dy: number; anchor: 'start' | 'middle' | 'end' };
 
-/** Offsets in drawing units from the anchor, and which way the text runs. */
-const GAIN_LABEL: Record<string, { dx: number; dy: number; anchor: 'start' | 'middle' | 'end' }> = {
+/**
+ * A loss label follows the arrow's DIRECTION, not its slot.
+ *
+ * Keying this on the slot looked fine on the office and was wrong on the
+ * school, which mirrors it: there the wall arrow leaves to the right and the
+ * window arrow to the left. The label went to the wrong side of both. The
+ * direction is in the data, so read it from there.
+ */
+export function lossPlacement(rotate: number, slot: string): Placement {
+  const radians = (rotate * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+
+  if (cos > 0.3) return { dx: 8, dy: 20, anchor: 'start' };
+  if (cos < -0.3) return { dx: -8, dy: 20, anchor: 'end' };
+  // Vertical. Both floor arrows point down, so they take opposite sides of
+  // their own anchors and cannot run into one another.
+  const side = slot === 'loss-exposed-floor' ? -1 : 1;
+  return sin > 0
+    ? { dx: 14 * side, dy: 20, anchor: side > 0 ? 'start' : 'end' }
+    : { dx: 14 * side, dy: -8, anchor: side > 0 ? 'start' : 'end' };
+}
+
+/** Gains sit beside their glyph, since a gain arrow points up into the space. */
+const GAIN_LABEL: Record<string, Placement> = {
   'gain-people': { dx: -30, dy: 6, anchor: 'end' },
   'gain-lighting': { dx: 28, dy: 5, anchor: 'start' },
   // Misc above its box and IT below its rack: the two glyphs sit side by side
   // and their labels are long, so they are separated vertically or not at all.
   'gain-misc-equipment': { dx: 0, dy: -26, anchor: 'middle' },
   'gain-it-equipment': { dx: 0, dy: 42, anchor: 'middle' },
+};
+
+/**
+ * Per-massing corrections, where a building's own geometry defeats the rule.
+ *
+ * The school is low and wide and its plant sits shoulder to shoulder, so the
+ * person and the equipment box are 65 units apart where the office gives them
+ * 181. Their labels are wider than that gap and have to be pulled apart by
+ * hand; everything else the direction rule handles.
+ */
+const OVERRIDES: Record<string, Record<string, Placement>> = {
+  school: {
+    'gain-people': { dx: 4, dy: 34, anchor: 'middle' },
+    // Below its box, not above: the school window arrow leaves to the LEFT and
+    // its label sits where misc equipment would otherwise go.
+    'gain-misc-equipment': { dx: -14, dy: 34, anchor: 'end' },
+    'gain-it-equipment': { dx: 14, dy: -24, anchor: 'start' },
+  },
 };
 
 /** The 88-unit shaft, drawn twice with opposite curvature so arrows alternate. */
@@ -196,7 +239,10 @@ export function SectionDrawing({
             </g>
             <g transform={`translate(${SHAFT_LENGTH},0)`}>
               <g transform={`translate(${geometry.tipOffset.toFixed(1)},0)`}>
-                <path d={HEAD} stroke="none" />
+                {/* Uniform, so the head grows without distorting. */}
+                <g transform={`scale(${geometry.headScale.toFixed(3)})`}>
+                  <path d={HEAD} stroke="none" />
+                </g>
               </g>
             </g>
           </g>
@@ -217,20 +263,19 @@ export function SectionDrawing({
             if (!term || !arrowGeometry(term.watts, reference).visible) return null;
             const isLoss = LOSS_SLOTS.has(anchor.slot);
 
-            const gain = GAIN_LABEL[anchor.slot];
-            const radians = (anchor.rotate * Math.PI) / 180;
-            // Fixed either way — nothing here reads the arrow's length.
-            const x = gain ? anchor.x + gain.dx : anchor.x + LOSS_LABEL_RADIUS * Math.cos(radians);
-            const y = gain ? anchor.y + gain.dy : anchor.y + LOSS_LABEL_RADIUS * Math.sin(radians);
-            const anchorPoint = gain
-              ? gain.anchor
-              : Math.cos(radians) < -0.3 ? 'end' : Math.cos(radians) > 0.3 ? 'start' : 'middle';
+            // Nothing here reads the arrow's length.
+            const placement: Placement =
+              OVERRIDES[type.id]?.[anchor.slot] ??
+              GAIN_LABEL[anchor.slot] ??
+              lossPlacement(anchor.rotate, anchor.slot);
+            const x = anchor.x + placement.dx;
+            const y = anchor.y + placement.dy;
             return (
               <text
                 key={anchor.slot}
                 x={x}
                 y={y}
-                textAnchor={anchorPoint}
+                textAnchor={placement.anchor}
                 fill={isLoss ? 'var(--loss)' : 'var(--gain)'}
               >
                 {term.label.toUpperCase()}

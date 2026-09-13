@@ -30,6 +30,14 @@ export const MIN_SCALE = 0.3;
 export const MAX_SCALE = 2.3;
 export const MIN_WIDTH = 2.2;
 export const MAX_WIDTH = 6.2;
+/**
+ * How big the head may get relative to its size at MIN_WIDTH.
+ *
+ * Strict proportionality would put it at 6.2 / 2.2 = 2.82, which on the longest
+ * arrow is a head a third of the shaft. 2.4 keeps the ratio honest and the
+ * arrow still reading as an arrow.
+ */
+export const MAX_HEAD_SCALE = 2.4;
 
 export interface ArrowGeometry {
   /** `scale(k, 1)` on the shaft. */
@@ -37,6 +45,15 @@ export interface ArrowGeometry {
   /** `translate(dx, 0)` on the head, so the arrowhead stays undistorted. */
   readonly tipOffset: number;
   readonly strokeWidth: number;
+  /**
+   * Uniform scale on the arrowhead.
+   *
+   * The head used to be a fixed 22-unit shape while the shaft's weight ran from
+   * 2.2 to 6.2 — so the heaviest arrow, which is the one carrying the biggest
+   * number, wore the same small head as the lightest and read as a blunt bar.
+   * The head now grows with the stroke so the two stay in proportion.
+   */
+  readonly headScale: number;
   /** False when the term is zero and nothing should be drawn at all. */
   readonly visible: boolean;
 }
@@ -69,7 +86,7 @@ export function arrowGeometry(watts: number, reference: number | null): ArrowGeo
   const magnitude = Math.abs(watts);
 
   if (magnitude <= 0 || reference === null || reference <= 0) {
-    return { scale: 0, tipOffset: 0, strokeWidth: MIN_WIDTH, visible: false };
+    return { scale: 0, tipOffset: 0, strokeWidth: MIN_WIDTH, headScale: 1, visible: false };
   }
 
   const raw = magnitude / reference;
@@ -86,6 +103,7 @@ export function arrowGeometry(watts: number, reference: number | null): ArrowGeo
     scale,
     tipOffset: SHAFT_LENGTH * (scale - 1),
     strokeWidth: width,
+    headScale: Math.min(MAX_HEAD_SCALE, width / MIN_WIDTH),
     visible: true,
   };
 }

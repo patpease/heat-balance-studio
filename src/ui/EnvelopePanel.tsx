@@ -86,12 +86,12 @@ export function EnvelopePanel({
   const ip = units === 'IP';
   const groundTemperature = ip ? toF(conditions.groundTemperature) : conditions.groundTemperature;
 
-  // The drawing follows the building type the gains came from. Six massings
-  // cover eighteen types, so most are shared — a hotel is drawn as multifamily
-  // because guest rooms stack the same way. Edited gains keep whatever was last
-  // chosen: the shape is not what the user changed.
+  // The drawing follows the building type the gains came FROM, read off
+  // `sourceId` rather than off the badge. Reading the badge meant the first
+  // edit to any density snapped a warehouse back to an office section, because
+  // the badge had gone null — the shape is not what the user changed.
   const massing = buildingType(
-    GAIN_PRESETS.find((preset) => preset.label === gains.preset)?.massing ?? 'office',
+    GAIN_PRESETS.find((preset) => preset.id === gains.sourceId)?.massing ?? 'office',
   );
 
   // The box is held in canonical SI like everything else; IP is a display

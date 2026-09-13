@@ -43,10 +43,20 @@ const html = fs.readFileSync(CANVAS, 'utf8');
 const attr = (tag, name) => tag.match(new RegExp(`${name}="([^"]*)"`))?.[1];
 
 const IT_OFFSET = 68;
-/** SHAFT_LENGTH x MAX_SCALE from src/chart/arrowScale.ts, plus the label past it. */
-const ARROW_REACH = 88 * 2.3 + 22;
-/** Room for the longest label text running outward from its radius. */
-const LABEL_ALLOWANCE = 130;
+/**
+ * SHAFT_LENGTH x MAX_SCALE from src/chart/arrowScale.ts, plus the head.
+ *
+ * The head scales with the stroke now, so the longest arrow also wears the
+ * biggest one and reaches a little further than the shaft alone.
+ */
+const ARROW_REACH = 88 * 2.3 + 34;
+/**
+ * Room for a label at the arrow START, running outward from the building.
+ *
+ * This was 130 when labels were parked past the arrowhead. They sit against the
+ * building now, so the crop only has to hold the text itself.
+ */
+const LABEL_ALLOWANCE = 60;
 
 /**
  * Shift a path in x. Absolute M/L/C/Z only — anything else returns null and the

@@ -122,6 +122,17 @@ export interface Gains {
   };
   /** Names the source preset. Goes null the moment any value is edited. */
   readonly preset: string | null;
+  /**
+   * Which building type these numbers CAME from, whatever has happened since.
+   *
+   * `preset` answers "are these still the published values?" and goes null on
+   * the first edit — that is the badge contract and it does not change. This
+   * answers "which building is this?", and an edit does not change the answer:
+   * a warehouse with one density typed over is still a warehouse. It is what
+   * keeps the section drawing on the massing the user picked instead of
+   * snapping back to the office the moment they touch a field.
+   */
+  readonly sourceId: string | null;
 }
 
 // ---------------------------------------------------------------------------
