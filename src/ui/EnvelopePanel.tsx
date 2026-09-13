@@ -198,11 +198,16 @@ export function EnvelopePanel({
         {/* Two items, not three. Wall-to-floor lived here for one revision and
             the bar could not hold it: title, ratio and export button came to
             624 px in a 620 px bar, so the button wrapped to a second line. It
-            has gone to the gross floor area row, which is a better home anyway
-            — and with the bar back to two items the title keeps its article. */}
+            has gone to the gross floor area row, which is a better home anyway.
+
+            "worst hour", not "the worst hour". The article was first dropped to
+            make room for the ratio; the room came back and the shorter title
+            was kept on its own merits. At this eyebrow's tracking it is 44 px,
+            and the bar now has 167 px of slack — so this is taste, not fit, and
+            re-adding "the" would break nothing. */}
         <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>
           Building envelope — {String(shownHour).padStart(2, '0')}:00
-          {scrubHour === null ? ', the worst hour' : ''}
+          {scrubHour === null ? ', worst hour' : ''}
         </h2>
         <span style={{ display: 'flex', gap: 6, pointerEvents: 'auto' }}>
           <button type="button" onClick={onExport} disabled={exporting} style={overlayButton}>

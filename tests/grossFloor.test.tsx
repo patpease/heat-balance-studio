@@ -185,9 +185,12 @@ describe('the wall-to-floor ratio sits on the gross floor area row', () => {
     expect(bar.textContent).not.toMatch(/Wall-to-floor/);
   });
 
-  it('still names the worst hour in full', () => {
-    // The article was trimmed only to make room for the ratio.
+  it('names the worst hour, without the article', () => {
+    // Trimmed to make room for the ratio, then kept once the room came back.
+    // Asserted so the two halves of the title cannot drift apart again.
     panel(DEFAULT_ENVELOPE);
-    expect(screen.getByRole('heading', { level: 2 }).textContent).toMatch(/the worst hour/);
+    const title = screen.getByRole('heading', { level: 2 }).textContent ?? '';
+    expect(title).toMatch(/, worst hour$/);
+    expect(title).not.toMatch(/the worst hour/);
   });
 });
