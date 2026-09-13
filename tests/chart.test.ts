@@ -100,9 +100,10 @@ describe('the chart has something to draw for the worked example', () => {
     expect(runs).toBe(2);
   });
 
-  it('peaks above the Passive House line, so the benchmark is visible on the axis', () => {
+  it('leaves the tallest curve inside the axis', () => {
+    // The ceiling used to have to clear a fixed benchmark line as well; with
+    // that gone, the only thing it must contain is the data.
     const maxLoss = Math.max(...result.hours.map((h) => h.loss / 500));
-    expect(maxLoss).toBeGreaterThan(10);
     expect(niceCeiling(maxLoss * 1.05).max).toBeGreaterThan(maxLoss);
   });
 });

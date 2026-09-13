@@ -172,8 +172,11 @@ describe('the arrow scale', () => {
 });
 
 describe('sketch a box', () => {
+  /** The Boston worked example, which DEFAULT_BOX no longer is. */
+  const WORKED_EXAMPLE = { length: 25, width: 20, height: 3.5, storeys: 1, windowToWallRatio: 0.3 };
+
   it('reproduces the worked example geometry from five dimensions', () => {
-    const areas = areasFromBox(DEFAULT_BOX);
+    const areas = areasFromBox(WORKED_EXAMPLE);
     expect(areas.floorArea).toBe(500);
     expect(areas.wallArea).toBeCloseTo(220.5, 6);
     expect(areas.windowArea).toBeCloseTo(94.5, 6);
@@ -184,25 +187,43 @@ describe('sketch a box', () => {
   });
 
   it('agrees with the engine on wall-to-floor ratio', () => {
-    expect(areasFromBox(DEFAULT_BOX).wallToFloorRatio)
+    expect(areasFromBox(WORKED_EXAMPLE).wallToFloorRatio)
       .toBeCloseTo(wallToFloorRatio(BOSTON_CASE.envelope), 6);
   });
 
   it('counts roof and ground floor ONCE however many storeys there are', () => {
     // The obvious slip is multiplying them by storeys, which roughly doubles a
     // tall building's envelope.
-    const tall = areasFromBox({ ...DEFAULT_BOX, storeys: 4 });
-    expect(tall.floorArea).toBe(2000);
+    const tall = areasFromBox({ ...WORKED_EXAMPLE, storeys: 4 });
     expect(tall.roofArea).toBe(500);
     expect(tall.groundFloorArea).toBe(500);
-    expect(tall.wallArea).toBeCloseTo(220.5 * 4, 6);
+  });
+
+  it('reads the height field as the WHOLE building, not one storey', () => {
+    // The field changed meaning: 14 m over four storeys is a 14 m building, not
+    // a 56 m one. Wall area is the perimeter times the overall height whatever
+    // the storey count, and only the floor area follows the storeys.
+    const one = areasFromBox({ ...WORKED_EXAMPLE, height: 14, storeys: 1 });
+    const four = areasFromBox({ ...WORKED_EXAMPLE, height: 14, storeys: 4 });
+    expect(four.wallArea).toBeCloseTo(one.wallArea, 9);
+    expect(four.floorArea).toBe(one.floorArea * 4);
+    expect(four.storeyHeight).toBeCloseTo(3.5, 9);
+    expect(one.storeyHeight).toBeCloseTo(14, 9);
+  });
+
+  it('gives the default box a gross floor area above its ground floor', () => {
+    // The rule the sixth table row enforces: gross floor can equal the floors
+    // on the ground, never fall below them.
+    const areas = areasFromBox(DEFAULT_BOX);
+    expect(areas.floorArea).toBeGreaterThanOrEqual(areas.groundFloorArea + areas.exposedFloorArea);
+    expect(areas.floorArea).toBe(6000);
   });
 
   it('shows a tall thin building having a worse wall-to-floor ratio', () => {
     // The tool's thesis, in one assertion: more wall per unit of floor is a
     // harder building to self-heat.
-    const squat = areasFromBox({ ...DEFAULT_BOX, length: 40, width: 40, storeys: 1 });
-    const thin = areasFromBox({ ...DEFAULT_BOX, length: 60, width: 8, storeys: 1 });
+    const squat = areasFromBox({ ...WORKED_EXAMPLE, length: 40, width: 40, storeys: 1 });
+    const thin = areasFromBox({ ...WORKED_EXAMPLE, length: 60, width: 8, storeys: 1 });
     expect(thin.wallToFloorRatio).toBeGreaterThan(squat.wallToFloorRatio);
   });
 

@@ -119,13 +119,13 @@ describe('the sketch-box fields carry a unit and convert', () => {
 
   it('converts storey height too — it is a length, not a count', () => {
     envelope('IP');
-    expect((screen.getByLabelText('Box storey height, ft') as HTMLInputElement).value).toBe(
-      toFt(DEFAULT_BOX.storeyHeight).toFixed(1),
+    expect((screen.getByLabelText('Box height, ft') as HTMLInputElement).value).toBe(
+      toFt(DEFAULT_BOX.height).toFixed(1),
     );
     cleanup();
     envelope('SI');
-    expect((screen.getByLabelText('Box storey height, m') as HTMLInputElement).value).toBe(
-      DEFAULT_BOX.storeyHeight.toFixed(1),
+    expect((screen.getByLabelText('Box height, m') as HTMLInputElement).value).toBe(
+      DEFAULT_BOX.height.toFixed(1),
     );
   });
 
@@ -143,19 +143,20 @@ describe('the sketch-box fields carry a unit and convert', () => {
     const ip = envelope('IP').container.textContent ?? '';
     expect(ip).toContain('Length, ft');
     expect(ip).toContain('Width, ft');
-    expect(ip).toContain('Storey height, ft');
+    expect(ip).toContain('Height, ft');
     cleanup();
     const si = envelope('SI').container.textContent ?? '';
     expect(si).toContain('Length, m');
-    expect(si).toContain('Storey height, m');
+    expect(si).toContain('Height, m');
   });
 
-  it('names the ground temperature from the project, in the displayed system', () => {
-    // It was hardcoded "ground at 55 °F" — wrong system under SI, and wrong
-    // number entirely on any site whose ground drifted off the rule of thumb.
-    expect(envelope('IP').container.textContent).toContain('ground at 55 °F');
+  it('does not repeat the ground temperature in the surface row', () => {
+    // It used to read "Ground floor · ground at 55 °F". The location strip
+    // already states the ground temperature and its basis, and the repeat cost
+    // width that the row needs for the numbers.
+    expect(envelope('IP').container.textContent).not.toContain('ground at');
     cleanup();
-    expect(envelope('SI').container.textContent).toContain('ground at 13 °C');
+    expect(envelope('SI').container.textContent).not.toContain('ground at');
   });
 });
 
@@ -190,22 +191,24 @@ describe('a box entered in feet is a box in feet', () => {
       fireEvent.change(input, { target: { value } });
       fireEvent.blur(input);
     }
-    fireEvent.click(screen.getByText('Sketch a box'));
+    fireEvent.click(screen.getByText('Create surfaces'));
     expect(onChange).toHaveBeenCalled();
     return onChange.mock.calls.at(-1)![0];
   };
+
+  const STOREYS = DEFAULT_BOX.storeys;
 
   it('reads 80 × 60 as feet under IP', () => {
     const next = sketch('IP', '80', '60');
     // Not to 6 places: M_PER_FT is exact and SQFT_PER_SQM is rounded, so a
     // ft -> m -> ft^2 round trip loses about 1.5e-9 relative. That is the
     // constants disagreeing in the ninth digit, not the conversion being wrong.
-    expect(toSqFt(next.floorArea)).toBeCloseTo(80 * 60, 4);
+    expect(toSqFt(next.floorArea)).toBeCloseTo(80 * 60 * STOREYS, 3);
   });
 
   it('reads 80 × 60 as metres under SI', () => {
     const next = sketch('SI', '80', '60');
-    expect(next.floorArea).toBeCloseTo(80 * 60, 6);
+    expect(next.floorArea).toBeCloseTo(80 * 60 * STOREYS, 6);
   });
 
   it('puts the two systems a factor of 10.76 apart, not on top of each other', () => {
@@ -216,8 +219,8 @@ describe('a box entered in feet is a box in feet', () => {
     );
   });
 
-  it('carries the storey height through the same conversion', () => {
-    const input = () => screen.getByLabelText('Box storey height, ft');
+  it('carries the height through the same conversion', () => {
+    const input = () => screen.getByLabelText('Box height, ft');
     const onChange = vi.fn<(next: Envelope) => void>();
     render(
       <EnvelopePanel
@@ -234,9 +237,10 @@ describe('a box entered in feet is a box in feet', () => {
     );
     fireEvent.change(input(), { target: { value: '12' } });
     fireEvent.blur(input());
-    fireEvent.click(screen.getByText('Sketch a box'));
-    // 12 ft, stored as 3.6576 m — not twelve metres of storey.
-    expect(onChange.mock.calls.at(-1)![0].storeyHeight).toBeCloseTo(3.6576, 6);
+    fireEvent.click(screen.getByText('Create surfaces'));
+    // 12 ft overall over four storeys, so 3 ft a storey — stored in metres, and
+    // not twelve metres of building.
+    expect(onChange.mock.calls.at(-1)![0].storeyHeight).toBeCloseTo(3.6576 / STOREYS, 6);
   });
 });
 
@@ -251,7 +255,7 @@ describe('the accessible name contains the visible caption', () => {
     const { container } = envelope(units);
     const captions = [...container.querySelectorAll('.eyebrow')]
       .map((node) => node.textContent ?? '')
-      .filter((text) => /^(Length|Width|Storey height|Storeys|WWR)\b/.test(text));
+      .filter((text) => /^(Length|Width|Height|Storeys|WWR)\b/.test(text));
 
     expect(captions).toHaveLength(5);
     for (const caption of captions) {

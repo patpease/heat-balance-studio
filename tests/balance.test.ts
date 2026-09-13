@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { solve, PASSIVE_HOUSE_BENCHMARK_W_M2 } from '../src/engine/balance';
+import { solve } from '../src/engine/balance';
 import { conductance, resolveGroundTemperature, wallToFloorRatio } from '../src/engine/ua';
 import { occupantCount } from '../src/engine/gains';
 import { fromF, toBtuHFt2, toF } from '../src/model/units';
@@ -126,9 +126,6 @@ describe('the verdict', () => {
     expect(result.marginPerArea).toBeCloseTo(-14.7, 1);
   });
 
-  it('misses the Passive House benchmark, which is a reference and not a gate', () => {
-    expect(result.peakHeatingLoadPerArea).toBeGreaterThan(PASSIVE_HOUSE_BENCHMARK_W_M2);
-  });
 });
 
 describe('the lever', () => {
@@ -211,10 +208,6 @@ describe('gain summary', () => {
 describe('the design condition converts for display without changing', () => {
   it('reports the worst-hour shortfall in IP as 4.6 Btu/h·ft²', () => {
     expect(toBtuHFt2(result.peakHeatingLoadPerArea)).toBeCloseTo(4.65, 2);
-  });
-
-  it('puts the Passive House line at 3.2 Btu/h·ft² under IP', () => {
-    expect(toBtuHFt2(PASSIVE_HOUSE_BENCHMARK_W_M2)).toBeCloseTo(3.17, 2);
   });
 
   it('reports the balance point as 38.9 °F', () => {

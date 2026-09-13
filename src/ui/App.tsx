@@ -10,10 +10,9 @@ import { shareUrl, stateFromLocation } from '../io/share';
 import {
   SAMPLE_CONDITIONS,
   SAMPLE_DESIGN_DAY,
-  SAMPLE_ENVELOPE,
   SAMPLE_SITE,
 } from '../model/sampleProject';
-import { DEFAULT_GAINS } from '../model/defaults';
+import { DEFAULT_ENVELOPE, DEFAULT_GAINS } from '../model/defaults';
 import type { Conditions, DesignDay, Envelope, Gains, Site, UnitSystem } from '../model/types';
 import { EnvelopePanel } from './EnvelopePanel';
 import { GainsPanel } from './GainsPanel';
@@ -45,7 +44,10 @@ export function App() {
   const shared = useMemo(() => stateFromLocation(), []);
 
   const [units, setUnits] = useState<UnitSystem>(shared?.units ?? 'IP');
-  const [envelope, setEnvelope] = useState<Envelope>(shared?.envelope ?? SAMPLE_ENVELOPE);
+  // DEFAULT_ENVELOPE, not SAMPLE_ENVELOPE: the worked example is 500 m² on one
+  // storey and stays frozen for the golden case, but the tool opens on a
+  // building shaped like the Large Office preset it loads beside it.
+  const [envelope, setEnvelope] = useState<Envelope>(shared?.envelope ?? DEFAULT_ENVELOPE);
   // DEFAULT_GAINS, not SAMPLE_GAINS: the worked example's five densities are
   // the original unsourced placeholders, and opening on them meant the picker
   // read "Office (provisional) — not a listed type" on first load. The envelope

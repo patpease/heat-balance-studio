@@ -10,7 +10,7 @@ import { wallToFloorRatio } from '../engine/ua';
 import { buildingType } from '../model/buildingTypes';
 import { GAIN_PRESETS } from '../model/gainPresets';
 import type { Conditions, DesignDay, Envelope, Gains, Surface, SurfaceSlot, UnitSystem } from '../model/types';
-import { fromBtuU, fromFt, fromSqFt, LABELS, rToU, toBtuU, toF, toFt, toSqFt, uToR } from '../model/units';
+import { fromBtuU, fromFt, fromSqFt, LABELS, rToU, toBtuU, toFt, toSqFt, uToR } from '../model/units';
 import { cellStyle as cell, NumberCell } from './NumberCell';
 
 /**
@@ -84,7 +84,6 @@ export function EnvelopePanel({
   const terms: SectionTerm[] = [...worst.lossTerms, ...worst.gainTerms];
   const labels = LABELS[units];
   const ip = units === 'IP';
-  const groundTemperature = ip ? toF(conditions.groundTemperature) : conditions.groundTemperature;
 
   // The drawing follows the building type the gains came FROM, read off
   // `sourceId` rather than off the badge. Reading the badge meant the first
@@ -104,19 +103,36 @@ export function EnvelopePanel({
   const boxFields = [
     { key: 'length', caption: `Length, ${labels.length}`, aria: `Box length, ${labels.length}`, decimals: ip ? 0 : 1 },
     { key: 'width', caption: `Width, ${labels.length}`, aria: `Box width, ${labels.length}`, decimals: ip ? 0 : 1 },
-    { key: 'storeyHeight', caption: `Storey height, ${labels.length}`, aria: `Box storey height, ${labels.length}`, decimals: 1 },
+    { key: 'height', caption: `Height, ${labels.length}`, aria: `Box height, ${labels.length}`, decimals: 1 },
     { key: 'storeys', caption: 'Storeys', aria: 'Box storeys', decimals: 0 },
     { key: 'windowToWallRatio', caption: 'WWR', aria: 'Box WWR, window-to-wall ratio', decimals: 2 },
   ] as const;
 
   const isLength = (key: keyof BoxDimensions) =>
-    key === 'length' || key === 'width' || key === 'storeyHeight';
+    key === 'length' || key === 'width' || key === 'height';
 
   const showBox = (key: keyof BoxDimensions) =>
     ip && isLength(key) ? toFt(box[key]) : box[key];
 
   const takeBox = (key: keyof BoxDimensions, typed: number) =>
     setBox({ ...box, [key]: Math.max(0, ip && isLength(key) ? fromFt(typed) : typed) });
+
+  /**
+   * Gross floor area is the area the internal gains are multiplied by, so it is
+   * the one number in this table that is not a surface and has no U-value.
+   *
+   * It can never be LESS than the floors that sit on the ground or over air:
+   * those are part of it. Equal is the ordinary single-storey case — one
+   * footprint, one floor — so only "less than" is wrong.
+   *
+   * An invalid figure is kept, flagged, and still used. Clamping would overwrite
+   * what was typed, and suppressing the verdict would hide the consequence,
+   * which is usually the thing that reveals the mistake.
+   */
+  const floorOnGround = envelope.surfaces
+    .filter((surface) => surface.category === 'groundFloor' || surface.category === 'exposedFloor')
+    .reduce((total, surface) => total + surface.area, 0);
+  const grossFloorTooSmall = envelope.floorArea < floorOnGround - 1e-9;
 
   const applyBox = () => {
     const areas = areasFromBox(box);
@@ -130,7 +146,8 @@ export function EnvelopePanel({
     onChange({
       ...envelope,
       floorArea: areas.floorArea,
-      storeyHeight: box.storeyHeight,
+      // Derived from the overall height, which is what the field asks for.
+      storeyHeight: areas.storeyHeight,
       storeys: box.storeys,
       surfaces: envelope.surfaces.map((s) => ({ ...s, area: byCategory[s.category] ?? s.area })),
     });
@@ -173,7 +190,7 @@ export function EnvelopePanel({
         }}
       >
         <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>
-          Section — {String(shownHour).padStart(2, '0')}:00
+          Building envelope — {String(shownHour).padStart(2, '0')}:00
           {scrubHour === null ? ', the worst hour' : ''}
         </h2>
         <span style={{ display: 'flex', gap: 6, pointerEvents: 'auto' }}>
@@ -197,7 +214,7 @@ export function EnvelopePanel({
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
-              {['Surface', `Area, ${labels.area}`, `U, ${labels.uValue}`, `R, ${labels.rValue}`, 'Loss at worst hour'].map((h) => (
+              {['Surface', `Area, ${labels.area}`, `U, ${labels.uValue}`, `R, ${labels.rValue}`, 'Loss at current hour'].map((h) => (
                 <th
                   key={h}
                   style={{
@@ -234,14 +251,6 @@ export function EnvelopePanel({
                 >
                   <td style={{ padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
                     {surface.label}
-                    {/* This read "ground at 55 °F" as a literal: the wrong
-                        system under SI, and the wrong NUMBER on any site whose
-                        annual mean pulled the ground off the rule of thumb. */}
-                    {surface.boundary === 'ground' && (
-                      <span style={{ color: 'var(--muted)', fontSize: 11 }}>
-                        {' '}· ground at {groundTemperature.toFixed(0)} {labels.temperature}
-                      </span>
-                    )}
                   </td>
                   <td style={cell}>
                     <NumberCell
@@ -280,8 +289,48 @@ export function EnvelopePanel({
                 </tr>
               );
             })}
+            {/* Not a surface: no U, no R, no loss. It earns its place in this
+                table because it is the denominator under every per-area figure
+                the tool reports, and it was previously settable only through
+                the box helper. */}
+            <tr>
+              <td style={{ padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
+                Gross floor area
+              </td>
+              <td style={cell}>
+                <NumberCell
+                  label="Gross floor area"
+                  value={units === 'IP' ? toSqFt(envelope.floorArea) : envelope.floorArea}
+                  decimals={0}
+                  onCommit={(next) =>
+                    onChange({
+                      ...envelope,
+                      floorArea: Math.max(0, units === 'IP' ? fromSqFt(next) : next),
+                    })
+                  }
+                  style={
+                    // The full shorthand, not borderColor: NumberCell sets
+                    // `border`, and React warns on a rerender that mixes a
+                    // shorthand with a longhand for the same property.
+                    grossFloorTooSmall ? { border: '1px solid var(--loss)', color: 'var(--loss)' } : {}
+                  }
+                />
+              </td>
+              <td style={{ ...cell, color: 'var(--muted)' }}>—</td>
+              <td style={{ ...cell, color: 'var(--muted)' }}>—</td>
+              <td style={{ textAlign: 'right', padding: '4px 0', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)' }}>
+                drives the gains
+              </td>
+            </tr>
           </tbody>
         </table>
+
+        {grossFloorTooSmall && (
+          <p style={{ margin: '6px 0 0', fontSize: 11, color: 'var(--loss)' }}>
+            Gross floor area is below the {Math.round(units === 'IP' ? toSqFt(floorOnGround) : floorOnGround).toLocaleString('en-US')} {labels.area}{' '}
+            of ground and exposed floor, which are part of it. The balance below still uses the figure entered.
+          </p>
+        )}
 
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 10, alignItems: 'flex-end' }}>
           {boxFields.map(({ key, caption, aria, decimals }) => (
@@ -302,20 +351,23 @@ export function EnvelopePanel({
               />
             </div>
           ))}
+          {/* In the row, not after it: it acts on the five fields beside it, and
+              a button on its own line read as a separate step. */}
           <button
             type="button"
             onClick={applyBox}
             style={{
               font: 'inherit',
               fontSize: 11,
-              padding: '5px 12px',
+              padding: '4px 12px',
               background: 'var(--gain)',
               color: 'var(--panel)',
               border: 'none',
               cursor: 'pointer',
+              alignSelf: 'flex-end',
             }}
           >
-            Sketch a box
+            Create surfaces
           </button>
           <span style={{ fontSize: 11, color: 'var(--muted)' }}>
             Wall-to-floor {wallToFloorRatio(envelope).toFixed(2)}

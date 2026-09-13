@@ -15,8 +15,6 @@ import type { Conditions, Envelope, Gains, DesignDay, SurfaceSlot } from '../mod
 import { conductance, groundLoss, wallToFloorRatio } from './ua';
 import { gainTerms, gainAtHour, termAtHour } from './gains';
 
-/** The Passive House peak heating load benchmark, W/m². A rough reference. */
-export const PASSIVE_HOUSE_BENCHMARK_W_M2 = 10;
 
 export interface TermResult {
   readonly slot: SurfaceSlot;

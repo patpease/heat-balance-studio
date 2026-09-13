@@ -93,7 +93,7 @@ export function fromSqFt(squareFeet: number): number {
   return squareFeet / SQFT_PER_SQM;
 }
 
-/** W/m² → Btu/h·ft². The unit the Passive House line is drawn in, under IP. */
+/** W/m² → Btu/h·ft². Heat FLUX, which is what the chart plots under IP. */
 export function toBtuHFt2(wattsPerSqM: number): number {
   return wattsPerSqM * BTU_H_FT2_PER_W_M2;
 }

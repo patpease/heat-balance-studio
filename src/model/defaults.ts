@@ -20,8 +20,9 @@
 
 import { DEFAULT_PRESET_ID, presetById } from './gainPresets';
 import type { GainPreset } from './gainPresets';
+import { areasFromBox, DEFAULT_BOX } from '../engine/sketchBox';
 import { presetSchedules } from './presetSchedules';
-import type { Conditions, Gains, Surface } from './types';
+import type { Conditions, Envelope, Gains, Surface } from './types';
 import { fromF } from './units';
 
 /** 70 °F exactly, in canonical °C. Settled: the default US office setpoint. */
@@ -131,3 +132,38 @@ export function defaultSurfaces(): Surface[] {
     { id: 'exposed-floor', category: 'exposedFloor', label: 'Exposed floor', area: 0, uValue: 0.25, boundary: 'air', ...base },
   ];
 }
+
+/**
+ * The envelope the tool opens on.
+ *
+ * SEPARATE from `SAMPLE_ENVELOPE`, which is the Boston worked example and is
+ * aliased as the golden-case fixture — every published figure for the method
+ * (15 deficit hours, 14.7 W/m², the 44.8% windows lever) is computed from it,
+ * so it cannot move.
+ *
+ * This one exists because the gross floor area is now a field on the page. The
+ * worked example is 500 m² on one storey, and reading "Large Office, 500 m²"
+ * on first paint invites the wrong idea about what the preset is. The preset
+ * supplies densities per m², which are scale-free — but the building beside
+ * them should still look like the building it is named after.
+ *
+ * 50 × 30 m over four storeys: 6,000 m² gross, a 1,500 m² footprint, and
+ * 2,240 m² of gross wall at a 14 m overall height. Derived from DEFAULT_BOX
+ * rather than typed, so the two cannot drift apart.
+ */
+export const DEFAULT_ENVELOPE: Envelope = (() => {
+  const areas = areasFromBox(DEFAULT_BOX);
+  const byCategory: Record<Surface['category'], number> = {
+    wall: areas.wallArea,
+    window: areas.windowArea,
+    roof: areas.roofArea,
+    groundFloor: areas.groundFloorArea,
+    exposedFloor: areas.exposedFloorArea,
+  };
+  return {
+    floorArea: areas.floorArea,
+    storeyHeight: areas.storeyHeight,
+    storeys: DEFAULT_BOX.storeys,
+    surfaces: defaultSurfaces().map((surface) => ({ ...surface, area: byCategory[surface.category] })),
+  };
+})();

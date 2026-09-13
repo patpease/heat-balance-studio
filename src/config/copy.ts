@@ -86,7 +86,7 @@ export const WHAT_IT_DOES = [
   'Five envelope surfaces — walls, windows, roof, ground floor, exposed floor — each with an area and a U-value.',
   'Four internal gains — people, lighting, misc equipment, IT equipment — each with its own 24-hour schedule.',
   'A design day derived from ten years of hourly weather: the coldest 0.4% of hours sets the minimum, the average of the cold days in the record sets the shape.',
-  'An hourly balance, with the worst hour flagged and the Passive House 10 W/m² load shown for context.',
+  'An hourly balance for all 24 hours, with the worst hour flagged.',
   'Balance-point temperature and wall-to-floor ratio as headline metrics.',
 ] as const;
 
@@ -107,7 +107,7 @@ export const ASSUMPTIONS = [
   'U-values are assembly averages including thermal bridges. The tool has no bridge model, so that is your job.',
   'Every surface faces outdoor air or the ground. A wall to an unheated garage has to be entered as an outdoor wall, which overstates its loss.',
   'All IT heat reaches the space. A separately-cooled server room that rejects its heat outdoors is counted here as if it warmed the building.',
-  'Floor area is gross conditioned area, not Passive House Treated Floor Area — the more generous of the two, including in the comparison to 10 W/m².',
+  'Floor area is gross conditioned area — every per-area figure the tool reports is divided by it, and it is the more generous of the conventions in use.',
   'Gains come from the PNNL prototype models, which are the 90.1-2004 vintage. Their lighting runs well above current code, so this tool takes lighting from the 90.1 Building Area Method and everything else from the prototypes.',
   'Kitchens, laundries and machine rooms are left out of the equipment density. Their load is cooking and washing, most of which leaves through an exhaust hood, and this tool has no exhaust to send it up.',
   'Schedules are weekday profiles. A heating design day is a cold weekday, so the weekend profiles the source publishes are not used.',
@@ -141,8 +141,6 @@ export const BALANCE_POINT_NOTE =
 export const WALL_TO_FLOOR_NOTE =
   'Gross exterior wall, including glazing, over conditioned floor area. Low is good — more floor making ' +
   'heat per unit of wall losing it, which is the whole argument in one number.';
-
-export const BENCHMARK_NOTE = 'A rough benchmark, not a pass mark.';
 
 // ---------------------------------------------------------------------------
 // Field help

@@ -1,7 +1,6 @@
 import { useId, useRef, useState } from 'react';
 
 import type { BalanceResult } from '../engine/balance';
-import { PASSIVE_HOUSE_BENCHMARK_W_M2 } from '../engine/balance';
 import type { UnitSystem } from '../model/types';
 import { LABELS, toBtuHFt2 } from '../model/units';
 import { crossing, linearScale, niceCeiling, ticksUpTo } from './scales';
@@ -10,7 +9,10 @@ import { crossing, linearScale, niceCeiling, ticksUpTo } from './scales';
  * The 24-hour balance.
  *
  * Loss against gain, hour by hour, with every hour the building is short shaded
- * between the two curves. The Passive House 10 W/m² line is drawn for context
+ * between the two curves. A Passive House reference line used to be drawn here
+ * and has been removed: it is a certification threshold from a scheme this tool
+ * has nothing else to do with, and on a chart of one building's own loss and
+ * gain it read as a target rather than the aside it was
  * and labelled as a rough benchmark — never as a gate.
  *
  * Hovering emits the hour, which the section drawing then redraws to. That one
@@ -52,9 +54,8 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
   const area = floorArea > 0 ? floorArea : 1;
   const loss = result.hours.map((h) => convert(h.loss / area));
   const gain = result.hours.map((h) => convert(h.gain / area));
-  const benchmark = convert(PASSIVE_HOUSE_BENCHMARK_W_M2);
 
-  const { max, step } = niceCeiling(Math.max(...loss, ...gain, benchmark) * 1.05);
+  const { max, step } = niceCeiling(Math.max(...loss, ...gain) * 1.05);
   const x = linearScale([0, 23], [PAD.left, WIDTH - PAD.right]);
   const y = linearScale([0, max], [HEIGHT - PAD.bottom, PAD.top]);
 
@@ -148,21 +149,6 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
         {deficitRegions.map((pts, i) => (
           <polygon key={i} points={pts} fill={`url(#${hatchId})`} />
         ))}
-
-        {/* The Passive House reference. A benchmark, not a gate — which is why
-            it is a hairline in a neutral colour rather than a threshold. */}
-        <line
-          x1={PAD.left}
-          y1={y(benchmark)}
-          x2={WIDTH - PAD.right}
-          y2={y(benchmark)}
-          stroke="var(--muted)"
-          strokeWidth="1.4"
-          strokeDasharray="7 5"
-        />
-        <text x={WIDTH - PAD.right} y={y(benchmark) - 7} textAnchor="end" fontSize="10.5" fill="var(--muted)" fontFamily="IBM Plex Mono, monospace">
-          Passive House {ip ? '3.2 Btu/h·ft²' : '10 W/m²'} — a rough benchmark, not a pass mark
-        </text>
 
         <polyline points={points(gain)} fill="none" stroke="var(--gain)" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
         <polyline points={points(loss)} fill="none" stroke="var(--loss)" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />

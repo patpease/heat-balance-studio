@@ -18,7 +18,15 @@ export interface BoxDimensions {
   /** m */
   readonly length: number;
   readonly width: number;
-  readonly storeyHeight: number;
+  /**
+   * OVERALL height of the building, not the height of one storey.
+   *
+   * Asking for the total is the dimension someone actually has in an early
+   * sketch — a four-storey building is "about 14 metres", not "3.5 metres,
+   * four times". The per-storey height is height/storeys and is derived, never
+   * shown.
+   */
+  readonly height: number;
   readonly storeys: number;
   /** 0–1, fraction of gross wall that is glazed. */
   readonly windowToWallRatio: number;
@@ -34,29 +42,34 @@ export interface BoxAreas {
   readonly groundFloorArea: number;
   /** Always zero: a simple box has no floor over outside air. */
   readonly exposedFloorArea: number;
+  /** m. Derived, never shown — the overall height divided by the storeys. */
+  readonly storeyHeight: number;
   /** Derived and shown, because it is a headline metric in its own right. */
   readonly wallToFloorRatio: number;
 }
 
 export const DEFAULT_BOX: BoxDimensions = {
-  length: 25,
-  width: 20,
-  storeyHeight: 3.5,
-  storeys: 1,
+  length: 50,
+  width: 30,
+  height: 14,
+  storeys: 4,
   windowToWallRatio: 0.3,
 };
 
 export function areasFromBox(box: BoxDimensions): BoxAreas {
   const length = Math.max(0, box.length);
   const width = Math.max(0, box.width);
-  const height = Math.max(0, box.storeyHeight);
+  const height = Math.max(0, box.height);
   const storeys = Math.max(1, Math.round(box.storeys));
   const wwr = Math.min(1, Math.max(0, box.windowToWallRatio));
 
   const footprint = length * width;
   const floorArea = footprint * storeys;
   const perimeter = 2 * (length + width);
-  const grossWall = perimeter * height * storeys;
+  // Height is the whole building, so the wall is the perimeter times it. The
+  // old form multiplied a per-storey height BY the storeys to reach the same
+  // number; this says it once.
+  const grossWall = perimeter * height;
 
   // Roof and ground floor are each ONE footprint however many storeys there
   // are. Multiplying them by storeys is the obvious slip, and it would roughly
@@ -68,6 +81,7 @@ export function areasFromBox(box: BoxDimensions): BoxAreas {
     roofArea: footprint,
     groundFloorArea: footprint,
     exposedFloorArea: 0,
+    storeyHeight: storeys > 0 ? height / storeys : height,
     wallToFloorRatio: floorArea > 0 ? grossWall / floorArea : 0,
   };
 }
