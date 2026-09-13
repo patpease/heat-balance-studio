@@ -45,11 +45,15 @@ Revisit when a fourth tool needs EPW.
       `src/config/copy.ts` for Patrick to edit; scope statement and assumptions
       on the page; share link; units toggle; headings and field labels.
 - [x] **Deploy** — live at heatbalance.peasestudio.com, 13 Sep 2026.
-- [ ] **Sourced gain densities** — templates in `docs/gain-data/`, with Patrick.
-      Until they come back every density carries a "Provisional" citation and
-      the preset is named "Office (provisional)". **No importer exists yet**; it
-      gets written against the returned sheets rather than against a guess at
-      their shape.
+- [x] **Sourced gain densities** — sheet 1 returned 13 Sep 2026 with 13 building
+      types. `npm run import:gains` generates `src/model/gainPresets.ts`; the
+      picker sits in the gains panel.
+- [ ] **Citation editions** — all 52 sources name a document but no edition or
+      table, so a reader cannot look the numbers up. The importer reports them
+      on every run.
+- [ ] **Per-type schedules** — sheet 2 rebuilt against the new keys and waiting.
+      Until it lands all 13 types run the office profile and the panel says so.
+      This moves the answer more than the densities did.
 - [ ] **Copy review** — `src/config/copy.ts`, four `DRAFT_NOTES` open.
 - [ ] **peasestudio.com tool card** — `SITE_RECORD` drafted, not yet added to
       the site's curated index.

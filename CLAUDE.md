@@ -100,6 +100,13 @@ number that no user ever had.
 - **A `k` floor that draws a stub arrow for a 0 W term.** People at 06:00 is
   exactly zero. An unoccupied hour must draw no people arrow at all, or the
   drawing asserts a gain that is not there.
+- **A `<select>` whose value matches no option.** It does not render blank —
+  the browser falls back to the FIRST option. The building-type picker read
+  "Assembly" while the page showed the office worked example, and nothing about
+  the display looked wrong. Any state whose preset is not one of the listed
+  types must render its own option: the worked example, edited gains, a share
+  link from a build with a different preset list. `tests/buildingPicker.test.tsx`
+  guards it.
 - **A panel that prints a number and never asked for `units`.** `LocationPanel`
   shipped without the prop at all, so it stayed in Fahrenheit under SI. There is
   no failing conversion to find — the wiring is simply absent, the build is
@@ -121,6 +128,35 @@ number that no user ever had.
   windows and roof render identically despite a 1.5× difference. Derive the
   reference per project, and hold it constant across the 24 hours so scrubbing
   shows the gains genuinely collapsing overnight.
+
+## Internal gains are generated, not typed
+
+`src/model/gainPresets.ts` is GENERATED from `docs/gain-data/` — do not edit it.
+Edit the sheet and run `npm run import:gains`. The importer converts to
+canonical SI once and carries each citation through to the field help text, and
+it refuses to generate rather than ship an uncited number, a duplicate key, or a
+value it cannot parse.
+
+`npm run gains:schedule-sheet` rebuilds sheet 2 against sheet 1's keys, keeping
+any row already filled. It seeds the office rows by reading the arrays out of
+`schedules.ts`, so the sheet's exemplar cannot drift from the profile the tool
+actually runs.
+
+Two things about the current data are worth holding in mind:
+
+1. **The schedules are not per-type yet.** All 13 building types run the office
+   profile, `SCHEDULES_ARE_PROVISIONAL` is true, and the panel says so in plain
+   text. This matters more than the densities do — the verdict is decided
+   between 04:00 and 07:00, so a schedule's overnight floor moves the answer
+   more than the density it scales.
+2. **The citations name a document but no edition or table.** The importer
+   reports every one of them on each run rather than hiding it. A citation a
+   reader cannot look up only half-satisfies the rule it exists for.
+
+The worked example (`SAMPLE_GAINS`, aliased as `BOSTON_GAINS`) is deliberately
+NOT a preset. It is the golden-case fixture, and repointing it at the sourced
+office row would rewrite the documented 15 deficit hours, 14.7 W/m² and 44.8%
+windows lever.
 
 ## Where the detail lives
 
