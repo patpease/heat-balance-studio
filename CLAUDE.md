@@ -65,7 +65,10 @@ npm run preview:worker   # the ONLY place the CSP and the routes are true
 
 **A green suite is not evidence the browser works, and a green build is not
 evidence the deploy works.** Both lessons cost a sibling a shipped failure.
-`npm run dev` serves on 5184; `preview:worker` on 8789.
+`npm run dev` serves on 5185 and `npm run preview` on 4185 — zeel holds
+5184/4184, and every port here is `strictPort` so a clash fails loudly instead
+of hopping. `preview:worker` is on 8789 (psychro 8788, zeel the wrangler
+default).
 
 **Measure performance on the production build, never the dev one.** React's
 development build is several times slower — a sibling optimised against a dev

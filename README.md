@@ -36,7 +36,7 @@ nothing kept.
 
 ```bash
 npm install
-npm run dev              # http://localhost:5184
+npm run dev              # http://localhost:5185
 npm test
 npm run preview:worker   # the real Workers runtime, with the real CSP
 ```

@@ -47,6 +47,10 @@ function weatherRelay(): Plugin {
 
 export default defineConfig({
   plugins: [react(), weatherRelay()],
-  server: { port: 5184, strictPort: true },
+  // 5185/4185, not 5184/4184: zeel claimed those first and `strictPort`
+  // turns a collision into a refusal to start rather than a silent hop to
+  // another port, which is the behaviour we want from a relay that is also
+  // serving the climate endpoints.
+  server: { port: 5185, strictPort: true },
   build: { target: 'es2022', sourcemap: true },
 });
