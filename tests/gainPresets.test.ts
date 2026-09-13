@@ -4,7 +4,7 @@ import { solve } from '../src/engine/balance';
 import { applyGainPreset, setDensity } from '../src/model/editGains';
 import { DEFAULT_GAINS, OFFICE_PRESET } from '../src/model/defaults';
 import { BUILDING_TYPES } from '../src/model/buildingTypes';
-import { GAIN_PRESETS, presetById } from '../src/model/gainPresets';
+import { DEFAULT_PRESET_ID, GAIN_PRESETS, presetById } from '../src/model/gainPresets';
 import {
   SAMPLE_CONDITIONS,
   SAMPLE_DESIGN_DAY,
@@ -22,10 +22,22 @@ import { BTU_H_PER_WATT, SQFT_PER_SQM } from '../src/model/units';
 describe('the sheet arrives in canonical SI', () => {
   it('converted the Medium Office row exactly', () => {
     // The sheet says 200 ft²/person, 200 Btu/h, 0.64 W/ft², 1.061 W/ft².
-    expect(OFFICE_PRESET.areaPerPerson.value).toBeCloseTo(200 / SQFT_PER_SQM, 6);
-    expect(OFFICE_PRESET.sensiblePerPerson.value).toBeCloseTo(200 / BTU_H_PER_WATT, 6);
-    expect(OFFICE_PRESET.lighting.value).toBeCloseTo(0.64 * SQFT_PER_SQM, 6);
-    expect(OFFICE_PRESET.miscEquipment.value).toBeCloseTo(1.061 * SQFT_PER_SQM, 6);
+    const medium = presetById('office-medium')!;
+    expect(medium.areaPerPerson.value).toBeCloseTo(200 / SQFT_PER_SQM, 6);
+    expect(medium.sensiblePerPerson.value).toBeCloseTo(200 / BTU_H_PER_WATT, 6);
+    expect(medium.lighting.value).toBeCloseTo(0.64 * SQFT_PER_SQM, 6);
+    expect(medium.miscEquipment.value).toBeCloseTo(1.061 * SQFT_PER_SQM, 6);
+  });
+
+  it('opens on Large Office', () => {
+    // The tool used to load the worked example's own densities, which are the
+    // original unsourced placeholders — the picker read "not a listed type" on
+    // first paint. Whatever it opens on must be a real building type.
+    expect(DEFAULT_PRESET_ID).toBe('office-large');
+    expect(OFFICE_PRESET.id).toBe('office-large');
+    expect(OFFICE_PRESET.label).toBe('Large Office');
+    expect(DEFAULT_GAINS.preset).toBe('Large Office');
+    expect(GAIN_PRESETS.some((p) => p.id === DEFAULT_PRESET_ID)).toBe(true);
   });
 
   it('takes lighting from 90.1 and everything else from PNNL', () => {

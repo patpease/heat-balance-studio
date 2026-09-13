@@ -11,9 +11,9 @@ import {
   SAMPLE_CONDITIONS,
   SAMPLE_DESIGN_DAY,
   SAMPLE_ENVELOPE,
-  SAMPLE_GAINS,
   SAMPLE_SITE,
 } from '../model/sampleProject';
+import { DEFAULT_GAINS } from '../model/defaults';
 import type { Conditions, DesignDay, Envelope, Gains, Site, UnitSystem } from '../model/types';
 import { EnvelopePanel } from './EnvelopePanel';
 import { GainsPanel } from './GainsPanel';
@@ -30,17 +30,28 @@ import { BalancePointBand, Verdict } from './Verdict';
  * arrows visibly collapse overnight while the loss arrows grow. At rest both
  * sit on the worst hour, which is the hour the verdict is decided on.
  *
- * It opens on the worked example rather than an empty form, so the first look
- * shows what the tool does — and that sample is also the floor the fallback
- * ladder lands on: if the relay is unreachable, the design day already loaded
- * stays and the panel says so.
+ * It opens on the worked example's building rather than an empty form, so the
+ * first look shows what the tool does — and that sample is also the floor the
+ * fallback ladder lands on: if the relay is unreachable, the design day already
+ * loaded stays and the panel says so.
+ *
+ * The LOADS it opens with are the Large Office preset rather than the worked
+ * example's own, which are the original unsourced placeholders. The worked
+ * example stays exactly as it is in `sampleProject.ts` because the golden-case
+ * test is built on it — but nothing unsourced should be the first thing a user
+ * sees.
  */
 export function App() {
   const shared = useMemo(() => stateFromLocation(), []);
 
   const [units, setUnits] = useState<UnitSystem>(shared?.units ?? 'IP');
   const [envelope, setEnvelope] = useState<Envelope>(shared?.envelope ?? SAMPLE_ENVELOPE);
-  const [gains, setGains] = useState<Gains>(shared?.gains ?? SAMPLE_GAINS);
+  // DEFAULT_GAINS, not SAMPLE_GAINS: the worked example's five densities are
+  // the original unsourced placeholders, and opening on them meant the picker
+  // read "Office (provisional) — not a listed type" on first load. The envelope
+  // and the site are still the Boston example; only the loads are now a real
+  // building type.
+  const [gains, setGains] = useState<Gains>(shared?.gains ?? DEFAULT_GAINS);
   // Site, design day and conditions move together — a design day belongs to a
   // place, and the ground temperature is resolved from that place's record.
   const [site, setSite] = useState<Site>(shared?.site ?? SAMPLE_SITE);

@@ -47,8 +47,12 @@ export interface DensityDefault {
 }
 
 /**
- * The office row of the imported sheet, which is where the opening numbers now
- * come from. These used to be hand-typed placeholders; they are generated.
+ * The row the tool opens on — Large Office. Every default below is derived from
+ * it, and the app's initial gains are these.
+ *
+ * Large rather than Medium because it is the most common thing a user of this
+ * tool is sizing up, and because its equipment density sits between the small
+ * and medium offices rather than at either edge.
  */
 export const OFFICE_PRESET: GainPreset = presetById(DEFAULT_PRESET_ID) ?? (() => {
   // A missing office row is a build error, not a runtime fallback: every other

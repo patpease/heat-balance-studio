@@ -368,7 +368,7 @@ export const GAIN_PRESETS: readonly GainPreset[] = Object.freeze([
 ]);
 
 /** The one the tool opens on. */
-export const DEFAULT_PRESET_ID = 'office-medium';
+export const DEFAULT_PRESET_ID = 'office-large';
 
 export function presetById(id: string): GainPreset | undefined {
   return GAIN_PRESETS.find((p) => p.id === id);
