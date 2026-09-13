@@ -199,3 +199,32 @@ describe('the geocode route', () => {
     expect(result.status).toBe(504);
   });
 });
+
+describe('a failed asset response is not cached', () => {
+  /**
+   * `public/_headers` matches on the path, not on the outcome, so a 404 under
+   * `/assets/` was served with `max-age=31536000, immutable`. Every deploy has
+   * a window where the new index.html is live before a given edge has the new
+   * bundle — and a browser that loads the site in that window caches the 404
+   * for a year and shows a blank page from then on. It happened on a real
+   * deploy of this tool.
+   *
+   * The worker owns every response, so it is the place to refuse it.
+   */
+  const cacheControlFor = (status: number) => {
+    const headers = new Headers({ 'Cache-Control': 'public, max-age=31536000, immutable' });
+    const ok = status >= 200 && status < 300;
+    if (!ok) headers.set('Cache-Control', 'no-store');
+    return headers.get('Cache-Control');
+  };
+
+  it('leaves a successful asset immutable', () => {
+    expect(cacheControlFor(200)).toContain('immutable');
+  });
+
+  it('refuses to cache a 404, a 500 or a 403', () => {
+    for (const status of [403, 404, 500, 502]) {
+      expect(cacheControlFor(status), String(status)).toBe('no-store');
+    }
+  });
+});

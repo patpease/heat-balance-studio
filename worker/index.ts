@@ -139,6 +139,20 @@ export default {
     const response = await env.ASSETS.fetch(request);
     const headers = new Headers(response.headers);
     for (const [key, value] of Object.entries(HEADERS)) headers.set(key, value);
+
+    // A FAILURE MUST NEVER INHERIT THE IMMUTABLE CACHE RULE.
+    //
+    // public/_headers matches on the PATH, not on the outcome, so a 404 under
+    // /assets/ came back stamped "max-age=31536000, immutable". There is a
+    // window during every deploy where the new index.html is live and a given
+    // edge has not got the new bundle yet; a browser loading the site in that
+    // window caches the 404 FOR A YEAR and shows a blank page from then on,
+    // with no error a user could act on and nothing a reload fixes.
+    //
+    // This deploy did exactly that: a forced revalidate of the identical URL
+    // returned 200 while the cached entry stayed 404.
+    if (!response.ok) headers.set('Cache-Control', 'no-store');
+
     return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
