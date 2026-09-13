@@ -78,9 +78,11 @@ export const SAMPLE_GAINS: Gains = {
   },
   lighting: { powerDensity: 6.5 },
   miscEquipment: { powerDensity: 7.0 },
-  // 1.0 W/m² is an IDF closet rather than a data hall. The shipped DEFAULT is
-  // zero; this example carries a value so the ninth arrow has something to draw.
-  itEquipment: { powerDensity: 1.0, spaceFraction: 1 },
+  // 0.5 kW over this example's 500 m² is the 1.0 W/m² this line used to read,
+  // to the watt — the golden case is unchanged by the move to absolute kW, and
+  // balance.test.ts proves it. The shipped DEFAULT is zero; this example
+  // carries a value so the ninth arrow has something to draw.
+  itEquipment: { kilowatts: 0.5, spaceFraction: 1 },
   schedules: {
     occupancy: OFFICE_OCCUPANCY,
     lighting: OFFICE_LIGHTING,

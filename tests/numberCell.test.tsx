@@ -113,12 +113,46 @@ describe('NumberCell groups digits', () => {
     expect((screen.getByLabelText('u') as HTMLInputElement).value).toBe('0.211');
   });
 
-  it('drops the separators on focus so the caret does not jump', () => {
+  /**
+   * The regression that cost a caret.
+   *
+   * The field used to swap `6,000` for `6000` on focus, to keep formatting out
+   * of the way while typing. Changing a controlled input's value during its own
+   * focus event discards the caret the click just set: clicking at the END of a
+   * number to append a digit left the caret at position 0 and typed the digit
+   * on the front. The value on screen must not move when the field is entered.
+   */
+  it('does not change what is on screen when it takes focus', () => {
     render(<NumberCell label="area" value={6000} decimals={0} onCommit={vi.fn()} />);
     const input = screen.getByLabelText('area') as HTMLInputElement;
 
+    const before = input.value;
     fireEvent.focus(input);
-    expect(input.value).toBe('6000');
+    expect(input.value).toBe(before);
+    expect(input.value).toBe('6,000');
+  });
+
+  it('keeps the caret where the click put it', () => {
+    render(<NumberCell label="area" value={6000} decimals={0} onCommit={vi.fn()} />);
+    const input = screen.getByLabelText('area') as HTMLInputElement;
+
+    input.setSelectionRange(5, 5); // between the last two digits of "6,000"
+    fireEvent.focus(input);
+    expect(input.selectionStart).toBe(5);
+  });
+
+  it('appends rather than prepends when you type at the end', () => {
+    // The user-visible shape of the bug: click at the end, type a zero, and
+    // 6,000 became 06000 instead of 60000.
+    const onCommit = vi.fn();
+    render(<NumberCell label="area" value={6000} decimals={0} onCommit={onCommit} />);
+    const input = screen.getByLabelText('area') as HTMLInputElement;
+
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: input.value + '0' } });
+    fireEvent.blur(input);
+
+    expect(onCommit).toHaveBeenCalledWith(60000);
   });
 
   it('accepts a pasted figure that still carries its commas', () => {
@@ -139,6 +173,8 @@ describe('NumberCell groups digits', () => {
     const input = screen.getByLabelText('area') as HTMLInputElement;
 
     fireEvent.focus(input);
+    // Free text while editing: no reformatting happens until blur, which is
+    // why a half-typed number never moves under the caret.
     fireEvent.change(input, { target: { value: '7500' } });
     fireEvent.blur(input);
     // The parent is what moves the value; this stands in for that round trip.

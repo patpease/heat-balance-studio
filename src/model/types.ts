@@ -102,9 +102,33 @@ export interface Gains {
   readonly lighting: { readonly powerDensity: number };
   /** W/m² — laptops, printers, fridges. Follows occupancy with a standby floor. */
   readonly miscEquipment: { readonly powerDensity: number };
+  /**
+   * IT equipment, as an ABSOLUTE load in kilowatts — not a density.
+   *
+   * Every other gain in this tool scales with floor area, because every other
+   * gain is spread through the building: double the floor and you double the
+   * lights, the people and the laptops. IT does not work that way. A server
+   * room is a room with racks in it, and the racks do not multiply because the
+   * building around them got bigger — the same 50 kW room in a 2,000 m² office
+   * and a 20,000 m² one is the same 50 kW.
+   *
+   * Held as a density, that error was invisible and one-directional: a user who
+   * sized their IT load against their building and then enlarged the building
+   * got ten times the IT heat, silently, in the term that runs 24/7 and decides
+   * the overnight verdict.
+   *
+   * The field is named for its unit for the same reason `toF` and `deltaToF`
+   * are separate functions. It was `powerDensity` and it is not one.
+   */
   readonly itEquipment: {
-    /** W/m² of building area — server rooms, IDF closets, data halls. */
-    readonly powerDensity: number;
+    /**
+     * kW of IT equipment in the building. NOT per unit area.
+     *
+     * The same number in both unit systems: kW is kW. There is no
+     * `toKilowatts` and there must not be one — a conversion here would be a
+     * bug with no symptom, since the value would still look plausible.
+     */
+    readonly kilowatts: number;
     /**
      * φ: the share of IT power released into the conditioned space. A data
      * hall on its own cooling rejects its heat outdoors and warms nothing.

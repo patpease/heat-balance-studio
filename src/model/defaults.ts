@@ -13,9 +13,10 @@
  *
  * IT equipment ships at ZERO rather than at a plausible-looking number. 90.1
  * does not break receptacle load into IT and misc, and real values span three
- * orders of magnitude — an IDF closet is a fraction of a W/m² of building area,
- * a data hall is hundreds of W/m² of white space. A single shipped default
- * would look authoritative and be wrong most of the time.
+ * orders of magnitude — an IDF closet is a few kW, a data hall is hundreds. A
+ * single shipped default would look authoritative and be wrong most of the
+ * time. It is also the one gain held as an absolute kW rather than a density,
+ * because racks do not multiply when the building around them grows.
  */
 
 import { DEFAULT_PRESET_ID, presetById } from './gainPresets';
@@ -95,7 +96,9 @@ export const DEFAULT_GAINS: Gains = {
   lighting: { powerDensity: OFFICE_DENSITIES.lighting.value },
   miscEquipment: { powerDensity: OFFICE_DENSITIES.miscEquipment.value },
   itEquipment: {
-    powerDensity: OFFICE_DENSITIES.itEquipment.value,
+    // kW, absolute. Not from the preset: the prototypes quote a density and
+    // leave it blank in any case. See applyGainPreset.
+    kilowatts: 0,
     // φ. Held at 1 in v1 with no control; the assumption is disclosed instead,
     // because the user cannot change it.
     spaceFraction: 1,

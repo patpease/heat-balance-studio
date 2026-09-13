@@ -7,7 +7,8 @@ import { GAINS_SOURCE_NOTE, HELP } from '../config/copy';
 import { OFFICE_DENSITIES } from '../model/defaults';
 import { GAIN_PRESETS } from '../model/gainPresets';
 import type { Gains, UnitSystem } from '../model/types';
-import { fromSqFt, fromWattsPerSqFt, LABELS, toBtuH, toSqFt, toWattsPerSqFt } from '../model/units';
+import { fromSqFt, fromWattsPerSqFt, LABELS, toBtuH, toBtuHFt2, toSqFt, toWattsPerSqFt } from '../model/units';
+import { grouped } from './format';
 import { NumberCell } from './NumberCell';
 import { ScheduleBars } from './ScheduleBars';
 
@@ -276,10 +277,13 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
                       <span style={unit}>{labels.powerDensity}</span>
                     </>
                   )}
+                  {/* 'raw', not 'power': kW is kW in both unit systems, and a
+                      conversion here would be a bug with no symptom — the
+                      number would still look like a plausible IT load. */}
                   {row.key === 'itEquipment' && (
                     <>
-                      {density('itEquipment', gains.itEquipment.powerDensity, 2, 'power', 'IT equipment power density')}
-                      <span style={unit}>{labels.powerDensity}</span>
+                      {density('itEquipment', gains.itEquipment.kilowatts, 1, 'raw', 'IT equipment load')}
+                      <span style={unit}>kW</span>
                     </>
                   )}
                 </div>
@@ -306,18 +310,34 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
                       key={preset.id}
                       type="button"
                       title={preset.note}
-                      onClick={() => onChange(setDensity(gains, 'itEquipment', preset.powerDensity))}
+                      onClick={() => onChange(setDensity(gains, 'itEquipment', preset.kilowatts))}
                       style={{
                         ...chip,
                         borderColor:
-                          Math.abs(gains.itEquipment.powerDensity - preset.powerDensity) < 0.001
+                          Math.abs(gains.itEquipment.kilowatts - preset.kilowatts) < 0.001
                             ? 'var(--gain)'
                             : 'var(--border)',
                       }}
                     >
                       {preset.label}
+                      {preset.kilowatts > 0 && (
+                        <span style={{ color: 'var(--muted)' }}> {preset.kilowatts} kW</span>
+                      )}
                     </button>
                   ))}
+                  {/* What the load is worth on THIS building. The figure is
+                      absolute, so its weight depends entirely on the floor it
+                      is spread over — which is the fact the density hid. */}
+                  {gains.itEquipment.kilowatts > 0 && floorArea > 0 && (
+                    <span style={{ fontSize: 11, color: 'var(--muted)', alignSelf: 'center' }}>
+                      ={' '}
+                      {(ip
+                        ? toBtuHFt2((gains.itEquipment.kilowatts * 1000) / floorArea)
+                        : (gains.itEquipment.kilowatts * 1000) / floorArea
+                      ).toFixed(2)}{' '}
+                      {labels.heatFlux} over {grouped(ip ? toSqFt(floorArea) : floorArea)} {labels.area}
+                    </span>
+                  )}
                 </div>
               )}
 
@@ -328,7 +348,8 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
                     <>
                       {' '}
                       No published default exists — 90.1 does not separate receptacle load into IT and misc, and real
-                      values span three orders of magnitude. The presets are provisional.
+                      values span three orders of magnitude. The presets are provisional, and they are whole-room
+                      loads: picking one does not change when the building around it does.
                     </>
                   )}
                 </p>

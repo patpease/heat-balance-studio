@@ -34,7 +34,21 @@ export interface ShareState {
   readonly gains: Gains;
 }
 
-const VERSION = 1;
+/**
+ * 2: IT equipment became an absolute kW rather than a W/m² density.
+ *
+ * The payload SHAPE did not change — `i[0]` is still one number in the same
+ * slot — so a version 1 link decodes cleanly and describes a different
+ * building. A shared link that silently means something else is worse than one
+ * that fails outright, and this one would fail invisibly, in the term that runs
+ * 24 hours a day and decides the overnight verdict.
+ *
+ * Version 1 links are therefore migrated rather than rejected. The old value
+ * was W/m² of the floor area travelling in the same payload, so the kilowatts
+ * it meant can be recovered exactly — it is the same multiplication the engine
+ * used to do at solve time.
+ */
+const VERSION = 2;
 
 /** Round for the wire: areas to 0.1 m², U-values to 3 dp, temperatures to 2. */
 const r = (value: number, places: number): number => Number(value.toFixed(places));
@@ -87,7 +101,7 @@ export function encodeState(state: ShareState): string {
       o: [state.gains.occupancy.mode, r(state.gains.occupancy.areaPerPerson, 3), r(state.gains.occupancy.count, 1), r(state.gains.occupancy.sensiblePerPerson, 1)],
       l: r(state.gains.lighting.powerDensity, 3),
       m: r(state.gains.miscEquipment.powerDensity, 3),
-      i: [r(state.gains.itEquipment.powerDensity, 3), r(state.gains.itEquipment.spaceFraction, 3)],
+      i: [r(state.gains.itEquipment.kilowatts, 3), r(state.gains.itEquipment.spaceFraction, 3)],
       p: state.gains.preset,
       sid: state.gains.sourceId,
       k: [
@@ -116,10 +130,11 @@ export function decodeState(encoded: string): ShareState | null {
     const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
     const payload = JSON.parse(new TextDecoder().decode(bytes));
 
-    // A link from a future version is a link this build cannot honour. Say so
+    // A link from a FUTURE version is a link this build cannot honour. Say so
     // by returning null rather than half-reading it into a plausible-looking
-    // building that is not the one that was sent.
-    if (payload?.v !== VERSION) return null;
+    // building that is not the one that was sent. An older version we can still
+    // read faithfully is migrated instead — see the note on VERSION.
+    if (payload?.v !== VERSION && payload?.v !== 1) return null;
 
     const surfaces: Surface[] = payload.e.s.map((entry: unknown[]) => ({
       id: String(entry[0]),
@@ -144,7 +159,16 @@ export function decodeState(encoded: string): ShareState | null {
       },
       lighting: { powerDensity: Number(payload.g.l) },
       miscEquipment: { powerDensity: Number(payload.g.m) },
-      itEquipment: { powerDensity: Number(payload.g.i[0]), spaceFraction: Number(payload.g.i[1]) },
+      itEquipment: {
+        // A v1 link carries W/m² in this slot. Multiply by the floor area it
+        // was quoted against, which travels in the same payload, to recover the
+        // kilowatts it always meant.
+        kilowatts:
+          payload.v === 1
+            ? r((Number(payload.g.i[0]) * Number(payload.e.a)) / 1000, 3)
+            : Number(payload.g.i[0]),
+        spaceFraction: Number(payload.g.i[1]),
+      },
       schedules: {
         occupancy: customSchedule(schedules[0]!),
         lighting: customSchedule(schedules[1]!),

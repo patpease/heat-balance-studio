@@ -56,7 +56,7 @@ export function setDensity(gains: Gains, field: DensityField, value: number): Ga
     case 'miscEquipment':
       return { ...next, miscEquipment: { powerDensity: safe } };
     case 'itEquipment':
-      return { ...next, itEquipment: { ...next.itEquipment, powerDensity: safe } };
+      return { ...next, itEquipment: { ...next.itEquipment, kilowatts: safe } };
   }
 }
 
@@ -108,36 +108,42 @@ export function setSchedule(gains: Gains, field: ScheduleField, schedule: Schedu
  * looked authoritative would be wrong most of the time. A picker of recognisable
  * situations is honest in a way a single default cannot be.
  *
- * These are building-average densities: intensity of the IT room times its
- * share of the building. The figures are PROVISIONAL, pending the data being
- * collected, and the UI says so.
+ * **These are whole-room loads in kW, not densities.** They used to be
+ * building-average W/m² — the intensity of the IT room times its share of the
+ * building — which made every one of them a function of a building size nobody
+ * had entered yet. A room is a room: naming one of these says "there is a
+ * server room in here", and the answer does not change because the office
+ * around it grew a floor.
+ *
+ * The figures are PROVISIONAL, pending the data being collected, and the UI
+ * says so.
  */
 export interface ItPreset {
   readonly id: string;
   readonly label: string;
-  /** W/m² of building area. */
-  readonly powerDensity: number;
+  /** kW, absolute. The same number in IP and SI. */
+  readonly kilowatts: number;
   readonly note: string;
 }
 
 export const IT_PRESETS: readonly ItPreset[] = Object.freeze([
-  { id: 'none', label: 'None', powerDensity: 0, note: 'No dedicated IT space.' },
+  { id: 'none', label: 'None', kilowatts: 0, note: 'No dedicated IT space.' },
   {
     id: 'idf',
     label: 'IDF closet',
-    powerDensity: 1,
-    note: 'A telecom or comms closet. Usually no dedicated cooling, so its heat reaches the space.',
+    kilowatts: 4,
+    note: 'A telecom or comms closet — a rack or two. Usually no dedicated cooling, so its heat reaches the space.',
   },
   {
     id: 'server-room',
     label: 'Server room',
-    powerDensity: 4,
+    kilowatts: 50,
     note: 'Often separately cooled — some of this heat may never reach the occupied space.',
   },
   {
     id: 'data-hall',
     label: 'Data hall',
-    powerDensity: 20,
+    kilowatts: 400,
     note: 'Nearly always rejects its heat outdoors. Counting it as space heat is optimistic.',
   },
 ]);
@@ -169,7 +175,17 @@ export function applyGainPreset(gains: Gains, preset: GainPreset): Gains {
     },
     lighting: { powerDensity: preset.lighting.value ?? 0 },
     miscEquipment: { powerDensity: preset.miscEquipment.value ?? 0 },
-    itEquipment: { ...gains.itEquipment, powerDensity: preset.itEquipment.value ?? 0 },
+    // IT is NOT replaced, and the reason is a type error rather than a
+    // preference: the preset carries a W/m² density and the model now holds an
+    // absolute kW, which are different quantities. The prototypes say as much
+    // themselves — every one of them leaves IT blank, with the citation "no
+    // published default exists". A source with nothing to say about a field
+    // should not write to it.
+    //
+    // The behaviour that falls out is also the better one. IT describes
+    // equipment the user put in THEIR building, so a server room they entered
+    // survives changing the building type around it.
+    itEquipment: gains.itEquipment,
     schedules: presetSchedules(preset),
     preset: preset.label,
     sourceId: preset.id,

@@ -1,7 +1,9 @@
+import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { gainTerms, occupantCount, termAtHour } from '../src/engine/gains';
-import { IT_PRESETS, setDensity, setOccupancyMode, setSchedule, setScheduleHour } from '../src/model/editGains';
+import { applyGainPreset, IT_PRESETS, setDensity, setOccupancyMode, setSchedule, setScheduleHour } from '../src/model/editGains';
+import { GAIN_PRESETS } from '../src/model/gainPresets';
 import { DEFAULT_GAINS, OFFICE_DENSITIES, OFFICE_PRESET } from '../src/model/defaults';
 import { ALWAYS_ON, OFFICE_OCCUPANCY } from '../src/model/schedules';
 import { SAMPLE_GAINS } from '../src/model/sampleProject';
@@ -85,7 +87,7 @@ describe('IT equipment', () => {
     // of magnitude. A single shipped default would look authoritative and be
     // wrong most of the time.
     expect(OFFICE_DENSITIES.itEquipment.value).toBe(0);
-    expect(DEFAULT_GAINS.itEquipment.powerDensity).toBe(0);
+    expect(DEFAULT_GAINS.itEquipment.kilowatts).toBe(0);
     expect(OFFICE_DENSITIES.itEquipment.citation).not.toMatch(/ASHRAE/i);
   });
 
@@ -97,12 +99,56 @@ describe('IT equipment', () => {
     expect(DEFAULT_GAINS.schedules.itEquipment.source).toBe('preset');
   });
 
-  it('offers presets spanning the real range, none of them cited', () => {
-    expect(IT_PRESETS.map((p) => p.powerDensity)).toEqual([0, 1, 4, 20]);
+  it('offers presets spanning the real range, in kW, none of them cited', () => {
+    expect(IT_PRESETS.map((p) => p.kilowatts)).toEqual([0, 4, 50, 400]);
     for (const preset of IT_PRESETS) {
       expect(preset.note).toBeTruthy();
       expect(preset.label).not.toMatch(/ASHRAE/i);
     }
+  });
+
+  /**
+   * The reason IT is an absolute load and everything else is a density.
+   *
+   * Every other gain is spread through the building, so doubling the floor
+   * doubles the heat. A server room is a room: the racks do not multiply when
+   * the office around them grows a storey. Held as a density that error was
+   * invisible and one-directional — a user who sized IT against their building
+   * and then enlarged it silently got ten times the load, in the one term that
+   * runs through the night.
+   */
+  it('does not scale with floor area, unlike every other gain', () => {
+    const gains = setDensity(DEFAULT_GAINS, 'itEquipment', 50);
+    const it = (area: number) =>
+      gainTerms(gains, area).find((t) => t.slot === 'gain-it-equipment')!.peakWatts;
+
+    expect(it(500)).toBe(50_000);
+    expect(it(50_000)).toBe(50_000);
+  });
+
+  it('scales the other gains, so the contrast is the model and not a dead branch', () => {
+    const lights = (area: number) =>
+      gainTerms(DEFAULT_GAINS, area).find((t) => t.slot === 'gain-lighting')!.peakWatts;
+    expect(lights(1000)).toBeCloseTo(lights(500) * 2, 6);
+  });
+
+  it('reads the same number in IP and SI — kW is kW', () => {
+    // There is no toKilowatts and there must not be one. The guard is that
+    // nothing in the unit module names this field.
+    const units = fs.readFileSync(
+      new URL('../src/model/units.ts', import.meta.url),
+      'utf8',
+    );
+    expect(units).not.toMatch(/kilowatt/i);
+  });
+
+  it('survives a change of building type, which has nothing to say about it', () => {
+    // Every prototype leaves IT blank with the citation "no published default
+    // exists". A source with nothing to say about a field must not write to it
+    // — and the user's server room is theirs, not the building type's.
+    const withIt = setDensity(DEFAULT_GAINS, 'itEquipment', 400);
+    const other = GAIN_PRESETS.find((p) => p.id !== withIt.sourceId)!;
+    expect(applyGainPreset(withIt, other).itEquipment.kilowatts).toBe(400);
   });
 
   it('holds φ at 1 with no way to change it in v1', () => {
@@ -117,9 +163,10 @@ describe('IT equipment', () => {
 describe('what the panel edits actually does to the balance', () => {
   it('a 24/7 watt beats a scheduled watt at the hour that decides the answer', () => {
     // The whole reason IT is its own row. Same 1 W/m², different schedule.
-    const asIt = setDensity(SAMPLE_GAINS, 'itEquipment', 1);
+    // 0.5 kW of IT against the same 500 W added to misc, on this 500 m² example.
+    const asIt = setDensity(SAMPLE_GAINS, 'itEquipment', 0.5);
     const asMisc = setDensity(
-      { ...SAMPLE_GAINS, itEquipment: { ...SAMPLE_GAINS.itEquipment, powerDensity: 0 } },
+      { ...SAMPLE_GAINS, itEquipment: { ...SAMPLE_GAINS.itEquipment, kilowatts: 0 } },
       'miscEquipment',
       SAMPLE_GAINS.miscEquipment.powerDensity + 1,
     );

@@ -19,11 +19,22 @@ export const cellStyle: CSSProperties = {
  * surface halfway through an edit. The draft is local; the store only hears
  * about finished numbers.
  *
- * **Grouped at rest, plain while editing.** A six thousand square metre floor
- * reads as `6,000` until the field takes focus, at which point the separators
- * come off. Formatting as you type would move the caret every time a comma
- * appeared, and the alternative — leaving them on and parsing around them — is
- * the same work with a worse failure mode. Pasted commas are still accepted.
+ * **Grouped at rest, and never reformatted while you type.** A six thousand
+ * square metre floor reads as `6,000`, and the field keeps that exact string
+ * when it takes focus — the draft is free text from then until blur, and only
+ * `parseGrouped` has an opinion about the commas in it.
+ *
+ * The field used to swap to an unseparated `6000` on focus, on the reasoning
+ * that formatting as you type moves the caret. That reasoning is right and the
+ * fix was wrong: changing a controlled input's value during its own focus event
+ * discards the caret the click just set, so clicking at the end of a number to
+ * append a digit put the caret at position 0 and typed the digit on the front.
+ * Not swapping at all costs nothing and keeps the caret exactly where the user
+ * put it.
+ *
+ * The price is that a half-deleted number can show a comma in a silly place
+ * until blur. That is visible, momentary, and cannot corrupt anything —
+ * unlike a caret that silently moved.
  *
  * `draft` doubles as the edit flag: `null` means nobody is typing, so the field
  * shows the stored value and follows it when something else moves it — editing
@@ -59,7 +70,9 @@ export function NumberCell({
       value={draft ?? grouped(value, decimals)}
       inputMode="decimal"
       aria-label={label}
-      onFocus={() => setDraft(plain(value, decimals))}
+      // Seeds the draft with the string ALREADY on screen. Anything else is a
+      // value change during focus, which is what moved the caret.
+      onFocus={() => setDraft(grouped(value, decimals))}
       onChange={(event) => setDraft(event.target.value)}
       onBlur={commit}
       onKeyDown={(event) => {

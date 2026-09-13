@@ -72,10 +72,10 @@ export function gainTerms(gains: Gains, floorArea: number): GainTerm[] {
     {
       slot: 'gain-it-equipment',
       label: 'IT equipment',
-      peakWatts:
-        gains.itEquipment.powerDensity *
-        gains.itEquipment.spaceFraction *
-        floorArea,
+      // No floorArea. This is the one gain that does not scale with the
+      // building — see the note on Gains.itEquipment. kW to W is the only
+      // conversion it needs, and it is the same in IP and SI.
+      peakWatts: gains.itEquipment.kilowatts * 1000 * gains.itEquipment.spaceFraction,
       schedule: gains.schedules.itEquipment.fractions,
     },
   ];

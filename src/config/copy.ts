@@ -179,7 +179,7 @@ export const HELP = {
   miscEquipment:
     'Laptops, workstations, printers, fridges, AV. Follows occupancy with a standby floor that does not drop to zero.',
   itEquipment:
-    '24/7 loads: server rooms, IDF and telecom closets, data halls. These run at full power overnight, which is when this tool’s verdict is usually decided. No published default exists — 90.1 does not separate receptacle load, and real values span three orders of magnitude.',
+    'Entered as kilowatts of equipment, not as a density: a server room is a room, and its racks do not multiply when the building around them grows. kW reads the same in IP and SI. These loads run at full power overnight, which is when this tool’s verdict is usually decided. No published default exists — 90.1 does not separate receptacle load, and real values span three orders of magnitude.',
   schedule:
     'Drag a bar to edit, or use the arrow keys. The overnight floor decides the answer: a row that drops to zero at night flatters every building.',
   sketchBox:

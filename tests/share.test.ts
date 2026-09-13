@@ -145,3 +145,81 @@ function base64url(text: string): string {
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
+
+/**
+ * The version 1 link.
+ *
+ * Version 2 changed what `i[0]` MEANS — W/m² of IT became absolute kW — without
+ * changing the payload's shape. So an old link still parses, and read as a v2
+ * link it describes a different building: the worked example's 1.0 W/m² would
+ * come back as 1 kW, twice the 0.5 kW it stood for. A link that silently means
+ * something else is worse than one that fails, and this one fails in the term
+ * that runs all night and decides the verdict.
+ */
+describe('a version 1 link is migrated, not misread', () => {
+  /** Re-encode a current link as a v1 payload carrying the old density. */
+  const asV1 = (wattsPerSqM: number): string => {
+    const encoded = encodeState(base);
+    const padded = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    const json = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4));
+    const payload = JSON.parse(json);
+    payload.v = 1;
+    payload.g.i[0] = wattsPerSqM;
+    const bytes = new TextEncoder().encode(JSON.stringify(payload));
+    let binary = '';
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  };
+
+  it('recovers the kilowatts the old density stood for', () => {
+    // 1.0 W/m² over the worked example's 500 m² was 500 W. That is 0.5 kW.
+    const decoded = decodeState(asV1(1.0));
+    expect(decoded).not.toBeNull();
+    expect(decoded!.gains.itEquipment.kilowatts).toBeCloseTo(0.5, 6);
+  });
+
+  it('lands the migrated link on the same balance as the current one', () => {
+    // The real test: not that a field matches, but that the building does.
+    const fromOld = decodeState(asV1(1.0))!;
+    const fromNew = decodeState(encodeState(base))!;
+    const answer = (state: typeof base) =>
+      solve({
+        envelope: state.envelope,
+        gains: state.gains,
+        conditions: state.conditions,
+        designDay: state.designDay,
+      }).peakHeatingLoad;
+
+    expect(answer(fromOld)).toBeCloseTo(answer(fromNew), 6);
+  });
+
+  it('scales a v1 link by ITS OWN floor area, not a fixed one', () => {
+    // The multiplication has to use the area travelling in the same payload,
+    // which is the area the density was quoted against.
+    const big = { ...base, envelope: { ...SAMPLE_ENVELOPE, floorArea: 5000 } };
+    const encoded = encodeState(big);
+    const padded = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(padded + '='.repeat((4 - (padded.length % 4)) % 4)));
+    payload.v = 1;
+    payload.g.i[0] = 1.0;
+    const bytes = new TextEncoder().encode(JSON.stringify(payload));
+    let binary = '';
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    const link = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+    expect(decodeState(link)!.gains.itEquipment.kilowatts).toBeCloseTo(5, 6);
+  });
+
+  it('still refuses a link from a version it cannot read', () => {
+    const encoded = encodeState(base);
+    const padded = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(padded + '='.repeat((4 - (padded.length % 4)) % 4)));
+    payload.v = 99;
+    const bytes = new TextEncoder().encode(JSON.stringify(payload));
+    let binary = '';
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    const link = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+    expect(decodeState(link)).toBeNull();
+  });
+});
