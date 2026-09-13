@@ -5,12 +5,14 @@ import {
   deltaToF,
   fromBtuU,
   fromF,
+  fromFt,
   fromSqFt,
   fromWattsPerSqFt,
   rToU,
   toBtuHFt2,
   toBtuU,
   toF,
+  toFt,
   toSqFt,
   toWattsPerSqFt,
   uToR,
@@ -136,5 +138,26 @@ describe('the IP U-value conversion', () => {
     expect(toBtuU(1.2)).toBeCloseTo(0.211, 3);
     expect(toBtuU(0.15)).toBeCloseTo(0.026, 3);
     expect(toBtuU(0.18)).toBeCloseTo(0.032, 3);
+  });
+});
+
+describe('length converts, and is not quietly an area', () => {
+  it('round-trips', () => {
+    for (const metres of [0.1, 3.5, 20, 25, 100]) {
+      expect(fromFt(toFt(metres))).toBeCloseTo(metres, 12);
+    }
+  });
+
+  it('gives the familiar numbers', () => {
+    expect(toFt(1)).toBeCloseTo(3.280839895, 9);
+    expect(fromFt(1)).toBe(0.3048);
+    // A 3.5 m storey is 11.5 ft, the number the sketch box now shows under IP.
+    expect(toFt(3.5)).toBeCloseTo(11.4829, 4);
+  });
+
+  it('is NOT the area factor — the two are a common slip apart', () => {
+    // 10.76 is ft² per m². Using it on a length turns a 25 m wall into 269 ft.
+    expect(toFt(25)).toBeCloseTo(82.02, 2);
+    expect(toSqFt(25)).toBeCloseTo(269.1, 1);
   });
 });

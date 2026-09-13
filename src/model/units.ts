@@ -23,6 +23,8 @@ import type { UnitSystem } from './types';
 
 /** 1 W = 3.412141633… Btu/h. */
 export const BTU_H_PER_WATT = 3.412141633;
+/** 1 ft = 0.3048 m, exactly, by international agreement since 1959. */
+export const M_PER_FT = 0.3048;
 /** 1 m² = 10.7639104 ft². */
 export const SQFT_PER_SQM = 10.7639104;
 /** 1 W/m² = 0.3169983… Btu/h·ft². */
@@ -63,6 +65,22 @@ export function deltaFromF(fahrenheitDegrees: number): number {
 /** W → Btu/h. */
 export function toBtuH(watts: number): number {
   return watts * BTU_H_PER_WATT;
+}
+
+/**
+ * m → ft. A DIMENSION, not an area.
+ *
+ * The sketch box is the only place in the tool where a plain length reaches a
+ * text field, and shipping without this is what let that box show 25 metres,
+ * unlabelled, to a user reading feet.
+ */
+export function toFt(metres: number): number {
+  return metres / M_PER_FT;
+}
+
+/** ft → m. */
+export function fromFt(feet: number): number {
+  return feet * M_PER_FT;
 }
 
 /** m² → ft². */
@@ -135,6 +153,7 @@ export function rToU(r: number, units: UnitSystem): number {
 
 export interface UnitLabels {
   temperature: string;
+  length: string;
   temperatureDelta: string;
   area: string;
   heatFlow: string;
@@ -150,6 +169,7 @@ export const LABELS: Record<UnitSystem, UnitLabels> = {
   IP: {
     temperature: '°F',
     temperatureDelta: '°F',
+    length: 'ft',
     area: 'ft²',
     heatFlow: 'Btu/h',
     heatFlux: 'Btu/h·ft²',
@@ -162,6 +182,7 @@ export const LABELS: Record<UnitSystem, UnitLabels> = {
   SI: {
     temperature: '°C',
     temperatureDelta: 'K',
+    length: 'm',
     area: 'm²',
     heatFlow: 'W',
     heatFlux: 'W/m²',

@@ -9,7 +9,7 @@ import type { BoxDimensions } from '../engine/sketchBox';
 import { wallToFloorRatio } from '../engine/ua';
 import { OFFICE } from '../model/buildingTypes';
 import type { Conditions, DesignDay, Envelope, Gains, Surface, SurfaceSlot, UnitSystem } from '../model/types';
-import { fromBtuU, fromSqFt, LABELS, rToU, toBtuU, toSqFt, uToR } from '../model/units';
+import { fromBtuU, fromFt, fromSqFt, LABELS, rToU, toBtuU, toF, toFt, toSqFt, uToR } from '../model/units';
 import { cellStyle as cell, NumberCell } from './NumberCell';
 
 /**
@@ -71,6 +71,32 @@ export function EnvelopePanel({
   const worst = result.hours[shownHour]!;
   const terms: SectionTerm[] = [...worst.lossTerms, ...worst.gainTerms];
   const labels = LABELS[units];
+  const ip = units === 'IP';
+  const groundTemperature = ip ? toF(conditions.groundTemperature) : conditions.groundTemperature;
+
+  // The box is held in canonical SI like everything else; IP is a display
+  // transform on the way into the field and back out of it. Length, width and
+  // storey height are all LENGTHS — storeys and WWR are the only two here that
+  // genuinely carry no unit.
+  // `aria` must CONTAIN the visible caption, or voice control cannot address a
+  // field by the words printed above it (WCAG 2.5.3). Hence "Box WWR,
+  // window-to-wall ratio" rather than the expansion alone.
+  const boxFields = [
+    { key: 'length', caption: `Length, ${labels.length}`, aria: `Box length, ${labels.length}`, decimals: ip ? 0 : 1 },
+    { key: 'width', caption: `Width, ${labels.length}`, aria: `Box width, ${labels.length}`, decimals: ip ? 0 : 1 },
+    { key: 'storeyHeight', caption: `Storey height, ${labels.length}`, aria: `Box storey height, ${labels.length}`, decimals: 1 },
+    { key: 'storeys', caption: 'Storeys', aria: 'Box storeys', decimals: 0 },
+    { key: 'windowToWallRatio', caption: 'WWR', aria: 'Box WWR, window-to-wall ratio', decimals: 2 },
+  ] as const;
+
+  const isLength = (key: keyof BoxDimensions) =>
+    key === 'length' || key === 'width' || key === 'storeyHeight';
+
+  const showBox = (key: keyof BoxDimensions) =>
+    ip && isLength(key) ? toFt(box[key]) : box[key];
+
+  const takeBox = (key: keyof BoxDimensions, typed: number) =>
+    setBox({ ...box, [key]: Math.max(0, ip && isLength(key) ? fromFt(typed) : typed) });
 
   const applyBox = () => {
     const areas = areasFromBox(box);
@@ -212,9 +238,12 @@ export function EnvelopePanel({
                 >
                   <td style={{ padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
                     {surface.label}
+                    {/* This read "ground at 55 °F" as a literal: the wrong
+                        system under SI, and the wrong NUMBER on any site whose
+                        annual mean pulled the ground off the rule of thumb. */}
                     {surface.boundary === 'ground' && (
                       <span style={{ color: 'var(--muted)', fontSize: 11 }}>
-                        {' '}· ground at 55 °F
+                        {' '}· ground at {groundTemperature.toFixed(0)} {labels.temperature}
                       </span>
                     )}
                   </td>
@@ -264,32 +293,23 @@ export function EnvelopePanel({
         </p>
 
         <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 14, alignItems: 'flex-end' }}>
-          {(
-            [
-              ['Length', 'length'],
-              ['Width', 'width'],
-              ['Storey height', 'storeyHeight'],
-              ['Storeys', 'storeys'],
-              ['WWR', 'windowToWallRatio'],
-            ] as const
-          ).map(([label, key]) => (
-            <label key={key} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11 }}>
-              <span className="eyebrow">{label}</span>
-              <input
-                type="number"
-                value={box[key]}
-                step={key === 'windowToWallRatio' ? 0.05 : 1}
-                onChange={(e) => setBox({ ...box, [key]: Number(e.target.value) })}
+          {boxFields.map(({ key, caption, aria, decimals }) => (
+            <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11 }}>
+              <span className="eyebrow">{caption}</span>
+              <NumberCell
+                label={aria}
+                value={showBox(key)}
+                decimals={decimals}
+                onCommit={(next) => takeBox(key, next)}
                 style={{
-                  font: 'inherit',
                   width: 74,
+                  textAlign: 'left',
                   padding: '5px 7px',
                   background: 'var(--page)',
-                  color: 'var(--ink)',
                   border: '1px solid var(--border)',
                 }}
               />
-            </label>
+            </div>
           ))}
           <button
             type="button"

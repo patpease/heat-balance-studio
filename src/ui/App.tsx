@@ -121,6 +121,7 @@ export function App() {
         site={site}
         designDay={designDay}
         conditions={conditions}
+        units={units}
         onApply={(nextSite, nextDay, nextConditions) => {
           setSite(nextSite);
           setDesignDay(nextDay);

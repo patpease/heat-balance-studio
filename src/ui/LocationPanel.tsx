@@ -5,8 +5,8 @@ import { readWeatherFile } from '../climate/weatherFile';
 import type { GeocodeMatch } from '../climate/openMeteo';
 import { resolveGroundTemperature } from '../engine/ua';
 import { GROUND_DRIFT_LIMIT_K } from '../model/defaults';
-import type { Conditions, DesignDay, Site } from '../model/types';
-import { toF } from '../model/units';
+import type { Conditions, DesignDay, Site, UnitSystem } from '../model/types';
+import { deltaToF, LABELS, toF, toFt } from '../model/units';
 
 /**
  * Location, and the weather that follows from it.
@@ -22,16 +22,23 @@ import { toF } from '../model/units';
  * silent selection dangerous: it would be correct almost always and wrong
  * invisibly, and a design day derived for the wrong town never announces
  * itself.
+ *
+ * **This panel prints temperatures, so it needs `units`.** It shipped without
+ * them and stayed in Fahrenheit under SI — a number that is still plausible,
+ * still has a unit beside it, and is simply the other system's answer. Note
+ * that the ground-drift limit is a temperature DIFFERENCE and takes
+ * `deltaToF`: 3 K of drift is 5.4 °F of drift, not 37.4 °F.
  */
 
 export interface LocationPanelProps {
   readonly site: Site;
   readonly designDay: DesignDay;
   readonly conditions: Conditions;
+  readonly units: UnitSystem;
   readonly onApply: (site: Site, designDay: DesignDay, conditions: Conditions) => void;
 }
 
-export function LocationPanel({ site, designDay, conditions, onApply }: LocationPanelProps) {
+export function LocationPanel({ site, designDay, conditions, units, onApply }: LocationPanelProps) {
   const [query, setQuery] = useState('');
   const [matches, setMatches] = useState<readonly GeocodeMatch[] | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -118,10 +125,17 @@ export function LocationPanel({ site, designDay, conditions, onApply }: Location
     if (problems.length > 0) setStatus(problems.join(' '));
   };
 
+  const labels = LABELS[units];
+  const ip = units === 'IP';
+  /** An absolute temperature, in the displayed system. */
+  const temp = (celsius: number) => (ip ? toF(celsius) : celsius);
+  /** A temperature DIFFERENCE. Never `temp` — see the note above. */
+  const drift = ip ? deltaToF(GROUND_DRIFT_LIMIT_K).toFixed(1) : String(GROUND_DRIFT_LIMIT_K);
+
   const groundNote =
     conditions.groundTemperatureBasis === 'rule-of-thumb'
-      ? `ground ${toF(conditions.groundTemperature).toFixed(0)} °F, the rule of thumb`
-      : `ground ${toF(conditions.groundTemperature).toFixed(1)} °F, this site’s annual mean — more than ${GROUND_DRIFT_LIMIT_K} K from the rule of thumb`;
+      ? `ground ${temp(conditions.groundTemperature).toFixed(0)} ${labels.temperature}, the rule of thumb`
+      : `ground ${temp(conditions.groundTemperature).toFixed(1)} ${labels.temperature}, this site’s annual mean — more than ${drift} ${labels.temperatureDelta} from the rule of thumb`;
 
   return (
     <section className="panel" style={{ padding: '14px 18px', display: 'grid', gap: 12 }}>
@@ -174,7 +188,8 @@ export function LocationPanel({ site, designDay, conditions, onApply }: Location
             >
               {match.label}
               <span style={{ color: 'var(--muted)' }}>
-                {' '}· {match.latitude.toFixed(2)}, {match.longitude.toFixed(2)} · {Math.round(match.elevation)} m
+                {' '}· {match.latitude.toFixed(2)}, {match.longitude.toFixed(2)} ·{' '}
+                {Math.round(ip ? toFt(match.elevation) : match.elevation).toLocaleString('en-US')} {labels.length}
               </span>
             </button>
           ))}
@@ -184,7 +199,7 @@ export function LocationPanel({ site, designDay, conditions, onApply }: Location
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'baseline', fontSize: 11 }}>
         <span style={{ color: 'var(--ink)', fontSize: 13 }}>{site.label}</span>
         <span style={{ color: 'var(--loss)' }}>
-          99.6% design {toF(designDay.minimum).toFixed(1)} °F
+          99.6% design {temp(designDay.minimum).toFixed(1)} {labels.temperature}
         </span>
         <span style={{ color: 'var(--muted)' }}>{groundNote}</span>
         <span style={{ color: 'var(--muted)', marginLeft: 'auto' }}>{designDay.provenance}</span>

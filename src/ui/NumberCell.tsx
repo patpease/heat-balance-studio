@@ -22,12 +22,16 @@ export function NumberCell({
   decimals,
   onCommit,
   label,
+  style,
 }: {
   readonly value: number;
   readonly decimals: number;
   readonly onCommit: (next: number) => void;
   /** Announced to a screen reader. "Windows U-value", not "value". */
   readonly label: string;
+  /** Merged over the base. The sketch-box fields are boxed rather than flush,
+   *  but the draft-and-commit behaviour must not be forked to get that. */
+  readonly style?: CSSProperties;
 }) {
   const formatted = value.toFixed(decimals);
   const [draft, setDraft] = useState(formatted);
@@ -67,6 +71,7 @@ export function NumberCell({
         color: 'var(--ink)',
         border: '1px solid transparent',
         borderRadius: 2,
+        ...style,
       }}
     />
   );
