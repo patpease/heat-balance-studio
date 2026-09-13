@@ -51,6 +51,11 @@ worker/          the Worker entry point. An adapter and nothing more.
    carry a source per density, through to the field help text. Unverified rows
    do not ship.
 
+Anything printed with a unit reads it from `LABELS[units]`, and any temperature
+literal in JSX is a bug waiting to be found — `· ground at 55 °F` sat in the
+envelope table for eight phases, wrong in SI and wrong on any site whose annual
+mean pulls the ground off the rule of thumb.
+
 ## Verifying a change
 
 ```bash
@@ -92,6 +97,22 @@ number that no user ever had.
 - **A `k` floor that draws a stub arrow for a 0 W term.** People at 06:00 is
   exactly zero. An unoccupied hour must draw no people arrow at all, or the
   drawing asserts a gain that is not there.
+- **A panel that prints a number and never asked for `units`.** `LocationPanel`
+  shipped without the prop at all, so it stayed in Fahrenheit under SI. There is
+  no failing conversion to find — the wiring is simply absent, the build is
+  green, and the number is still plausible with a unit beside it. Every other
+  panel took `units`, which is exactly why nobody looked at this one.
+- **An entry field with no unit printed on it.** The sketch box held metres and
+  showed `25` to a user reading feet. The missing label is cosmetic; the
+  consequence is not. `80 × 60` meant as feet became a 4,800 m² floor — eleven
+  times the building drawn — and the verdict followed it without complaint.
+  `tests/unitSwitch.test.tsx` asserts the two systems land a factor of 10.76
+  apart, because before the fix both returned the same number and *that
+  equality was the bug*.
+- **Treating storey height as one of the "unitless" box fields.** Storeys and
+  WWR carry no unit. Length, width and storey height are all lengths. Converting
+  two of the three is worse than converting none: two foot fields beside one
+  metre field, all unlabelled.
 - **A fixed 800 W arrow reference.** Real values saturate it — the worked
   example's windows term is 4,063 W against a clamp equivalent to 1,840 W, so
   windows and roof render identically despite a 1.5× difference. Derive the
