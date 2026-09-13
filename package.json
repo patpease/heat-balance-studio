@@ -15,7 +15,9 @@
     "preview:worker": "npm run build && wrangler dev --port 8789",
     "deploy": "npm run build && wrangler deploy",
     "import:gains": "node scripts/import-gain-data.mjs",
-    "gains:schedule-sheet": "node scripts/regen-schedule-sheet.mjs"
+    "gains:schedule-sheet": "node scripts/regen-schedule-sheet.mjs",
+    "import:pnnl": "node scripts/import-pnnl.mjs",
+    "import:massings": "node scripts/import-massings.mjs"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.3.0",

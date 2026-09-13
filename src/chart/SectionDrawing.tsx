@@ -1,6 +1,6 @@
 import { useId } from 'react';
 
-import { OFFICE_GROUND_LINE, OFFICE_PERSON_HEAD } from '../model/buildingTypes';
+import { GROUND_LINES, PERSON_HEADS } from '../model/buildingTypes';
 import type { BuildingType, SurfaceSlot } from '../model/types';
 import { arrowGeometry, SHAFT_LENGTH } from './arrowScale';
 
@@ -91,7 +91,7 @@ export function SectionDrawing({
         {type.soil.map((rect, i) => (
           <rect key={i} {...rect} fill={`url(#${soilId})`} opacity="0.8" />
         ))}
-        <path d={OFFICE_GROUND_LINE} fill="none" stroke="var(--ground-line)" strokeWidth="2.2" />
+        <path d={GROUND_LINES[type.id]} fill="none" stroke="var(--ground-line)" strokeWidth="2.2" />
 
         <g stroke="var(--ink)" strokeWidth="2.8" fill="var(--massing-fill)" fillOpacity="var(--massing-fill-opacity)">
           {type.shell.map((path, i) => (
@@ -107,7 +107,7 @@ export function SectionDrawing({
         </g>
 
         <g stroke="var(--gain)" fill="none" strokeWidth="2.2">
-          <circle cx={OFFICE_PERSON_HEAD.cx} cy={OFFICE_PERSON_HEAD.cy} r={OFFICE_PERSON_HEAD.r} />
+          <circle cx={PERSON_HEADS[type.id].cx} cy={PERSON_HEADS[type.id].cy} r={PERSON_HEADS[type.id].r} />
           {type.glyphs.map((g, i) => (
             <path key={i} d={g.d} strokeWidth={g.role === 'glyph-light' ? 1.4 : 2.2} />
           ))}

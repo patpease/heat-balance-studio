@@ -1,12 +1,15 @@
 /**
  * Starting values.
  *
- * **Every density here is provisional.** They are representative of ASHRAE
- * 90.1-era office assumptions but have not been checked against the published
- * tables, and this tool's rule is that a number badged with a standard's name
- * must carry its citation. So the preset is called "Office (provisional)" and
- * `citation` says so on every row — the field help text renders it, and the
- * name changes only when the sourced data arrives.
+ * **These are DERIVED, not typed.** Every density and every schedule below comes
+ * from the Medium Office row of `gainPresets.ts`, which is generated from the
+ * PNNL prototype scorecards. Editing a number here does nothing; edit the sheet
+ * in `docs/gain-data/` and re-run `npm run import:gains`.
+ *
+ * Lighting is the one exception, and it is deliberate: the PNNL models are the
+ * 90.1-2004 vintage, whose lighting runs well above current code. In a tool
+ * asking whether a building can need no heating, overstated lighting flatters
+ * every answer — so lighting comes from the 90.1 Building Area Method instead.
  *
  * IT equipment ships at ZERO rather than at a plausible-looking number. 90.1
  * does not break receptacle load into IT and misc, and real values span three
@@ -17,12 +20,7 @@
 
 import { DEFAULT_PRESET_ID, presetById } from './gainPresets';
 import type { GainPreset } from './gainPresets';
-import {
-  ALWAYS_ON,
-  OFFICE_LIGHTING,
-  OFFICE_MISC_EQUIPMENT,
-  OFFICE_OCCUPANCY,
-} from './schedules';
+import { presetSchedules } from './presetSchedules';
 import type { Conditions, Gains, Surface } from './types';
 import { fromF } from './units';
 
@@ -97,12 +95,9 @@ export const DEFAULT_GAINS: Gains = {
     // because the user cannot change it.
     spaceFraction: 1,
   },
-  schedules: {
-    occupancy: OFFICE_OCCUPANCY,
-    lighting: OFFICE_LIGHTING,
-    miscEquipment: OFFICE_MISC_EQUIPMENT,
-    itEquipment: ALWAYS_ON,
-  },
+  // The office preset's OWN profiles, not the hand-typed OFFICE_* constants —
+  // those stay in schedules.ts for the frozen worked example.
+  schedules: presetSchedules(OFFICE_PRESET),
   preset: OFFICE_PRESET.label,
 };
 

@@ -89,9 +89,12 @@ describe('IT equipment', () => {
     expect(OFFICE_DENSITIES.itEquipment.citation).not.toMatch(/ASHRAE/i);
   });
 
-  it('defaults to the flat 24/7 strip', () => {
-    expect(DEFAULT_GAINS.schedules.itEquipment).toBe(ALWAYS_ON);
+  it('defaults to a flat 24/7 strip', () => {
+    // No longer the ALWAYS_ON object itself: the schedules now come from the
+    // building type. Flatness is the contract, not object identity.
+    expect(DEFAULT_GAINS.schedules.itEquipment.fractions).toHaveLength(24);
     expect(DEFAULT_GAINS.schedules.itEquipment.fractions.every((f) => f === 1)).toBe(true);
+    expect(DEFAULT_GAINS.schedules.itEquipment.source).toBe('preset');
   });
 
   it('offers presets spanning the real range, none of them cited', () => {
@@ -164,6 +167,8 @@ describe('schedule presets', () => {
   });
 
   it('leave occupancy genuinely empty overnight, which is the point', () => {
-    expect(DEFAULT_GAINS.schedules.occupancy.fractions[6]).toBe(0);
+    // Hour 5 rather than 6: the Medium Office prototype starts its ramp at 06:00
+    // with 0.10, where the old hand-shaped profile was still flat until 07:00.
+    expect(DEFAULT_GAINS.schedules.occupancy.fractions[5]).toBe(0);
   });
 });

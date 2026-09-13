@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:wght@400&display=swap" rel="stylesheet" />
+<style>
+  body { margin: 0; background: #15181B; }
+  a { color: #55C0A5; }
+  a:hover { color: #D8DEE3; }
+</style>
+</helmet>
+<div style="min-height:100vh;padding:40px 32px 56px;font-family:'IBM Plex Mono',ui-monospace,monospace;color:#D8DEE3;background:#15181B;box-sizing:border-box">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="hb-sketch" x="-12%" y="-12%" width="124%" height="124%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.016" numOctaves="3" seed="9" result="hbnoise" />
+        <feDisplacementMap in="SourceGraphic" in2="hbnoise" scale="3.4" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+      <pattern id="hb-soil" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+        <line x1="0" y1="0" x2="0" y2="16" stroke="#4C565D" stroke-width="1.1" />
+      </pattern>
+      <pattern id="hb-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+        <path d="M40 0 L0 0 L0 40" fill="none" stroke="#2B3137" stroke-width="1" />
+      </pattern>
+    </defs>
+  </svg>
+
+  <div style="max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:28px">
+    <header style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;justify-content:space-between;border-bottom:1px solid #343A40;padding-bottom:18px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#8A949B">Heat Balance Studio</div>
+        <h1 style="margin:0;font-family:'IBM Plex Serif',Georgia,serif;font-weight:400;font-size:32px;letter-spacing:-0.01em">Massing set — six building types</h1>
+      </div>
+      <div style="font-size:13px;line-height:1.55;color:#AAB3B9;max-width:460px;text-align:right">Isolated graphics, no annotation. Same eight surfaces and the same neutral arrow at every scale — each carries a <code style="color:#55C0A5">data-surface</code> attribute and a type-prefixed id.</div>
+    </header>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:20px">
+      <div style="background:#23272B;border:1px solid #343A40;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:14px 18px;border-bottom:1px solid #343A40;font-size:11px;letter-spacing:0.18em;text-transform:uppercase"><span>Single-family home</span><span style="color:#8A949B">01 · home</span></div>
+        <svg viewBox="-120 -60 1000 860" style="display:block;width:100%;height:auto" role="img" aria-label="Single-family home section">
+          <rect x="-120" y="-60" width="1000" height="860" fill="url(#hb-grid)" />
+          <g filter="url(#hb-sketch)" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="300" y="430" width="580" height="370" fill="url(#hb-soil)" opacity="0.8" />
+            <rect x="-120" y="556" width="1000" height="244" fill="url(#hb-soil)" opacity="0.8" />
+            <path d="M880 431 C 640 428 520 433 400 430 C 366 429 332 432 301 430 L 300 490 C 303 522 297 540 300 557 C 200 554 100 559 -120 556" fill="none" stroke="#78848C" stroke-width="2.2" />
+            <g stroke="#D8DEE3" stroke-width="2.8" fill="#2C3238" fill-opacity="0.7">
+              <path d="M190 430 C 187 372 193 306 190 250 C 254 213 320 175 380 162 C 442 176 508 214 570 250 C 567 310 573 374 570 430 C 508 433 442 427 380 430 C 318 433 252 427 190 430 Z" />
+              <path d="M170 262 C 240 218 312 176 380 154 C 450 178 522 220 590 262" fill="none" />
+              <path d="M190 430 C 252 427 318 433 380 430 C 442 427 508 433 570 430" fill="none" />
+              <path d="M191 442 C 253 439 318 445 380 442 C 442 439 507 445 569 442" fill="none" stroke-width="1.4" opacity="0.5" />
+              <path d="M184 352 C 190 349 196 355 202 352 C 205 374 199 394 202 412 C 196 415 190 409 184 412" fill="none" stroke-width="2.4" />
+              <path d="M570 276 C 564 273 558 279 552 276 C 549 298 555 318 552 336 C 558 339 564 333 570 336" fill="none" stroke-width="2.4" />
+            </g>
+            <g stroke="#55C0A5" fill="none" stroke-width="2.2">
+              <circle cx="320" cy="384" r="7" />
+              <path d="M320 391 C 321 402 319 410 320 418 M308 398 C 313 395 327 395 332 398 M320 418 L 312 432 M320 418 L 328 432" />
+              <path d="M400 268 C 401 282 399 292 400 300" stroke-width="1.4" />
+              <path d="M386 314 C 389 305 394 300 400 300 C 406 300 411 305 414 314 C 405 316 395 312 386 314 Z" />
+              <path d="M456 396 C 470 393 484 399 498 396 C 495 406 501 414 498 424 C 484 427 470 421 456 424 C 459 414 453 406 456 396 Z" />
+            </g>
+            <g stroke="#55C0A5" fill="#55C0A5" stroke-width="3">
+              <g id="home-gain-people" data-surface="gain-people" transform="translate(320,376) rotate(-108)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="home-gain-lighting" data-surface="gain-lighting" transform="translate(386,308) rotate(172)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="home-gain-equipment" data-surface="gain-equipment" transform="translate(477,390) rotate(-72)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+            </g>
+            <g stroke="#E4805A" fill="#E4805A" stroke-width="3">
+              <g id="home-loss-roof" data-surface="loss-roof" transform="translate(480,206) rotate(-62)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="home-loss-walls" data-surface="loss-walls" transform="translate(190,296) rotate(180)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="home-loss-windows" data-surface="loss-windows" transform="translate(570,306)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="home-loss-ground-floor" data-surface="loss-ground-floor" transform="translate(470,446) rotate(90)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="home-loss-exposed-floor" data-surface="loss-exposed-floor" transform="translate(240,446) rotate(90)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div style="background:#23272B;border:1px solid #343A40;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:14px 18px;border-bottom:1px solid #343A40;font-size:11px;letter-spacing:0.18em;text-transform:uppercase"><span>Office</span><span style="color:#8A949B">02 · office</span></div>
+        <svg viewBox="-120 -60 1000 860" style="display:block;width:100%;height:auto" role="img" aria-label="Office building section">
+          <rect x="-120" y="-60" width="1000" height="860" fill="url(#hb-grid)" />
+          <g filter="url(#hb-sketch)" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="270" y="454" width="610" height="346" fill="url(#hb-soil)" opacity="0.8" />
+            <rect x="-120" y="556" width="1000" height="244" fill="url(#hb-soil)" opacity="0.8" />
+            <path d="M880 455 C 640 452 520 457 400 454 C 366 453 300 456 271 454 L 270 500 C 273 528 267 542 270 557 C 180 554 90 559 -120 556" fill="none" stroke="#78848C" stroke-width="2.2" />
+            <g stroke="#D8DEE3" stroke-width="2.8" fill="#2C3238" fill-opacity="0.7">
+              <path d="M176 454 C 173 380 179 290 176 208 C 254 205 340 211 424 208 C 508 205 576 211 636 208 C 633 290 639 380 636 454 C 566 457 494 451 424 454 C 342 457 250 451 176 454 Z" />
+              <path d="M164 208 C 264 205 366 211 466 208 C 534 206 588 210 648 208" fill="none" />
+              <path d="M176 454 C 250 451 342 457 424 454 C 494 451 566 457 636 454" fill="none" />
+              <path d="M177 466 C 251 463 342 469 424 466 C 494 463 565 469 635 466" fill="none" stroke-width="1.4" opacity="0.5" />
+              <path d="M176 290 C 250 287 342 293 424 290 C 494 287 566 293 636 290" fill="none" stroke-width="1.4" opacity="0.45" />
+              <path d="M176 372 C 250 369 342 375 424 372 C 494 369 566 375 636 372" fill="none" stroke-width="1.4" opacity="0.45" />
+              <path d="M636 236 C 610 233 584 239 558 236 C 555 254 561 266 558 278 C 584 281 610 275 636 278" fill="none" stroke-width="2.4" />
+              <path d="M636 318 C 610 315 584 321 558 318 C 555 336 561 348 558 360 C 584 363 610 357 636 360" fill="none" stroke-width="2.4" />
+              <path d="M176 236 C 200 233 224 239 248 236 C 245 254 251 266 248 278 C 224 281 200 275 176 278" fill="none" stroke-width="2.4" />
+            </g>
+            <g stroke="#55C0A5" fill="none" stroke-width="2.2">
+              <circle cx="300" cy="404" r="7" />
+              <path d="M300 411 C 301 422 299 430 300 438 M288 418 C 293 415 307 415 312 418 M300 438 L 292 452 M300 438 L 308 452" />
+              <path d="M420 230 C 421 244 419 254 420 262" stroke-width="1.4" />
+              <path d="M406 276 C 409 267 414 262 420 262 C 426 262 431 267 434 276 C 425 278 415 274 406 276 Z" />
+              <path d="M460 412 C 474 409 488 415 502 412 C 499 422 505 430 502 440 C 488 443 474 437 460 440 C 463 430 457 422 460 412 Z" />
+            </g>
+            <g stroke="#55C0A5" fill="#55C0A5" stroke-width="3">
+              <g id="office-gain-people" data-surface="gain-people" transform="translate(300,396) rotate(-108)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="office-gain-lighting" data-surface="gain-lighting" transform="translate(406,272) rotate(174)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="office-gain-equipment" data-surface="gain-equipment" transform="translate(481,406) rotate(-72)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+            </g>
+            <g stroke="#E4805A" fill="#E4805A" stroke-width="3">
+              <g id="office-loss-roof" data-surface="loss-roof" transform="translate(400,202) rotate(-90)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="office-loss-walls" data-surface="loss-walls" transform="translate(176,336) rotate(180)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="office-loss-windows" data-surface="loss-windows" transform="translate(636,258)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="office-loss-ground-floor" data-surface="loss-ground-floor" transform="translate(470,470) rotate(90)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="office-loss-exposed-floor" data-surface="loss-exposed-floor" transform="translate(222,470) rotate(90)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div style="background:#23272B;border:1px solid #343A40;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:14px 18px;border-bottom:1px solid #343A40;font-size:11px;letter-spacing:0.18em;text-transform:uppercase"><span>Multi-family</span><span style="color:#8A949B">03 · multifamily</span></div>
+        <svg viewBox="-120 -60 1000 860" style="display:block;width:100%;height:auto" role="img" aria-label="Multi-family building section">
+          <rect x="-120" y="-60" width="1000" height="860" fill="url(#hb-grid)" />
+          <g filter="url(#hb-sketch)" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="286" y="470" width="594" height="330" fill="url(#hb-soil)" opacity="0.8" />
+            <rect x="-120" y="562" width="1000" height="238" fill="url(#hb-soil)" opacity="0.8" />
+            <path d="M880 471 C 640 468 520 473 400 470 C 366 469 316 472 287 470 L 286 512 C 289 538 283 550 286 563 C 190 560 96 565 -120 562" fill="none" stroke="#78848C" stroke-width="2.2" />
+            <g stroke="#D8DEE3" stroke-width="2.8" fill="#2C3238" fill-opacity="0.7">
+              <path d="M212 470 C 209 380 215 272 212 164 C 280 161 356 167 424 164 C 492 161 550 167 600 164 C 597 272 603 380 600 470 C 542 473 484 467 424 470 C 356 473 282 467 212 470 Z" />
+              <path d="M200 164 C 288 161 378 167 466 164 C 522 162 562 166 612 164" fill="none" />
+              <path d="M212 470 C 282 467 356 473 424 470 C 484 467 542 473 600 470" fill="none" />
+              <path d="M213 482 C 283 479 356 485 424 482 C 484 479 541 485 599 482" fill="none" stroke-width="1.4" opacity="0.5" />
+              <path d="M212 240 C 282 237 356 243 424 240 C 484 237 542 243 600 240 M212 316 C 282 313 356 319 424 316 C 484 313 542 319 600 316 M212 392 C 282 389 356 395 424 392 C 484 389 542 395 600 392" fill="none" stroke-width="1.4" opacity="0.45" />
+              <path d="M600 190 C 578 187 556 193 534 190 C 531 204 537 214 534 224 C 556 227 578 221 600 224 M600 266 C 578 263 556 269 534 266 C 531 280 537 290 534 300 C 556 303 578 297 600 300 M600 342 C 578 339 556 345 534 342 C 531 356 537 366 534 376 C 556 379 578 373 600 376" fill="none" stroke-width="2.4" />
+              <path d="M212 190 C 232 187 252 193 272 190 C 269 204 275 214 272 224 C 252 227 232 221 212 224 M212 342 C 232 339 252 345 272 342 C 269 356 275 366 272 376 C 252 379 232 373 212 376" fill="none" stroke-width="2.4" />
+            </g>
+            <g stroke="#55C0A5" fill="none" stroke-width="2.2">
+              <circle cx="316" cy="420" r="7" />
+              <path d="M316 427 C 317 438 315 446 316 454 M304 434 C 309 431 323 431 328 434 M316 454 L 308 468 M316 454 L 324 468" />
+              <path d="M420 186 C 421 200 419 210 420 218" stroke-width="1.4" />
+              <path d="M406 232 C 409 223 414 218 420 218 C 426 218 431 223 434 232 C 425 234 415 230 406 232 Z" />
+              <path d="M466 428 C 480 425 494 431 508 428 C 505 438 511 446 508 456 C 494 459 480 453 466 456 C 469 446 463 438 466 428 Z" />
+            </g>
+            <g stroke="#55C0A5" fill="#55C0A5" stroke-width="3">
+              <g id="multifamily-gain-people" data-surface="gain-people" transform="translate(316,412) rotate(-108)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="multifamily-gain-lighting" data-surface="gain-lighting" transform="translate(406,228) rotate(174)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="multifamily-gain-equipment" data-surface="gain-equipment" transform="translate(487,422) rotate(-72)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+            </g>
+            <g stroke="#E4805A" fill="#E4805A" stroke-width="3">
+              <g id="multifamily-loss-roof" data-surface="loss-roof" transform="translate(400,158) rotate(-90)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="multifamily-loss-walls" data-surface="loss-walls" transform="translate(212,290) rotate(180)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="multifamily-loss-windows" data-surface="loss-windows" transform="translate(600,207)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="multifamily-loss-ground-floor" data-surface="loss-ground-floor" transform="translate(474,486) rotate(90)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="multifamily-loss-exposed-floor" data-surface="loss-exposed-floor" transform="translate(252,486) rotate(90)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div style="background:#23272B;border:1px solid #343A40;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:14px 18px;border-bottom:1px solid #343A40;font-size:11px;letter-spacing:0.18em;text-transform:uppercase"><span>School</span><span style="color:#8A949B">04 · school</span></div>
+        <svg viewBox="-120 -60 1000 860" style="display:block;width:100%;height:auto" role="img" aria-label="School building section">
+          <rect x="-120" y="-60" width="1000" height="860" fill="url(#hb-grid)" />
+          <g filter="url(#hb-sketch)" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="254" y="462" width="626" height="338" fill="url(#hb-soil)" opacity="0.8" />
+            <rect x="-120" y="560" width="1000" height="240" fill="url(#hb-soil)" opacity="0.8" />
+            <path d="M880 463 C 640 460 520 465 400 462 C 350 461 290 464 255 462 L 254 506 C 257 534 251 548 254 561 C 170 558 84 563 -120 560" fill="none" stroke="#78848C" stroke-width="2.2" />
+            <g stroke="#D8DEE3" stroke-width="2.8" fill="#2C3238" fill-opacity="0.7">
+              <path d="M158 462 C 155 404 161 340 158 286 C 226 283 300 289 368 286 C 365 322 371 350 368 376 C 442 373 524 379 604 376 C 601 404 607 436 604 462 C 530 465 448 459 368 462 C 296 465 226 459 158 462 Z" />
+              <path d="M146 286 C 218 283 292 289 364 286 C 394 285 410 288 380 288" fill="none" />
+              <path d="M356 376 C 438 373 526 379 616 376" fill="none" />
+              <path d="M158 462 C 226 459 296 465 368 462 C 448 459 530 465 604 462" fill="none" />
+              <path d="M159 474 C 227 471 296 477 368 474 C 448 471 529 477 603 474" fill="none" stroke-width="1.4" opacity="0.5" />
+              <path d="M226 240 C 226 256 226 270 226 286 M300 240 C 300 256 300 270 300 286" fill="none" stroke-width="2.2" />
+              <path d="M214 240 C 244 237 274 243 304 240 C 288 224 268 214 258 212 C 246 216 230 226 214 240 Z" />
+              <path d="M158 322 C 182 319 206 325 230 322 C 227 344 233 364 230 382 C 206 385 182 379 158 382" fill="none" stroke-width="2.4" />
+              <path d="M604 404 C 578 401 552 407 526 404 C 523 420 529 430 526 440 C 552 443 578 437 604 440" fill="none" stroke-width="2.4" />
+            </g>
+            <g stroke="#55C0A5" fill="none" stroke-width="2.2">
+              <circle cx="284" cy="398" r="7" />
+              <path d="M284 405 C 285 416 283 424 284 432 M272 412 C 277 409 291 409 296 412 M284 432 L 276 446 M284 432 L 292 446" />
+              <path d="M470 400 C 471 414 469 424 470 432" stroke-width="1.4" />
+              <path d="M456 446 C 459 437 464 432 470 432 C 476 432 481 437 484 446 C 475 448 465 444 456 446 Z" />
+              <path d="M198 412 C 212 409 226 415 240 412 C 237 422 243 430 240 440 C 226 443 212 437 198 440 C 201 430 195 422 198 412 Z" />
+            </g>
+            <g stroke="#55C0A5" fill="#55C0A5" stroke-width="3">
+              <g id="school-gain-people" data-surface="gain-people" transform="translate(284,390) rotate(-98)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="school-gain-lighting" data-surface="gain-lighting" transform="translate(456,442) rotate(178)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="school-gain-equipment" data-surface="gain-equipment" transform="translate(219,406) rotate(-118)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+            </g>
+            <g stroke="#E4805A" fill="#E4805A" stroke-width="3">
+              <g id="school-loss-roof" data-surface="loss-roof" transform="translate(500,370) rotate(-90)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="school-loss-walls" data-surface="loss-walls" transform="translate(604,418)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="school-loss-windows" data-surface="loss-windows" transform="translate(158,352) rotate(180)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="school-loss-ground-floor" data-surface="loss-ground-floor" transform="translate(500,478) rotate(90)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="school-loss-exposed-floor" data-surface="loss-exposed-floor" transform="translate(206,478) rotate(90)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div style="background:#23272B;border:1px solid #343A40;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:14px 18px;border-bottom:1px solid #343A40;font-size:11px;letter-spacing:0.18em;text-transform:uppercase"><span>Laboratory</span><span style="color:#8A949B">05 · lab</span></div>
+        <svg viewBox="-120 -60 1000 860" style="display:block;width:100%;height:auto" role="img" aria-label="Laboratory building section">
+          <rect x="-120" y="-60" width="1000" height="860" fill="url(#hb-grid)" />
+          <g filter="url(#hb-sketch)" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="276" y="458" width="604" height="342" fill="url(#hb-soil)" opacity="0.8" />
+            <rect x="-120" y="558" width="1000" height="242" fill="url(#hb-soil)" opacity="0.8" />
+            <path d="M880 459 C 640 456 520 461 400 458 C 356 457 306 460 277 458 L 276 502 C 279 532 273 546 276 559 C 184 556 92 561 -120 558" fill="none" stroke="#78848C" stroke-width="2.2" />
+            <g stroke="#D8DEE3" stroke-width="2.8" fill="#2C3238" fill-opacity="0.7">
+              <path d="M186 458 C 183 386 189 300 186 224 C 258 221 336 227 410 224 C 484 221 552 227 614 224 C 611 300 617 386 614 458 C 544 461 470 455 410 458 C 336 461 258 455 186 458 Z" />
+              <path d="M174 224 C 270 221 372 227 470 224 C 526 222 566 226 626 224" fill="none" />
+              <path d="M186 458 C 258 455 336 461 410 458 C 470 455 544 461 614 458" fill="none" />
+              <path d="M187 470 C 259 467 336 473 410 470 C 470 467 543 473 613 470" fill="none" stroke-width="1.4" opacity="0.5" />
+              <path d="M186 342 C 258 339 336 345 410 342 C 470 339 544 345 614 342" fill="none" stroke-width="1.4" opacity="0.45" />
+              <path d="M230 224 C 228 208 232 196 230 180 C 250 177 272 183 292 180 C 290 196 294 208 292 224" fill="none" stroke-width="2.4" />
+              <path d="M340 224 C 338 206 342 190 340 172 C 348 169 358 175 366 172 C 364 190 368 206 366 224" fill="none" stroke-width="2.4" />
+              <path d="M340 172 C 338 158 348 150 360 152" fill="none" stroke-width="2.2" />
+              <path d="M614 254 C 588 251 562 257 536 254 C 533 272 539 288 536 306 C 562 309 588 303 614 306" fill="none" stroke-width="2.4" />
+              <path d="M186 254 C 210 251 234 257 258 254 C 255 272 261 288 258 306 C 234 309 210 303 186 306" fill="none" stroke-width="2.4" />
+            </g>
+            <g stroke="#55C0A5" fill="none" stroke-width="2.2">
+              <circle cx="306" cy="392" r="7" />
+              <path d="M306 399 C 307 410 305 418 306 426 M294 406 C 299 403 313 403 318 406 M306 426 L 298 440 M306 426 L 314 440" />
+              <path d="M410 250 C 411 264 409 274 410 282" stroke-width="1.4" />
+              <path d="M396 296 C 399 287 404 282 410 282 C 416 282 421 287 424 296 C 415 298 405 294 396 296 Z" />
+              <path d="M470 396 C 488 393 506 399 524 396 C 521 408 527 420 524 432 C 506 435 488 429 470 432 C 473 420 467 408 470 396 Z" />
+              <path d="M480 410 C 492 410 500 410 512 410" stroke-width="1.4" opacity="0.6" />
+            </g>
+            <g stroke="#55C0A5" fill="#55C0A5" stroke-width="3">
+              <g id="lab-gain-people" data-surface="gain-people" transform="translate(306,384) rotate(-108)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="lab-gain-lighting" data-surface="gain-lighting" transform="translate(396,292) rotate(174)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="lab-gain-equipment" data-surface="gain-equipment" transform="translate(497,390) rotate(-74)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+            </g>
+            <g stroke="#E4805A" fill="#E4805A" stroke-width="3">
+              <g id="lab-loss-roof" data-surface="loss-roof" transform="translate(460,218) rotate(-90)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="lab-loss-walls" data-surface="loss-walls" transform="translate(186,392) rotate(180)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="lab-loss-windows" data-surface="loss-windows" transform="translate(614,280)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="lab-loss-ground-floor" data-surface="loss-ground-floor" transform="translate(480,474) rotate(90)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="lab-loss-exposed-floor" data-surface="loss-exposed-floor" transform="translate(230,474) rotate(90)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div style="background:#23272B;border:1px solid #343A40;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:14px 18px;border-bottom:1px solid #343A40;font-size:11px;letter-spacing:0.18em;text-transform:uppercase"><span>Civic</span><span style="color:#8A949B">06 · civic</span></div>
+        <svg viewBox="-120 -60 1000 860" style="display:block;width:100%;height:auto" role="img" aria-label="Civic building section">
+          <rect x="-120" y="-60" width="1000" height="860" fill="url(#hb-grid)" />
+          <g filter="url(#hb-sketch)" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="264" y="470" width="616" height="330" fill="url(#hb-soil)" opacity="0.8" />
+            <rect x="-120" y="562" width="1000" height="238" fill="url(#hb-soil)" opacity="0.8" />
+            <path d="M880 471 C 640 468 520 473 400 470 C 350 469 296 472 265 470 L 264 512 C 267 538 261 550 264 563 C 176 560 88 565 -120 562" fill="none" stroke="#78848C" stroke-width="2.2" />
+            <g stroke="#D8DEE3" stroke-width="2.8" fill="#2C3238" fill-opacity="0.7">
+              <path d="M170 470 C 167 428 173 380 170 336 C 170 300 176 268 174 244 C 256 241 348 247 430 244 C 512 241 582 247 626 244 C 624 268 630 300 630 336 C 627 380 633 428 630 470 C 556 473 474 467 400 470 C 322 473 244 467 170 470 Z" />
+              <path d="M160 244 C 260 241 364 247 466 244 C 528 242 580 246 640 244" fill="none" />
+              <path d="M186 244 C 218 208 274 168 330 152 C 388 168 444 208 476 244" fill="none" stroke-width="2.6" />
+              <path d="M222 244 C 222 288 222 320 222 356 M262 244 C 262 288 262 320 262 356 M302 244 C 302 288 302 320 302 356 M342 244 C 342 288 342 320 342 356 M382 244 C 382 288 382 320 382 356" fill="none" stroke-width="2.2" />
+              <path d="M170 366 C 250 363 322 369 400 366 C 470 363 556 369 630 366" fill="none" stroke-width="2.4" />
+              <path d="M170 470 C 244 467 322 473 400 470 C 474 467 556 473 630 470" fill="none" />
+              <path d="M171 482 C 245 479 322 485 400 482 C 474 479 555 485 629 482" fill="none" stroke-width="1.4" opacity="0.5" />
+              <path d="M630 396 C 598 393 566 399 534 396 C 531 414 537 430 534 448 C 566 451 598 445 630 448" fill="none" stroke-width="2.4" />
+              <path d="M440 296 C 464 293 488 299 512 296 C 509 314 515 330 512 348 C 488 351 464 345 440 348" fill="none" stroke-width="2.4" />
+            </g>
+            <g stroke="#55C0A5" fill="none" stroke-width="2.2">
+              <circle cx="330" cy="402" r="7" />
+              <path d="M330 409 C 331 420 329 428 330 436 M318 416 C 323 413 337 413 342 416 M330 436 L 322 450 M330 436 L 338 450" />
+              <path d="M430 288 C 431 302 429 312 430 320" stroke-width="1.4" />
+              <path d="M416 334 C 419 325 424 320 430 320 C 436 320 441 325 444 334 C 435 336 425 332 416 334 Z" />
+              <path d="M470 408 C 484 405 498 411 512 408 C 509 418 515 426 512 436 C 498 439 484 433 470 436 C 473 426 467 418 470 408 Z" />
+            </g>
+            <g stroke="#55C0A5" fill="#55C0A5" stroke-width="3">
+              <g id="civic-gain-people" data-surface="gain-people" transform="translate(330,394) rotate(-112)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="civic-gain-lighting" data-surface="gain-lighting" transform="translate(416,330) rotate(176)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="civic-gain-equipment" data-surface="gain-equipment" transform="translate(491,402) rotate(-70)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+            </g>
+            <g stroke="#E4805A" fill="#E4805A" stroke-width="3">
+              <g id="civic-loss-roof" data-surface="loss-roof" transform="translate(390,196) rotate(-64)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="civic-loss-walls" data-surface="loss-walls" transform="translate(170,300) rotate(180)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="civic-loss-windows" data-surface="loss-windows" transform="translate(630,422)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="civic-loss-ground-floor" data-surface="loss-ground-floor" transform="translate(500,486) rotate(90)"><g class="hb-shaft"><path d="M0 0 C 22 -5 44 4 64 -2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+              <g id="civic-loss-exposed-floor" data-surface="loss-exposed-floor" transform="translate(216,486) rotate(90)"><g class="hb-shaft"><path d="M0 0 C 22 4 44 -5 64 2 L 88 0" fill="none" vector-effect="non-scaling-stroke" /></g><g transform="translate(88,0)"><g class="hb-tip"><path d="M6 0 L -16 -11 L -10 0 L -16 11 Z" stroke="none" /></g></g></g>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

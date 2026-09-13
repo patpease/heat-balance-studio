@@ -1,87 +1,90 @@
-# Internal gain data templates
+# Internal gain data
 
-Three sheets. Open each in Excel, fill what you can, leave the rest blank.
-**A blank imports as "no default", never as zero.**
+**Both CSVs in this folder are generated. Do not hand-edit them.**
 
-## What the tool needs
-
-For each hour `h` of the design day the engine computes:
-
-```
-Q_gain(h) = f_occ(h)·N·q_p  +  f_lgt(h)·LPD·A  +  f_misc(h)·MPD·A  +  f_IT(h)·IPD·φ·A
+```bash
+npm run import:pnnl     # PNNL_Prototype_Scorecards.xlsx -> the two CSVs here
+npm run import:gains    # the two CSVs -> src/model/gainPresets.ts
 ```
 
-| Sheet | Supplies |
+`import:pnnl` takes the workbook path as an argument and defaults to
+`/Users/patrickpease/Projects/Temp/PNNL_Prototype_Scorecards.xlsx`. The workbook
+itself is **not committed** — it is a 1.7 MB binary published by PNNL, and the
+reviewable artifact is the CSV it produces.
+
+## What comes from where
+
+| Quantity | Source |
 |---|---|
-| `1-space-type-densities.csv` | the densities — `N` via occupancy density, `q_p`, `LPD`, `MPD` |
-| `2-space-type-schedules.csv` | the four hourly fraction rows `f(h)`, per space type |
-| `3-it-equipment-types.csv` | `IPD` and `φ`, which cannot be looked up the way the others can |
+| occupancy density | PNNL prototype, area-weighted over conditioned zones |
+| equipment density | PNNL prototype, area-weighted, process zones excluded |
+| all four schedules | PNNL prototype, weekday, area-weighted across space types |
+| **lighting** | **ASHRAE 90.1 Building Area Method — deliberately not PNNL** |
+| sensible heat per person | ASHRAE Handbook Fundamentals |
+| IT equipment | none; the user adds it from the IT picker |
 
-## Units — fill in what the column headers name, not SI
+## The five decisions baked into the importer
 
-The tool stores canonical SI and converts at the display edge, so the import
-does the conversion. Collect in the units the source standard publishes:
+Each one is visible in the citation the number ends up carrying, and each is
+printed on every run so it cannot quietly drift.
 
-| Quantity | Collect in |
-|---|---|
-| occupancy | ft² per person |
-| people | Btu/h **sensible** per person — sensible only, no latent |
-| lighting | W/ft² |
-| misc equipment | W/ft² |
-| IT equipment | W/ft² of **building** area (sheet 3 derives it from room area) |
+**1. Lighting does not come from the workbook.** Every row in it is the
+90.1-2004 vintage, whose LPD runs well above current code — office 1.02 against
+0.64 W/ft², multifamily 1.60 against 0.45. In a tool asking whether a building
+can need no heating, overstated lighting flatters every answer, so lighting
+comes from the Building Area Method table in the importer instead.
 
-## Source columns are not optional
+**2. Process zones are excluded.** A kitchen carries 99–273 W/ft² of equipment,
+most of which leaves through the hood. This tool has no exhaust model and would
+count all of it as sensible space gain. The rule is a name match on
+kitchen/laundry plus a 15 W/ft² ceiling, which also catches an elevator pump
+room at 155.6 and the Large Office data-centre zones. Twelve zones are excluded
+and the run prints every one. Without this a Boston primary school comes out
+with a balance point of **−73 °F** on the strength of one 1,808 ft² kitchen.
 
-Every density gets a citation naming edition and table — `ASHRAE 90.1-2022
-Table 9.5.1`, `ASHRAE Fundamentals 2021 Ch.18 Table 1`. A number badged with a
-standard's name that has not been checked against the standard is worse than no
-default. **Rows still marked UNVERIFIED will not ship.**
+**3. IT is not in the workbook.** "Electric Equipment" is plug and process
+combined, with no IT split and no IT schedule, so all of it lands in misc and IT
+stays "none" for every type.
 
-This is the whole point of the exercise: the preset is currently called
-"Office (provisional)" and every field's help text says so. That name changes
-only when these sheets come back.
+**4. Plenums are not floor area.** They are flagged `Conditioned=Yes` and carry
+a blank lighting cell. Counting them halves a prototype's weighted density —
+Medium Office came out at 0.51 W/ft², below present-day code, which was the
+tell.
 
-## Sheet 1 — one row per space type
+**5. Weekday only.** The source publishes Saturday and Sunday profiles too. A
+heating design day is the cold weekday.
 
-The `office-open` row is filled so the format is unambiguous. Those numbers are
-**my placeholders, not sourced values**, and need replacing along with their
-source cells. Every other row is blank. Add or delete rows freely; `space_type`
-is the key and must stay unique.
+## How a schedule is built
 
-For reference, the placeholder row is what ships today, converted from the SI in
-`src/model/defaults.ts` — 18.6 m²/person, 75 W/person, 6.5 W/m², 7.0 W/m².
+One prototype has several schedule variants, named for space types
+("Guest Rooms", "Others", "All (Except Perimeter_mid_ZN_2)"). The importer joins
+those names to the model's thermal zones and area-weights the result:
 
-One exception: the `it_equip` cell on that row carries the **worked example's**
-1.0 W/m², not the shipped default. IT ships at **zero** by design — see sheet 3.
+- **"Others" is the residual** — it takes whatever no named variant claimed.
+- Summer-holiday variants are dropped; a heating design day has school in
+  session.
+- A zone two variants claim equally splits its area between them, which averages
+  the apartment "Stay Home"/"Working" pair rather than picking one.
+- Matching is word-prefix on both sides (`class`/`classroom`, `guest`/
+  `GUESTROOM101`) with a substring fallback for zone names written without
+  separators (`REARSTAIRSFLR1`). Two spelling aliases are needed:
+  `Patient Rm` → `PATROOM`, `Physical Therapy` → `PHYSTHERAPY`.
 
-## Sheet 2 — four rows per space type, one per category
+Seven schedules cover less than the whole floor plate because the missing zones
+carry no row in the scorecard at all — Large Office's perimeter-mid zones have
+no occupancy row, hospital corridors have no equipment row. The profile then
+describes the area that does have one, and the run prints the coverage.
 
-Fractions 0–1, weekday. Two things worth holding to:
+## The two borrowed types
 
-- **The overnight floor decides the answer.** The verdict is usually settled
-  between 04:00 and 07:00, so a lighting or equipment row that drops to zero at
-  night flatters every building the tool will ever see.
-- **`it_equip` stays flat at 1** unless the space genuinely powers its IT down.
+PNNL publishes no single-family and no laboratory model.
 
-## Sheet 3 — IT equipment
+- **Single Family Home** takes Mid-rise Apartment wholesale.
+- **Laboratory** takes Hospital densities on the Medium Office schedule: similar
+  benches and plant, ordinary business hours. Its lighting is the Building Area
+  Method laboratory value (0.91 W/ft²), not the healthcare one.
 
-IT is the one row with no 90.1 equivalent, because 90.1 does not split
-receptacle load into IT and misc. It also spans three orders of magnitude: an
-IDF closet is a fraction of a W/ft² of building area, a data hall is hundreds of
-W/ft² of white space. So it is collected as intensity-of-IT-room × share of
-building, and the tool ships `none` rather than a number that would look
-authoritative and be wrong most of the time.
+## Known gap
 
-`φ` is the fraction of IT power released into the **conditioned space**. A data
-hall on its own cooling system rejects its heat outdoors and warms nothing;
-counting it as space heat is the likeliest way this row gets misused. v1 holds
-φ at 1.0 and shows no control, so the value collected here matters from v2 on.
-
-## When you send them back
-
-**There is no importer yet** — the earlier note in this file claimed the build
-had one, and that was wrong. Writing it is a small job once the real column
-shapes are known, and it will generate `src/model/defaults.ts` with the
-citations carried through to the field help text so the tool can show where each
-number came from. Ask for it when the sheets are ready and it gets written
-against the actual data rather than against a guess at it.
+The 90.1 citations name a document but no edition or table, so a reader cannot
+look those numbers up. `import:gains` reports them on every run.

@@ -129,6 +129,23 @@ number that no user ever had.
   reference per project, and hold it constant across the 24 hours so scrubbing
   shows the gains genuinely collapsing overnight.
 
+## Three generators, and nothing between them typed by hand
+
+```
+PNNL_Prototype_Scorecards.xlsx --import:pnnl--> docs/gain-data/*.csv
+docs/gain-data/*.csv           --import:gains-> src/model/gainPresets.ts
+docs/massings/*.dc.html        --import:massings-> src/model/buildingTypes.ts
+```
+
+`gainPresets.ts` and `buildingTypes.ts` are both GENERATED. Do not edit either;
+edit the source and re-run. Each importer refuses to write rather than emit
+something unciteable, and each prints what it had to decide.
+
+The massing extractor was validated by round-tripping the one massing that was
+already in the repo: its nine shell paths came back byte-for-byte identical, and
+the ground line and person's head matched. That is the check that made it safe
+to trust for the other five.
+
 ## Internal gains are generated, not typed
 
 `src/model/gainPresets.ts` is GENERATED from `docs/gain-data/` — do not edit it.
@@ -142,14 +159,22 @@ any row already filled. It seeds the office rows by reading the arrays out of
 `schedules.ts`, so the sheet's exemplar cannot drift from the profile the tool
 actually runs.
 
-Two things about the current data are worth holding in mind:
+Four things about the current data are worth holding in mind:
 
-1. **The schedules are not per-type yet.** All 13 building types run the office
-   profile, `SCHEDULES_ARE_PROVISIONAL` is true, and the panel says so in plain
-   text. This matters more than the densities do — the verdict is decided
-   between 04:00 and 07:00, so a schedule's overnight floor moves the answer
-   more than the density it scales.
-2. **The citations name a document but no edition or table.** The importer
+1. **Lighting does not come from PNNL.** Those models are the 90.1-2004 vintage,
+   whose LPD runs well above current code — office 1.02 against 0.64 W/ft². In a
+   tool asking whether a building can need no heating, overstated lighting
+   flatters every answer, so lighting comes from the 90.1 Building Area Method
+   and everything else from PNNL.
+2. **Process zones are excluded** — kitchens, laundries, machine rooms, and any
+   zone over 15 W/ft². This tool has no exhaust model and would count a
+   99–273 W/ft² kitchen as sensible space heat. Without the rule a Boston
+   primary school came out with a **−73 °F balance point** on the strength of
+   one 1,808 ft² kitchen.
+3. **Two types borrow.** Single Family uses the Mid-rise Apartment model, and
+   Laboratory uses Hospital densities on the Medium Office schedule — similar
+   benches and plant, ordinary business hours. PNNL publishes neither.
+4. **The citations name a document but no edition or table.** The importer
    reports every one of them on each run rather than hiding it. A citation a
    reader cannot look up only half-satisfies the rule it exists for.
 
@@ -157,6 +182,23 @@ The worked example (`SAMPLE_GAINS`, aliased as `BOSTON_GAINS`) is deliberately
 NOT a preset. It is the golden-case fixture, and repointing it at the sourced
 office row would rewrite the documented 15 deficit hours, 14.7 W/m² and 44.8%
 windows lever.
+
+## The section drawing follows the building type
+
+Eighteen types share six massings — a hotel is drawn as multifamily because
+guest rooms stack the same way, and Warehouse borrows the single-family shed,
+which is the closest shape in the set rather than a likeness. The mapping lives
+in `massing` on each preset, so it travels with the data rather than sitting in
+the component.
+
+`data-surface` on the canvas and `SurfaceSlot` in the model are the same names
+on purpose: that contract is why six massings need no renderer changes between
+them, and a test asserts every massing carries all nine slots. A missing slot
+would silently drop that surface's arrow rather than fail.
+
+The canvas draws eight anchors — it predates the misc/IT split — so the ninth
+and the rack it leaves from are both derived from the equipment glyph, by the
+same offset, so the two cannot disagree.
 
 ## Where the detail lives
 

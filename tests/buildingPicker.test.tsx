@@ -53,19 +53,30 @@ describe('the building-type picker', () => {
 
   it('applies the chosen type to every density', () => {
     const { select, onChange } = panel(DEFAULT_GAINS);
-    fireEvent.change(select, { target: { value: 'restaurant' } });
+    fireEvent.change(select, { target: { value: 'restaurant-full' } });
 
     const next = onChange.mock.calls.at(-1)![0] as Gains;
-    const restaurant = presetById('restaurant')!;
-    expect(next.preset).toBe('Restaurant');
+    const restaurant = presetById('restaurant-full')!;
+    expect(next.preset).toBe('Full Service Restaurant');
     expect(next.lighting.powerDensity).toBeCloseTo(restaurant.lighting.value!, 9);
     expect(next.occupancy.areaPerPerson).toBeCloseTo(restaurant.areaPerPerson.value!, 9);
   });
 
-  it('says plainly that the schedules are not per-type yet', () => {
+  it('names where the numbers came from, including the lighting exception', () => {
     const { container } = render(
       <GainsPanel gains={DEFAULT_GAINS} floorArea={500} units="IP" marker={6} onChange={vi.fn()} />,
     );
-    expect(container.textContent).toContain('office profile');
+    expect(container.textContent).toContain('PNNL prototype');
+    expect(container.textContent).toContain('Building Area Method');
+  });
+
+  it('swaps the schedules as well as the densities', () => {
+    const { select, onChange } = panel(DEFAULT_GAINS);
+    fireEvent.change(select, { target: { value: 'apartment-midrise' } });
+    const next = onChange.mock.calls.at(-1)![0] as Gains;
+    // An office is empty at 05:00; an apartment is not. If the picker moved
+    // only densities, this would still read zero.
+    expect(DEFAULT_GAINS.schedules.occupancy.fractions[5]).toBe(0);
+    expect(next.schedules.occupancy.fractions[5]!).toBeGreaterThan(0.9);
   });
 });

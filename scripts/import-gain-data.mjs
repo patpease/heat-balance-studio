@@ -19,6 +19,7 @@ import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SHEET_1 = path.join(ROOT, 'docs/gain-data/1-space-type-densities.csv');
+const SHEET_2 = path.join(ROOT, 'docs/gain-data/2-space-type-schedules.csv');
 const OUT = path.join(ROOT, 'src/model/gainPresets.ts');
 
 // Exact-by-definition, matching src/model/units.ts.
@@ -90,6 +91,36 @@ function citation(record, column, { value, fallback }) {
   return raw;
 }
 
+/**
+ * Sheet 2: four 24-hour rows per building type.
+ *
+ * The overnight floor is the load-bearing part of every one of these. This
+ * tool's verdict is decided between 04:00 and 07:00, so a lighting or equipment
+ * row that drops to zero at night flatters the building more than any density
+ * error would. A row of 24 zeroes is therefore reported, not accepted quietly.
+ */
+/** The section drawings that exist. A type must name one of these. */
+const MASSINGS = new Set(["office", "school", "lab", "civic", "multifamily", "home"]);
+
+const CATEGORIES = { occupancy: 'occupancy', lighting: 'lighting', misc_equip: 'miscEquipment', it_equip: 'itEquipment' };
+
+function readSchedules() {
+  const byType = new Map();
+  for (const row of toRecords(parseCsv(fs.readFileSync(SHEET_2, 'utf8')))) {
+    const field = CATEGORIES[row.category];
+    if (!field) { problems.push(`schedules: unknown category "${row.category}" for ${row.space_type}`); continue; }
+    const hours = Array.from({ length: 24 }, (_, h) => row[`h${String(h).padStart(2, '0')}`]);
+    if (hours.some((v) => v === '' || v === undefined)) { problems.push(`${row.space_type}/${row.category}: not all 24 hours are filled`); continue; }
+    const values = hours.map(Number);
+    if (values.some((v) => !Number.isFinite(v) || v < 0 || v > 1)) { problems.push(`${row.space_type}/${row.category}: fractions must be 0-1`); continue; }
+    if (values.every((v) => v === 0)) notes.push(`${row.space_type}/${row.category} is zero for all 24 hours`);
+    if (!byType.has(row.space_type)) byType.set(row.space_type, {});
+    byType.get(row.space_type)[field] = { values, source: row.source ?? '' };
+  }
+  return byType;
+}
+
+const schedulesByType = readSchedules();
 const records = toRecords(parseCsv(fs.readFileSync(SHEET_1, 'utf8')));
 const seen = new Set();
 
@@ -106,8 +137,18 @@ const presets = records.map((r) => {
 
   const NO_IT = 'No published default exists — pick an IT space type or enter a value';
 
+  const schedules = schedulesByType.get(r.space_type);
+  for (const field of Object.values(CATEGORIES)) {
+    if (!schedules?.[field]) problems.push(`${r.space_type}: sheet 2 has no ${field} schedule`);
+  }
+
+  const massing = (r.massing ?? "").trim();
+  if (!MASSINGS.has(massing)) problems.push(`${r.space_type}: massing "${massing}" is not one of ${[...MASSINGS].join(", ")}`);
+
   return {
     id: r.space_type,
+    massing,
+    schedules,
     label: r.label,
     areaPerPerson: {
       value: areaPerPersonFt2 === null ? null : areaPerPersonFt2 / SQFT_PER_SQM,
@@ -143,6 +184,9 @@ if (problems.length > 0) {
 
 const q = (s) => JSON.stringify(s);
 const density = (d) => `{ value: ${d.value === null ? 'null' : Number(d.value.toFixed(6))}, citation: ${q(d.citation)} }`;
+const sched = (s) => `{ values: [${s.values.join(', ')}], source: ${q(s.source)} }`;
+const schedules = (p) => Object.values(CATEGORIES)
+  .map((field) => `      ${field}: ${sched(p.schedules[field])},`).join('\n');
 
 const file = `/**
  * Internal-gain presets, one per building type.
@@ -154,13 +198,17 @@ const file = `/**
  * The sheet is collected in IP because that is what the standards publish;
  * the conversion happens once, in the importer.
  *
- * **The schedules are NOT from this data.** Sheet 2 has not come back yet, so
- * every preset below runs on the office profile, and \`SCHEDULES_ARE_PROVISIONAL\`
- * says so on the page. That matters more than it sounds: this tool's verdict is
- * decided between 04:00 and 07:00, so the overnight floor of a schedule moves
- * the answer more than the density it scales. A warehouse on an office lighting
- * profile is wrong in a way a user cannot see.
+ * Each preset carries its own four 24-hour weekday profiles. That matters more
+ * than the densities do: the verdict is decided between 04:00 and 07:00, so a
+ * schedule's overnight floor moves the answer more than the density it scales.
+ * An apartment sits near full occupancy at 05:00 where an office sits at zero,
+ * and no density can express that.
+ *
+ * WEEKDAY ONLY. The source publishes Saturday and Sunday profiles too; a
+ * heating design day is the cold weekday, so those are not imported.
  */
+
+import type { BuildingTypeId } from './types';
 
 export interface PresetDensity {
   /** Canonical SI. Null means the sheet left it blank: no default, not zero. */
@@ -168,9 +216,25 @@ export interface PresetDensity {
   readonly citation: string;
 }
 
+export interface PresetSchedule {
+  /** Exactly 24, each 0-1. Hour 0 is 00:00-01:00 local standard time. */
+  readonly values: readonly number[];
+  readonly source: string;
+}
+
+export interface PresetSchedules {
+  readonly occupancy: PresetSchedule;
+  readonly lighting: PresetSchedule;
+  readonly miscEquipment: PresetSchedule;
+  readonly itEquipment: PresetSchedule;
+}
+
 export interface GainPreset {
   readonly id: string;
   readonly label: string;
+  /** Which section drawing this type is shown with. Six cover eighteen types. */
+  readonly massing: BuildingTypeId;
+  readonly schedules: PresetSchedules;
   /** m² per person. */
   readonly areaPerPerson: PresetDensity;
   /** W per person, sensible only. */
@@ -184,17 +248,14 @@ export interface GainPreset {
   readonly notes: string;
 }
 
-/**
- * True while the presets below borrow the office schedule. The UI renders a
- * line saying so; delete this flag when sheet 2 lands and the schedules become
- * per-type.
- */
-export const SCHEDULES_ARE_PROVISIONAL = true;
-
 export const GAIN_PRESETS: readonly GainPreset[] = Object.freeze([
 ${presets.map((p) => `  {
     id: ${q(p.id)},
     label: ${q(p.label)},
+    massing: ${q(p.massing)},
+    schedules: {
+${schedules(p)}
+    },
     areaPerPerson: ${density(p.areaPerPerson)},
     sensiblePerPerson: ${density(p.sensiblePerPerson)},
     lighting: ${density(p.lighting)},
@@ -205,7 +266,7 @@ ${presets.map((p) => `  {
 ]);
 
 /** The one the tool opens on. */
-export const DEFAULT_PRESET_ID = 'office';
+export const DEFAULT_PRESET_ID = 'office-medium';
 
 export function presetById(id: string): GainPreset | undefined {
   return GAIN_PRESETS.find((p) => p.id === id);

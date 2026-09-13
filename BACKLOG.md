@@ -51,9 +51,15 @@ Revisit when a fourth tool needs EPW.
 - [ ] **Citation editions** — all 52 sources name a document but no edition or
       table, so a reader cannot look the numbers up. The importer reports them
       on every run.
-- [ ] **Per-type schedules** — sheet 2 rebuilt against the new keys and waiting.
-      Until it lands all 13 types run the office profile and the panel says so.
-      This moves the answer more than the densities did.
+- [x] **Per-type schedules** — from the PNNL scorecards, 13 Sep 2026. Weekday,
+      area-weighted across each prototype's space types.
+- [x] **Entry by building type** — 18 types, 6 massings, drawing follows the
+      picker.
+- [ ] **A warehouse massing.** It currently borrows the single-family shed,
+      which Patrick accepted for v1. It is the one mapping that is a placeholder
+      rather than a reading.
+- [ ] **Saturday and Sunday schedules.** The source publishes them; only the
+      weekday is imported, because a heating design day is the cold weekday.
 - [ ] **Copy review** — `src/config/copy.ts`, four `DRAFT_NOTES` open.
 - [ ] **peasestudio.com tool card** — `SITE_RECORD` drafted, not yet added to
       the site's curated index.

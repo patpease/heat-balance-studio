@@ -15,10 +15,12 @@
  * equipment: a watt of 24/7 load is worth roughly three times a watt of
  * scheduled load to this answer.
  *
- * SOURCING: these profiles are placeholders pending the schedule data Patrick
- * is collecting. They are shaped correctly but are not yet traceable to a
- * published table, which is why `preset` is named "Office (provisional)" rather
- * than after a standard. A number badged with a standard's name must be cited.
+ * SOURCING: the OFFICE_* profiles below are the original hand-shaped
+ * placeholders. They are no longer what the tool ships — every building type
+ * now carries its own PNNL profile out of `gainPresets.ts` — and survive only
+ * as part of the frozen Boston worked example, whose published numbers depend
+ * on them. That is why the worked example alone still reads
+ * "Office (provisional)": those five densities really are unsourced.
  */
 
 import type { Schedule } from './types';
@@ -69,6 +71,16 @@ export const SCHEDULE_PRESETS: readonly Schedule[] = Object.freeze([
   OFFICE_MISC_EQUIPMENT,
   ALWAYS_ON,
 ]);
+
+/**
+ * A building type's own profile, out of `gainPresets.ts`.
+ *
+ * It stays `source: 'preset'` so the gains panel keeps its badge: these came
+ * from a published model, not from the user dragging bars.
+ */
+export function presetSchedule(id: string, name: string, fractions: readonly number[]): Schedule {
+  return schedule(id, name, [...fractions]);
+}
 
 /** A custom schedule built from 24 user-dragged bars. */
 export function customSchedule(fractions: number[]): Schedule {

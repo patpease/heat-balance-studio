@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { arrowGeometry, MAX_SCALE, MAX_WIDTH, MIN_WIDTH, referenceWatts, SHAFT_LENGTH } from '../src/chart/arrowScale';
 import { areasFromBox, DEFAULT_BOX } from '../src/engine/sketchBox';
-import { BUILDING_TYPES, OFFICE, buildingType } from '../src/model/buildingTypes';
+import { BUILDING_TYPES, GROUND_LINES, OFFICE, PERSON_HEADS, buildingType } from '../src/model/buildingTypes';
 import { solve } from '../src/engine/balance';
 import { wallToFloorRatio } from '../src/engine/ua';
 import { BOSTON_CASE } from './fixtures/boston-office';
@@ -45,10 +45,45 @@ describe('the building type record', () => {
     }
   });
 
-  it('ships one type in v1 and resolves unknown ids to it', () => {
-    expect(BUILDING_TYPES).toHaveLength(1);
+  it('ships all six massings and resolves an unknown id to the office', () => {
+    expect(BUILDING_TYPES).toHaveLength(6);
+    expect(BUILDING_TYPES.map((t) => t.id).sort())
+      .toEqual(['civic', 'home', 'lab', 'multifamily', 'office', 'school']);
     expect(buildingType('office')).toBe(OFFICE);
-    expect(buildingType('lab')).toBe(OFFICE);
+    expect(buildingType('lab')).not.toBe(OFFICE);
+  });
+
+  it('gives every massing the same nine slots, which is what lets one renderer draw them all', () => {
+    // `data-surface` on the canvas and SurfaceSlot in the model are the same
+    // names on purpose. If a massing were missing a slot, that surface's arrow
+    // would silently not be drawn.
+    const expected = [...OFFICE.anchors.map((a) => a.slot)].sort();
+    for (const type of BUILDING_TYPES) {
+      expect([...type.anchors.map((a) => a.slot)].sort(), type.id).toEqual(expected);
+    }
+  });
+
+  it('gives every massing a ground line, a head and a crop', () => {
+    for (const type of BUILDING_TYPES) {
+      expect(GROUND_LINES[type.id], type.id).toMatch(/^M/);
+      expect(PERSON_HEADS[type.id].r, type.id).toBeGreaterThan(0);
+      expect(type.viewBox.split(' '), type.id).toHaveLength(4);
+      expect(type.shell.length, type.id).toBeGreaterThan(3);
+      expect(type.soil.length, type.id).toBeGreaterThan(0);
+    }
+  });
+
+  it('draws the IT rack clear of the equipment it was copied from', () => {
+    // The canvas predates the misc/IT split, so both the ninth arrow and the
+    // rack it leaves from are derived. They must agree, and must not overlap
+    // the equipment glyph.
+    for (const type of BUILDING_TYPES) {
+      const misc = type.anchors.find((a) => a.slot === 'gain-misc-equipment')!;
+      const it = type.anchors.find((a) => a.slot === 'gain-it-equipment')!;
+      expect(it.x, type.id).toBeGreaterThan(misc.x);
+      expect(it.y, type.id).toBe(misc.y);
+      expect(it.rotate, type.id).toBe(misc.rotate);
+    }
   });
 });
 

@@ -294,6 +294,4 @@ export interface BuildingType {
   readonly glyphs: readonly MassingPath[];
   readonly soil: readonly { x: number; y: number; width: number; height: number }[];
   readonly anchors: readonly ArrowAnchor[];
-  /** Keys into the gain presets — picking a type sets the massing and the loads. */
-  readonly defaultSpaceType: string;
 }

@@ -7,7 +7,8 @@ import { solve } from '../engine/balance';
 import { areasFromBox, DEFAULT_BOX } from '../engine/sketchBox';
 import type { BoxDimensions } from '../engine/sketchBox';
 import { wallToFloorRatio } from '../engine/ua';
-import { OFFICE } from '../model/buildingTypes';
+import { buildingType } from '../model/buildingTypes';
+import { GAIN_PRESETS } from '../model/gainPresets';
 import type { Conditions, DesignDay, Envelope, Gains, Surface, SurfaceSlot, UnitSystem } from '../model/types';
 import { fromBtuU, fromFt, fromSqFt, LABELS, rToU, toBtuU, toF, toFt, toSqFt, uToR } from '../model/units';
 import { cellStyle as cell, NumberCell } from './NumberCell';
@@ -73,6 +74,14 @@ export function EnvelopePanel({
   const labels = LABELS[units];
   const ip = units === 'IP';
   const groundTemperature = ip ? toF(conditions.groundTemperature) : conditions.groundTemperature;
+
+  // The drawing follows the building type the gains came from. Six massings
+  // cover eighteen types, so most are shared — a hotel is drawn as multifamily
+  // because guest rooms stack the same way. Edited gains keep whatever was last
+  // chosen: the shape is not what the user changed.
+  const massing = buildingType(
+    GAIN_PRESETS.find((preset) => preset.label === gains.preset)?.massing ?? 'office',
+  );
 
   // The box is held in canonical SI like everything else; IP is a display
   // transform on the way into the field and back out of it. Length, width and
@@ -188,7 +197,7 @@ export function EnvelopePanel({
 
       <div style={{ padding: '8px 8px 0' }}>
         <SectionDrawing
-          type={OFFICE}
+          type={massing}
           terms={terms}
           reference={reference}
           sketch={sketch}

@@ -1,53 +1,73 @@
 space_type,category,h00,h01,h02,h03,h04,h05,h06,h07,h08,h09,h10,h11,h12,h13,h14,h15,h16,h17,h18,h19,h20,h21,h22,h23,source,notes
-assembly,occupancy,,,,,,,,,,,,,,,,,,,,,,,,,,"Weekday, fractions 0–1."
-assembly,lighting,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-assembly,misc_equip,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-assembly,it_equip,,,,,,,,,,,,,,,,,,,,,,,,,,IT runs flat. Change only for a space that genuinely powers down.
-healthcare,occupancy,,,,,,,,,,,,,,,,,,,,,,,,,,"Weekday, fractions 0–1."
-healthcare,lighting,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-healthcare,misc_equip,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-healthcare,it_equip,,,,,,,,,,,,,,,,,,,,,,,,,,IT runs flat. Change only for a space that genuinely powers down.
-hotel,occupancy,,,,,,,,,,,,,,,,,,,,,,,,,,"Weekday, fractions 0–1."
-hotel,lighting,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-hotel,misc_equip,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-hotel,it_equip,,,,,,,,,,,,,,,,,,,,,,,,,,IT runs flat. Change only for a space that genuinely powers down.
-manufacturing,occupancy,,,,,,,,,,,,,,,,,,,,,,,,,,"Weekday, fractions 0–1."
-manufacturing,lighting,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-manufacturing,misc_equip,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-manufacturing,it_equip,,,,,,,,,,,,,,,,,,,,,,,,,,IT runs flat. Change only for a space that genuinely powers down.
-office,occupancy,0,0,0,0,0,0,0,0.1,0.5,0.95,0.95,0.95,0.5,0.95,0.95,0.95,0.95,0.5,0.1,0.05,0,0,0,0,"PLACEHOLDER — the profile the tool ships today, not a sourced one","Weekday, fractions 0–1. This is the shape the tool uses for EVERY type today."
-office,lighting,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.3,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.5,0.3,0.05,0.05,0.05,0.05,"PLACEHOLDER — the profile the tool ships today, not a sourced one",Night floor is load-bearing — a zero here flatters the building. This is the shape the tool uses for EVERY type today.
-office,misc_equip,0.35,0.35,0.35,0.35,0.35,0.35,0.35,0.6,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.6,0.45,0.35,0.35,0.35,0.35,"PLACEHOLDER — the profile the tool ships today, not a sourced one",Night floor is load-bearing — a zero here flatters the building. This is the shape the tool uses for EVERY type today.
-office,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,"PLACEHOLDER — the profile the tool ships today, not a sourced one",IT runs flat. Change only for a space that genuinely powers down. This is the shape the tool uses for EVERY type today.
-restaurant,occupancy,,,,,,,,,,,,,,,,,,,,,,,,,,"Weekday, fractions 0–1."
-restaurant,lighting,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-restaurant,misc_equip,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-restaurant,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,,
-retail,occupancy,,,,,,,,,,,,,,,,,,,,,,,,,,"Weekday, fractions 0–1."
-retail,lighting,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-retail,misc_equip,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-retail,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,,
-school,occupancy,,,,,,,,,,,,,,,,,,,,,,,,,,"Weekday, fractions 0–1."
-school,lighting,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-school,misc_equip,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-school,it_equip,,,,,,,,,,,,,,,,,,,,,,,,,,IT runs flat. Change only for a space that genuinely powers down.
-warehouse,occupancy,,,,,,,,,,,,,,,,,,,,,,,,,,"Weekday, fractions 0–1."
-warehouse,lighting,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-warehouse,misc_equip,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-warehouse,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,,
-residential-single,occupancy,,,,,,,,,,,,,,,,,,,,,,,,,,"Weekday, fractions 0–1."
-residential-single,lighting,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-residential-single,misc_equip,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-residential-single,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,,
-residential-multi,occupancy,,,,,,,,,,,,,,,,,,,,,,,,,,"Weekday, fractions 0–1."
-residential-multi,lighting,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-residential-multi,misc_equip,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-residential-multi,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,,
-library,occupancy,,,,,,,,,,,,,,,,,,,,,,,,,,"Weekday, fractions 0–1."
-library,lighting,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-library,misc_equip,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-library,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,,
-laboratory,occupancy,,,,,,,,,,,,,,,,,,,,,,,,,,"Weekday, fractions 0–1."
-laboratory,lighting,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-laboratory,misc_equip,,,,,,,,,,,,,,,,,,,,,,,,,,Night floor is load-bearing — a zero here flatters the building.
-laboratory,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,,
+office-small,occupancy,0,0,0,0,0,0,0.11,0.21,1,1,1,1,0.6104,1,1,1,1,0.32,0.11,0.11,0.11,0.11,0.05,0,"PNNL prototype scorecards, 90.1-2004 models (OfficeSmall)",
+office-small,lighting,0.18,0.18,0.18,0.18,0.18,0.23,0.23,0.42,0.9,0.9,0.9,0.9,0.8,0.9,0.9,0.9,0.9,0.61,0.42,0.42,0.32,0.32,0.23,0.18,"PNNL prototype scorecards, 90.1-2004 models (OfficeSmall)",
+office-small,misc_equip,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,1,1,1,1,0.94,1,1,1,1,0.5,0.2,0.2,0.2,0.2,0.2,0.2,"PNNL prototype scorecards, 90.1-2004 models (OfficeSmall)",
+office-small,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+office-medium,occupancy,0,0,0,0,0,0,0.1,0.2,0.95,0.95,0.9757,0.95,0.5135,0.95,0.9757,0.95,0.95,0.3,0.1,0.1,0.1,0.1,0.05,0.05,"PNNL prototype scorecards, 90.1-2004 models (OfficeMedium)",
+office-medium,lighting,0.05,0.05,0.05,0.05,0.05,0.1,0.1,0.3,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.5,0.3,0.3,0.2,0.2,0.1,0.05,"PNNL prototype scorecards, 90.1-2004 models (OfficeMedium)",
+office-medium,misc_equip,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.9,0.9,0.9,0.9,0.8,0.9,0.9,0.9,0.9,0.5,0.4,0.4,0.4,0.4,0.4,0.4,"PNNL prototype scorecards, 90.1-2004 models (OfficeMedium)",
+office-medium,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+office-large,occupancy,0,0,0,0,0,0,0.1,0.2,0.95,0.95,0.9933,0.95,0.5228,0.95,0.9933,0.95,0.95,0.3,0.1,0.1,0.1,0.1,0.05,0.05,"PNNL prototype scorecards, 90.1-2004 models (OfficeLarge)",
+office-large,lighting,0.05,0.05,0.05,0.05,0.05,0.1,0.1,0.3,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.5,0.3,0.3,0.2,0.2,0.1,0.05,"PNNL prototype scorecards, 90.1-2004 models (OfficeLarge)",
+office-large,misc_equip,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.9,0.9,0.9,0.9,0.8,0.9,0.9,0.9,0.9,0.5,0.4,0.4,0.4,0.4,0.4,0.4,"PNNL prototype scorecards, 90.1-2004 models (OfficeLarge)",
+office-large,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+retail-standalone,occupancy,0,0,0,0,0,0,0,0.1,0.2,0.5,0.5,0.7,0.7,0.7,0.7,0.8,0.7,0.5,0.5,0.3,0.3,0,0,0,"PNNL prototype scorecards, 90.1-2004 models (RetailStandalone)",
+retail-standalone,lighting,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.2,0.4,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.5,0.5,0.5,0.2,0.05,0.05,"PNNL prototype scorecards, 90.1-2004 models (RetailStandalone)",
+retail-standalone,misc_equip,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.4,0.6,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.7,0.7,0.2,0.2,0.2,"PNNL prototype scorecards, 90.1-2004 models (RetailStandalone)",
+retail-standalone,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+retail-stripmall,occupancy,0,0,0,0,0,0,0,0,0.0333,0.0867,0.1033,0.21,0.2867,0.5033,0.4,0.38,0.33,0.57,0.4467,0.32,0.1533,0.1,0.1,0.0167,"PNNL prototype scorecards, 90.1-2004 models (RetailStripmall)",
+retail-stripmall,lighting,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.14,0.5903,0.9506,0.9506,0.9506,0.9506,0.9506,0.9506,0.9506,0.9506,0.9506,0.9506,0.6808,0.411,0.411,0.2305,"PNNL prototype scorecards, 90.1-2004 models (RetailStripmall)",
+retail-stripmall,misc_equip,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.2,0.6333,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.6333,0.3333,0.3333,0.2,"PNNL prototype scorecards, 90.1-2004 models (RetailStripmall)",
+retail-stripmall,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+school-primary,occupancy,0,0,0,0,0,0,0,0,0.8734,0.918,0.918,0.918,0.8555,0.918,0.8555,0.8898,0.6671,0.6145,0.6145,0.6145,0.598,0,0,0,"PNNL prototype scorecards, 90.1-2004 models (SchoolPrimary)",
+school-primary,lighting,0.1773,0.1773,0.1773,0.1773,0.1773,0.1773,0.1773,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.1773,0.1773,0.1773,"PNNL prototype scorecards, 90.1-2004 models (SchoolPrimary)",
+school-primary,misc_equip,0.3383,0.3383,0.3383,0.3383,0.3383,0.3383,0.3383,0.3383,0.9124,0.9124,0.9171,0.9171,0.9171,0.9124,0.9124,0.9101,0.9101,0.3383,0.3383,0.3383,0.3383,0.3383,0.3383,0.3383,"PNNL prototype scorecards, 90.1-2004 models (SchoolPrimary)",
+school-primary,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+school-secondary,occupancy,0,0,0,0,0,0,0,0,0.95,0.95,0.95,0.95,0.95,0.95,0.95,0.95,0.95,0.95,0.95,0.95,0.95,0,0,0,"PNNL prototype scorecards, 90.1-2004 models (SchoolSecondary)",
+school-secondary,lighting,0.1773,0.1773,0.1773,0.1773,0.1773,0.1773,0.1773,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.1773,0.1773,0.1773,"PNNL prototype scorecards, 90.1-2004 models (SchoolSecondary)",
+school-secondary,misc_equip,0.3419,0.3419,0.3419,0.3419,0.3419,0.3419,0.3419,0.3419,0.9242,0.9242,0.9275,0.9275,0.9275,0.9242,0.9242,0.9226,0.9226,0.3419,0.3419,0.3419,0.3419,0.3419,0.3419,0.3419,"PNNL prototype scorecards, 90.1-2004 models (SchoolSecondary)",
+school-secondary,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+healthcare-outpatient,occupancy,0.05,0.05,0.05,0.05,0.2,0.2,0.5,0.9,0.9,0.9,0.8912,0.8912,0.5612,0.9,0.5524,0.9,0.9,0.9,0.5,0.5,0.2,0.2,0.05,0.05,"PNNL prototype scorecards, 90.1-2004 models (OutPatientHealthCare)",
+healthcare-outpatient,lighting,0.1,0.1,0.1,0.1,0.3,0.3,0.6,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.6,0.6,0.3,0.3,0.1,0.1,"PNNL prototype scorecards, 90.1-2004 models (OutPatientHealthCare)",
+healthcare-outpatient,misc_equip,0.3,0.3,0.3,0.3,0.5,0.5,1,1,1,1,1,1,1,1,1,1,1,1,0.5,0.5,0.3,0.3,0.3,0.3,"PNNL prototype scorecards, 90.1-2004 models (OutPatientHealthCare)",
+healthcare-outpatient,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+hospital,occupancy,0.1621,0.1621,0.1621,0.1621,0.1621,0.1621,0.1621,0.2621,0.5405,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.5405,0.3811,0.3811,0.2811,0.2811,0.1621,0.1621,"PNNL prototype scorecards, 90.1-2004 models (Hospital)",
+hospital,lighting,0.2942,0.2942,0.2942,0.2942,0.2942,0.2942,0.2942,0.5,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.3971,0.3971,0.3971,0.3971,0.3971,0.3971,0.3971,0.2942,"PNNL prototype scorecards, 90.1-2004 models (Hospital)",
+hospital,misc_equip,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.7,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.4,"PNNL prototype scorecards, 90.1-2004 models (Hospital)",
+hospital,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+laboratory,occupancy,0,0,0,0,0,0,0.1,0.2,0.95,0.95,0.9757,0.95,0.5135,0.95,0.9757,0.95,0.95,0.3,0.1,0.1,0.1,0.1,0.05,0.05,"PNNL prototype scorecards, 90.1-2004 models (OfficeMedium)","Hospital equipment on an office schedule: similar benches and plant, ordinary business hours. PNNL publishes no laboratory prototype."
+laboratory,lighting,0.05,0.05,0.05,0.05,0.05,0.1,0.1,0.3,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.5,0.3,0.3,0.2,0.2,0.1,0.05,"PNNL prototype scorecards, 90.1-2004 models (OfficeMedium)","Hospital equipment on an office schedule: similar benches and plant, ordinary business hours. PNNL publishes no laboratory prototype."
+laboratory,misc_equip,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.9,0.9,0.9,0.9,0.8,0.9,0.9,0.9,0.9,0.5,0.4,0.4,0.4,0.4,0.4,0.4,"PNNL prototype scorecards, 90.1-2004 models (OfficeMedium)","Hospital equipment on an office schedule: similar benches and plant, ordinary business hours. PNNL publishes no laboratory prototype."
+laboratory,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+hotel-small,occupancy,0.8364,0.8364,0.8364,0.8364,0.8364,0.8596,0.7224,0.4529,0.4773,0.2885,0.2202,0.2149,0.195,0.2332,0.199,0.3157,0.5215,0.5088,0.4835,0.6702,0.6692,0.7677,0.8417,0.8364,"PNNL prototype scorecards, 90.1-2004 models (HotelSmall)",
+hotel-small,lighting,0.3417,0.3077,0.2669,0.2669,0.2669,0.3622,0.5265,0.6357,0.6121,0.6121,0.5033,0.5033,0.5015,0.5033,0.5033,0.5033,0.5033,0.4982,0.7086,0.8378,0.9024,0.8122,0.6531,0.4166,"PNNL prototype scorecards, 90.1-2004 models (HotelSmall)",
+hotel-small,misc_equip,0.1207,0.1207,0.1207,0.1207,0.1207,0.1702,0.6311,0.8718,0.5027,0.4973,0.2908,0.2817,0.2711,0.2891,0.2891,0.2817,0.2871,0.4839,0.4693,0.4574,0.5931,0.621,0.3273,0.1207,"PNNL prototype scorecards, 90.1-2004 models (HotelSmall)",
+hotel-small,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+hotel-large,occupancy,0.9417,0.9417,0.9417,0.9417,0.9417,0.9417,0.7292,0.4125,0.4125,0.2,0.2,0.2,0.2,0.2,0.2,0.3042,0.5167,0.5167,0.5167,0.7292,0.7292,0.8375,0.9417,0.9417,"PNNL prototype scorecards, 90.1-2004 models (HotelLarge)",
+hotel-large,lighting,0.2083,0.1583,0.1042,0.1042,0.1042,0.2083,0.4167,0.525,0.4167,0.4167,0.2625,0.2625,0.2625,0.2625,0.2625,0.2625,0.2625,0.2625,0.6292,0.8375,0.9417,0.8375,0.6292,0.3125,"PNNL prototype scorecards, 90.1-2004 models (HotelLarge)",
+hotel-large,misc_equip,0.2465,0.2203,0.1941,0.1941,0.1941,0.2465,0.5351,0.7072,0.459,0.459,0.3095,0.3095,0.3095,0.3095,0.3095,0.3095,0.3095,0.4137,0.5971,0.6935,0.7906,0.781,0.5304,0.3107,"PNNL prototype scorecards, 90.1-2004 models (HotelLarge)",
+hotel-large,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+warehouse,occupancy,0,0,0,0,0,0,0.11,0.21,1,1,1,1,0.53,1,1,1,1,0.32,0,0,0,0,0,0,"PNNL prototype scorecards, 90.1-2004 models (Warehouse)","Drawn with the single-family shed: the closest shape in the massing set, not a likeness."
+warehouse,lighting,0.1039,0.1039,0.1039,0.1039,0.1039,0.1039,0.1064,0.5912,0.751,0.8461,0.8461,0.8461,0.8417,0.8461,0.8461,0.8461,0.751,0.6005,0.1039,0.1039,0.1039,0.1039,0.1039,0.1039,"PNNL prototype scorecards, 90.1-2004 models (Warehouse)","Drawn with the single-family shed: the closest shape in the massing set, not a likeness."
+warehouse,misc_equip,0.2524,0.2524,0.2524,0.2524,0.2524,0.2524,0.2524,0.2622,1,1,1,1,0.2838,1,1,1,1,0.2622,0.2524,0.2524,0.2524,0.2524,0.2524,0.2524,"PNNL prototype scorecards, 90.1-2004 models (Warehouse)","Drawn with the single-family shed: the closest shape in the massing set, not a likeness."
+warehouse,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+restaurant-quick,occupancy,0.05,0,0,0,0,0.05,0.1,0.4,0.4,0.4,0.2,0.5,0.8,0.7,0.4,0.2,0.25,0.5,0.8,0.8,0.8,0.5,0.35,0.2,"PNNL prototype scorecards, 90.1-2004 models (RestaurantFastFood)",
+restaurant-quick,lighting,0.15,0.15,0.15,0.15,0.15,0.2,0.4,0.4,0.6,0.6,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.5,0.3,"PNNL prototype scorecards, 90.1-2004 models (RestaurantFastFood)",
+restaurant-quick,misc_equip,0.03,0.02,0.03,0.02,0.05,0.12,0.13,0.15,0.18,0.21,0.26,0.29,0.27,0.25,0.23,0.23,0.26,0.26,0.24,0.22,0.2,0.18,0.09,0.03,"PNNL prototype scorecards, 90.1-2004 models (RestaurantFastFood)",
+restaurant-quick,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+restaurant-full,occupancy,0.05,0,0,0,0,0.05,0.1,0.4,0.4,0.4,0.2,0.5,0.8,0.7,0.4,0.2,0.25,0.5,0.8,0.8,0.8,0.5,0.35,0.2,"PNNL prototype scorecards, 90.1-2004 models (RestaurantSitDown)",
+restaurant-full,lighting,0.15,0.15,0.15,0.15,0.15,0.2,0.4,0.4,0.6,0.6,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.5,0.3,"PNNL prototype scorecards, 90.1-2004 models (RestaurantSitDown)",
+restaurant-full,misc_equip,0.03,0.02,0.03,0.02,0.05,0.12,0.13,0.15,0.18,0.21,0.26,0.29,0.27,0.25,0.23,0.23,0.26,0.26,0.24,0.22,0.2,0.18,0.09,0.03,"PNNL prototype scorecards, 90.1-2004 models (RestaurantSitDown)",
+restaurant-full,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+apartment-midrise,occupancy,0.9687,0.9687,0.9687,0.9687,0.9687,0.9687,0.9687,0.8961,0.2202,0.1523,0.1523,0.1523,0.1211,0.1523,0.1211,0.1523,0.1766,0.2519,0.9058,0.9058,0.9058,0.9687,0.9687,0.9687,"PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)",
+apartment-midrise,lighting,0.0166,0.0166,0.0166,0.0166,0.0385,0.0769,0.0824,0.0769,0.061,0.05,0.05,0.05,0.0469,0.05,0.05,0.0665,0.1049,0.1152,0.1536,0.181,0.181,0.1262,0.0714,0.033,"PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)",
+apartment-midrise,misc_equip,0.4462,0.4075,0.3881,0.3784,0.3784,0.4269,0.5334,0.6453,0.6706,0.6803,0.6997,0.7094,0.6978,0.6706,0.6609,0.69,0.8062,0.9844,0.9791,0.9112,0.8725,0.8337,0.6981,0.5722,"PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)",
+apartment-midrise,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+apartment-highrise,occupancy,0.9875,0.9875,0.9875,0.9875,0.9875,0.9875,0.9875,0.9134,0.2051,0.1359,0.1359,0.1359,0.1234,0.1359,0.1234,0.1359,0.1606,0.2568,0.9233,0.9233,0.9233,0.9875,0.9875,0.9875,"PNNL prototype scorecards, 90.1-2004 models (ApartmentHighRise)",
+apartment-highrise,lighting,0.0134,0.0134,0.0134,0.0134,0.0358,0.0749,0.0805,0.0749,0.0448,0.0336,0.0336,0.0336,0.0323,0.0336,0.0336,0.0504,0.0895,0.114,0.1531,0.181,0.181,0.1252,0.0693,0.0302,"PNNL prototype scorecards, 90.1-2004 models (ApartmentHighRise)",
+apartment-highrise,misc_equip,0.4485,0.409,0.3892,0.3794,0.3794,0.4288,0.5374,0.6481,0.6643,0.6741,0.6939,0.7038,0.6931,0.6643,0.6544,0.684,0.8025,0.9937,0.9916,0.9225,0.883,0.8435,0.7053,0.5769,"PNNL prototype scorecards, 90.1-2004 models (ApartmentHighRise)",
+apartment-highrise,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,
+residential-single,occupancy,0.9687,0.9687,0.9687,0.9687,0.9687,0.9687,0.9687,0.8961,0.2202,0.1523,0.1523,0.1523,0.1211,0.1523,0.1211,0.1523,0.1766,0.2519,0.9058,0.9058,0.9058,0.9687,0.9687,0.9687,"PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)",Uses the Mid-rise Apartment prototype: PNNL publishes no single-family model.
+residential-single,lighting,0.0166,0.0166,0.0166,0.0166,0.0385,0.0769,0.0824,0.0769,0.061,0.05,0.05,0.05,0.0469,0.05,0.05,0.0665,0.1049,0.1152,0.1536,0.181,0.181,0.1262,0.0714,0.033,"PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)",Uses the Mid-rise Apartment prototype: PNNL publishes no single-family model.
+residential-single,misc_equip,0.4462,0.4075,0.3881,0.3784,0.3784,0.4269,0.5334,0.6453,0.6706,0.6803,0.6997,0.7094,0.6978,0.6706,0.6609,0.69,0.8062,0.9844,0.9791,0.9112,0.8725,0.8337,0.6981,0.5722,"PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)",Uses the Mid-rise Apartment prototype: PNNL publishes no single-family model.
+residential-single,it_equip,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,Flat by definition — IT does not follow a building schedule,

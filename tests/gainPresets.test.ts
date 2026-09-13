@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { solve } from '../src/engine/balance';
 import { applyGainPreset, setDensity } from '../src/model/editGains';
 import { DEFAULT_GAINS, OFFICE_PRESET } from '../src/model/defaults';
-import { GAIN_PRESETS, presetById, SCHEDULES_ARE_PROVISIONAL } from '../src/model/gainPresets';
+import { BUILDING_TYPES } from '../src/model/buildingTypes';
+import { GAIN_PRESETS, presetById } from '../src/model/gainPresets';
 import {
   SAMPLE_CONDITIONS,
   SAMPLE_DESIGN_DAY,
@@ -19,19 +20,28 @@ import { BTU_H_PER_WATT, SQFT_PER_SQM } from '../src/model/units';
  */
 
 describe('the sheet arrives in canonical SI', () => {
-  it('converted the office row exactly', () => {
-    // The sheet says 275 ft²/person, 200 Btu/h, 0.64 W/ft², 0.75 W/ft².
-    expect(OFFICE_PRESET.areaPerPerson.value).toBeCloseTo(275 / SQFT_PER_SQM, 6);
+  it('converted the Medium Office row exactly', () => {
+    // The sheet says 200 ft²/person, 200 Btu/h, 0.64 W/ft², 1.061 W/ft².
+    expect(OFFICE_PRESET.areaPerPerson.value).toBeCloseTo(200 / SQFT_PER_SQM, 6);
     expect(OFFICE_PRESET.sensiblePerPerson.value).toBeCloseTo(200 / BTU_H_PER_WATT, 6);
     expect(OFFICE_PRESET.lighting.value).toBeCloseTo(0.64 * SQFT_PER_SQM, 6);
-    expect(OFFICE_PRESET.miscEquipment.value).toBeCloseTo(0.75 * SQFT_PER_SQM, 6);
+    expect(OFFICE_PRESET.miscEquipment.value).toBeCloseTo(1.061 * SQFT_PER_SQM, 6);
+  });
+
+  it('takes lighting from 90.1 and everything else from PNNL', () => {
+    // The deliberate split. PNNL is the 2004 vintage, whose lighting runs well
+    // above current code, and overstated lighting flatters every answer here.
+    expect(OFFICE_PRESET.lighting.citation).toMatch(/Building Area Method/);
+    expect(OFFICE_PRESET.lighting.citation).not.toMatch(/PNNL/);
+    expect(OFFICE_PRESET.miscEquipment.citation).toMatch(/PNNL/);
+    expect(OFFICE_PRESET.areaPerPerson.citation).toMatch(/PNNL/);
   });
 
   it('did not convert a density with the area factor, or an area with the density factor', () => {
     // Both are ~10.76 but they run in OPPOSITE directions: ft²/person divides,
     // W/ft² multiplies. Swapping them is a 116x error that still looks like a
     // number, so pin the direction rather than the magnitude.
-    expect(OFFICE_PRESET.areaPerPerson.value!).toBeLessThan(275);
+    expect(OFFICE_PRESET.areaPerPerson.value!).toBeLessThan(200);
     expect(OFFICE_PRESET.lighting.value!).toBeGreaterThan(0.64);
   });
 
@@ -46,10 +56,45 @@ describe('the sheet arrives in canonical SI', () => {
     }
   });
 
-  it('carries all thirteen building types, each with a unique id and a label', () => {
-    expect(GAIN_PRESETS).toHaveLength(13);
-    expect(new Set(GAIN_PRESETS.map((p) => p.id)).size).toBe(13);
+  it('carries all eighteen building types, each with a unique id and a label', () => {
+    // Sixteen PNNL prototypes, plus Single Family and Laboratory — neither has
+    // a PNNL model, so each borrows one.
+    expect(GAIN_PRESETS).toHaveLength(18);
+    expect(new Set(GAIN_PRESETS.map((p) => p.id)).size).toBe(18);
     for (const preset of GAIN_PRESETS) expect(preset.label.length).toBeGreaterThan(0);
+  });
+
+  it('gives Laboratory hospital equipment on an office schedule', () => {
+    // A lab has hospital-like benches and plant but keeps business hours, so
+    // the two halves come from different prototypes on purpose.
+    const lab = presetById('laboratory')!;
+    const hospital = presetById('hospital')!;
+    const office = presetById('office-medium')!;
+    expect(lab.miscEquipment.value).toBeCloseTo(hospital.miscEquipment.value!, 9);
+    expect(lab.areaPerPerson.value).toBeCloseTo(hospital.areaPerPerson.value!, 9);
+    expect(lab.schedules.occupancy.values).toEqual(office.schedules.occupancy.values);
+    // And NOT the hospital's, which never empties overnight.
+    expect(hospital.schedules.occupancy.values[3]!).toBeGreaterThan(0);
+    expect(lab.schedules.occupancy.values[3]).toBe(0);
+  });
+
+  it('names a massing that exists for every type', () => {
+    const drawn = new Set(BUILDING_TYPES.map((t) => t.id));
+    for (const preset of GAIN_PRESETS) {
+      expect(drawn.has(preset.massing), `${preset.id} -> ${preset.massing}`).toBe(true);
+    }
+    // Every drawing earns its place: none is orphaned.
+    for (const id of drawn) {
+      expect(GAIN_PRESETS.some((p) => p.massing === id), `nothing uses the ${id} massing`).toBe(true);
+    }
+  });
+
+  it('gives Single Family the Mid-rise Apartment numbers, as instructed', () => {
+    const single = presetById('residential-single')!;
+    const mid = presetById('apartment-midrise')!;
+    expect(single.areaPerPerson.value).toBeCloseTo(mid.areaPerPerson.value!, 9);
+    expect(single.miscEquipment.value).toBeCloseTo(mid.miscEquipment.value!, 9);
+    expect(single.schedules.occupancy.values).toEqual(mid.schedules.occupancy.values);
   });
 });
 
@@ -101,13 +146,43 @@ describe('applying a preset', () => {
     expect(applyGainPreset(edited, warehouse).preset).toBe('Warehouse');
   });
 
-  it('leaves the schedules alone, including ones the user dragged', () => {
-    // There are no per-type profiles yet, and a user comparing types should not
-    // lose the strip they shaped.
+  it('replaces the schedules too — the half that matters most', () => {
+    // A picker that changed only the densities would be the wrong half: the
+    // verdict lands between 04:00 and 07:00, where the schedule decides.
     const next = applyGainPreset(DEFAULT_GAINS, warehouse);
-    expect(next.schedules.occupancy).toBe(DEFAULT_GAINS.schedules.occupancy);
-    expect(next.schedules.lighting).toBe(DEFAULT_GAINS.schedules.lighting);
-    expect(next.schedules.itEquipment).toBe(DEFAULT_GAINS.schedules.itEquipment);
+    expect(next.schedules.occupancy.fractions).toEqual(warehouse.schedules.occupancy.values);
+    expect(next.schedules.lighting.fractions).toEqual(warehouse.schedules.lighting.values);
+    expect(next.schedules.miscEquipment.fractions).toEqual(warehouse.schedules.miscEquipment.values);
+    // Still a preset, not a custom strip — the badge survives.
+    expect(next.schedules.occupancy.source).toBe('preset');
+  });
+
+  it('gives an apartment a nearly-full night and an office an empty one', () => {
+    // The single clearest reason the schedules had to come across. At 05:00 on
+    // the design day an apartment is occupied and an office is not.
+    const apartment = presetById('apartment-midrise')!;
+    const office = presetById('office-medium')!;
+    expect(apartment.schedules.occupancy.values[5]!).toBeGreaterThan(0.9);
+    expect(office.schedules.occupancy.values[5]!).toBe(0);
+  });
+
+  it('keeps every schedule 24 long and inside 0-1', () => {
+    for (const preset of GAIN_PRESETS) {
+      for (const key of ['occupancy', 'lighting', 'miscEquipment', 'itEquipment'] as const) {
+        const values = preset.schedules[key].values;
+        expect(values, `${preset.id}.${key}`).toHaveLength(24);
+        for (const v of values) {
+          expect(v, `${preset.id}.${key}`).toBeGreaterThanOrEqual(0);
+          expect(v, `${preset.id}.${key}`).toBeLessThanOrEqual(1);
+        }
+      }
+    }
+  });
+
+  it('runs IT flat in every building', () => {
+    for (const preset of GAIN_PRESETS) {
+      expect(preset.schedules.itEquipment.values.every((v) => v === 1), preset.id).toBe(true);
+    }
   });
 
   it('holds phi, which v1 does not expose', () => {
@@ -127,31 +202,25 @@ describe('the building type changes the answer', () => {
   };
 
   it('gives a warehouse a worse balance point than a restaurant', () => {
-    // A restaurant is 100 ft²/person against a warehouse's 1,500, and carries
-    // four times the lighting. If the picker were wired to nothing, these two
-    // would come back identical — which is the failure this test exists for.
-    const warehouse = solveWith('warehouse');
-    const restaurant = solveWith('restaurant');
-    expect(restaurant.balancePoint.onMeanGain).toBeLessThan(warehouse.balancePoint.onMeanGain);
+    // A restaurant dining room is 14 ft²/person against a warehouse's 466. If
+    // the picker were wired to nothing these two would come back identical,
+    // which is the failure this test exists to catch.
+    expect(solveWith('restaurant-full').balancePoint.onMeanGain)
+      .toBeLessThan(solveWith('warehouse').balancePoint.onMeanGain);
   });
 
-  it('gives thirteen distinct answers, not one repeated thirteen times', () => {
+  it('gives eighteen distinct answers, not one repeated eighteen times', () => {
     const points = GAIN_PRESETS.map((p) => solveWith(p.id).balancePoint.onMeanGain.toFixed(3));
-    expect(new Set(points).size).toBeGreaterThan(10);
+    // Single Family and Mid-rise Apartment are the same building by
+    // instruction, so sixteen distinct answers is the ceiling.
+    expect(new Set(points).size).toBeGreaterThan(13);
   });
 
   it('leaves the envelope alone — this picker moves gains only', () => {
-    const before = solveWith('office');
+    const before = solveWith('office-medium');
     const after = solveWith('warehouse');
     expect(after.hours[0]!.loss).toBeCloseTo(before.hours[0]!.loss, 9);
     expect(after.hours[0]!.gain).not.toBeCloseTo(before.hours[0]!.gain, 3);
   });
 });
 
-describe('the provisional-schedule flag is honest', () => {
-  it('is set while every preset shares the office profile', () => {
-    // When sheet 2 lands and schedules become per-type, this flag comes out and
-    // so does the line in the UI. Until then it must stay true.
-    expect(SCHEDULES_ARE_PROVISIONAL).toBe(true);
-  });
-});

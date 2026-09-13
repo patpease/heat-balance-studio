@@ -5,7 +5,7 @@ import { applyGainPreset, IT_PRESETS, setDensity, setOccupancyMode, setScheduleH
 import type { DensityField, ScheduleField } from '../model/editGains';
 import { HELP } from '../config/copy';
 import { OFFICE_DENSITIES } from '../model/defaults';
-import { GAIN_PRESETS, SCHEDULES_ARE_PROVISIONAL } from '../model/gainPresets';
+import { GAIN_PRESETS } from '../model/gainPresets';
 import type { Gains, UnitSystem } from '../model/types';
 import { fromSqFt, fromWattsPerSqFt, LABELS, toBtuH, toSqFt, toWattsPerSqFt } from '../model/units';
 import { NumberCell } from './NumberCell';
@@ -19,12 +19,11 @@ import { ScheduleBars } from './ScheduleBars';
  * standby floor. A watt of 24/7 load is worth roughly three times a watt of
  * scheduled load to this answer, and no single-row model can say that.
  *
- * The building-type picker sets all four densities at once from
- * `model/gainPresets.ts`, which is generated from the sourced sheet. It does
- * NOT touch the schedules — there are no per-type profiles yet, and rewriting
- * the strips would claim a warehouse had a warehouse schedule when it has an
- * office one. The line under the picker says so rather than leaving the user to
- * infer it.
+ * The building-type picker sets all four densities AND all four schedules from
+ * `model/gainPresets.ts`, which is generated from the PNNL prototype
+ * scorecards. The schedules are the half that matters most: an apartment sits
+ * near full occupancy at 05:00 where an office sits at zero, and the verdict is
+ * decided between 04:00 and 07:00.
  *
  * No advanced field appears here. φ — the share of IT power that reaches the
  * conditioned space — is in the schema and the engine applies it, but v1 holds
@@ -189,13 +188,12 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
             </option>
           ))}
         </select>
-        {SCHEDULES_ARE_PROVISIONAL && (
-          <span style={{ fontSize: 10.5, color: 'var(--muted)', maxWidth: '58ch' }}>
-            Densities are sourced per type; the <strong>schedules below are the office
-            profile</strong> for every type, pending data. The overnight fraction moves this
-            tool's answer more than the density it scales.
-          </span>
-        )}
+        <span style={{ fontSize: 10.5, color: 'var(--muted)', maxWidth: '60ch' }}>
+          Densities and all four schedules come from the PNNL prototype for this type,
+          weekday profiles. Lighting is the exception: it is the 90.1 Building Area Method
+          value, because the prototypes are the 2004 vintage and their lighting runs well
+          above current code.
+        </span>
       </div>
 
       <div style={{ padding: '6px 18px 16px' }}>
@@ -318,7 +316,7 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
         })}
 
         <p style={{ margin: '12px 0 0', fontSize: 11, color: 'var(--muted)', maxWidth: '62ch' }}>
-          Densities are {gains.preset ? 'provisional, pending sourcing against the published tables' : 'yours'}.
+          Densities and schedules are {gains.preset ? 'the published prototype\u2019s' : 'yours'}.
           The overnight floor decides the answer — the verdict lands between 04:00 and 07:00, so an equipment row that
           drops to zero at night flatters every building. Drag a bar to edit, or use the arrow keys.
         </p>

@@ -8,13 +8,17 @@
  * The sheet is collected in IP because that is what the standards publish;
  * the conversion happens once, in the importer.
  *
- * **The schedules are NOT from this data.** Sheet 2 has not come back yet, so
- * every preset below runs on the office profile, and `SCHEDULES_ARE_PROVISIONAL`
- * says so on the page. That matters more than it sounds: this tool's verdict is
- * decided between 04:00 and 07:00, so the overnight floor of a schedule moves
- * the answer more than the density it scales. A warehouse on an office lighting
- * profile is wrong in a way a user cannot see.
+ * Each preset carries its own four 24-hour weekday profiles. That matters more
+ * than the densities do: the verdict is decided between 04:00 and 07:00, so a
+ * schedule's overnight floor moves the answer more than the density it scales.
+ * An apartment sits near full occupancy at 05:00 where an office sits at zero,
+ * and no density can express that.
+ *
+ * WEEKDAY ONLY. The source publishes Saturday and Sunday profiles too; a
+ * heating design day is the cold weekday, so those are not imported.
  */
+
+import type { BuildingTypeId } from './types';
 
 export interface PresetDensity {
   /** Canonical SI. Null means the sheet left it blank: no default, not zero. */
@@ -22,9 +26,25 @@ export interface PresetDensity {
   readonly citation: string;
 }
 
+export interface PresetSchedule {
+  /** Exactly 24, each 0-1. Hour 0 is 00:00-01:00 local standard time. */
+  readonly values: readonly number[];
+  readonly source: string;
+}
+
+export interface PresetSchedules {
+  readonly occupancy: PresetSchedule;
+  readonly lighting: PresetSchedule;
+  readonly miscEquipment: PresetSchedule;
+  readonly itEquipment: PresetSchedule;
+}
+
 export interface GainPreset {
   readonly id: string;
   readonly label: string;
+  /** Which section drawing this type is shown with. Six cover eighteen types. */
+  readonly massing: BuildingTypeId;
+  readonly schedules: PresetSchedules;
   /** m² per person. */
   readonly areaPerPerson: PresetDensity;
   /** W per person, sensible only. */
@@ -38,148 +58,317 @@ export interface GainPreset {
   readonly notes: string;
 }
 
-/**
- * True while the presets below borrow the office schedule. The UI renders a
- * line saying so; delete this flag when sheet 2 lands and the schedules become
- * per-type.
- */
-export const SCHEDULES_ARE_PROVISIONAL = true;
-
 export const GAIN_PRESETS: readonly GainPreset[] = Object.freeze([
   {
-    id: "assembly",
-    label: "Assembly",
-    areaPerPerson: { value: 4.645152, citation: "Standard 90.1 User Manual" },
-    sensiblePerPerson: { value: 73.267768, citation: "ASHRAE Handbook Fundamentals" },
-    lighting: { value: 8.180572, citation: "ASHRAE 90.1 Building Area Method" },
-    miscEquipment: { value: 2.690978, citation: "Standard 90.1 User Manual" },
-    itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
-    notes: "",
-  },
-  {
-    id: "healthcare",
-    label: "Healthcare",
-    areaPerPerson: { value: 18.580608, citation: "Standard 90.1 User Manual" },
-    sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
-    lighting: { value: 8.718767, citation: "ASHRAE 90.1 Building Area Method" },
-    miscEquipment: { value: 10.76391, citation: "Standard 90.1 User Manual" },
-    itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
-    notes: "",
-  },
-  {
-    id: "hotel",
-    label: "Hotel",
-    areaPerPerson: { value: 23.22576, citation: "Standard 90.1 User Manual" },
-    sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
-    lighting: { value: 6.02779, citation: "ASHRAE 90.1 Building Area Method" },
-    miscEquipment: { value: 2.690978, citation: "Standard 90.1 User Manual" },
-    itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
-    notes: "",
-  },
-  {
-    id: "manufacturing",
-    label: "Light Manufacturing",
-    areaPerPerson: { value: 69.67728, citation: "Standard 90.1 User Manual" },
-    sensiblePerPerson: { value: 73.267768, citation: "ASHRAE Handbook Fundamentals" },
-    lighting: { value: 8.826407, citation: "ASHRAE 90.1 Building Area Method" },
-    miscEquipment: { value: 2.152782, citation: "Standard 90.1 User Manual" },
-    itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
-    notes: "",
-  },
-  {
-    id: "office",
-    label: "Office",
-    areaPerPerson: { value: 25.548336, citation: "Standard 90.1 User Manual" },
+    id: "office-small",
+    label: "Small Office",
+    massing: "office",
+    schedules: {
+      occupancy: { values: [0, 0, 0, 0, 0, 0, 0.11, 0.21, 1, 1, 1, 1, 0.6104, 1, 1, 1, 1, 0.32, 0.11, 0.11, 0.11, 0.11, 0.05, 0], source: "PNNL prototype scorecards, 90.1-2004 models (OfficeSmall)" },
+      lighting: { values: [0.18, 0.18, 0.18, 0.18, 0.18, 0.23, 0.23, 0.42, 0.9, 0.9, 0.9, 0.9, 0.8, 0.9, 0.9, 0.9, 0.9, 0.61, 0.42, 0.42, 0.32, 0.32, 0.23, 0.18], source: "PNNL prototype scorecards, 90.1-2004 models (OfficeSmall)" },
+      miscEquipment: { values: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1, 1, 1, 1, 0.94, 1, 1, 1, 1, 0.5, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2], source: "PNNL prototype scorecards, 90.1-2004 models (OfficeSmall)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 18.580608, citation: "PNNL prototype scorecards, 90.1-2004 models (OfficeSmall)" },
     sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
     lighting: { value: 6.888903, citation: "ASHRAE 90.1 Building Area Method" },
-    miscEquipment: { value: 8.072933, citation: "Standard 90.1 User Manual" },
+    miscEquipment: { value: 6.781264, citation: "PNNL prototype scorecards, 90.1-2004 models (OfficeSmall)" },
     itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
     notes: "",
   },
   {
-    id: "restaurant",
-    label: "Restaurant",
-    areaPerPerson: { value: 9.290304, citation: "Standard 90.1 User Manual" },
-    sensiblePerPerson: { value: 73.267768, citation: "ASHRAE Handbook Fundamentals" },
-    lighting: { value: 8.611128, citation: "ASHRAE 90.1 Building Area Method" },
-    miscEquipment: { value: 10.76391, citation: "Standard 90.1 User Manual" },
+    id: "office-medium",
+    label: "Medium Office",
+    massing: "office",
+    schedules: {
+      occupancy: { values: [0, 0, 0, 0, 0, 0, 0.1, 0.2, 0.95, 0.95, 0.9757, 0.95, 0.5135, 0.95, 0.9757, 0.95, 0.95, 0.3, 0.1, 0.1, 0.1, 0.1, 0.05, 0.05], source: "PNNL prototype scorecards, 90.1-2004 models (OfficeMedium)" },
+      lighting: { values: [0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.1, 0.3, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.5, 0.3, 0.3, 0.2, 0.2, 0.1, 0.05], source: "PNNL prototype scorecards, 90.1-2004 models (OfficeMedium)" },
+      miscEquipment: { values: [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.9, 0.9, 0.9, 0.9, 0.8, 0.9, 0.9, 0.9, 0.9, 0.5, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4], source: "PNNL prototype scorecards, 90.1-2004 models (OfficeMedium)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 18.580608, citation: "PNNL prototype scorecards, 90.1-2004 models (OfficeMedium)" },
+    sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
+    lighting: { value: 6.888903, citation: "ASHRAE 90.1 Building Area Method" },
+    miscEquipment: { value: 11.420509, citation: "PNNL prototype scorecards, 90.1-2004 models (OfficeMedium)" },
     itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
     notes: "",
   },
   {
-    id: "retail",
-    label: "Retail",
-    areaPerPerson: { value: 27.870912, citation: "Standard 90.1 User Manual" },
+    id: "office-large",
+    label: "Large Office",
+    massing: "office",
+    schedules: {
+      occupancy: { values: [0, 0, 0, 0, 0, 0, 0.1, 0.2, 0.95, 0.95, 0.9933, 0.95, 0.5228, 0.95, 0.9933, 0.95, 0.95, 0.3, 0.1, 0.1, 0.1, 0.1, 0.05, 0.05], source: "PNNL prototype scorecards, 90.1-2004 models (OfficeLarge)" },
+      lighting: { values: [0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.1, 0.3, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.5, 0.3, 0.3, 0.2, 0.2, 0.1, 0.05], source: "PNNL prototype scorecards, 90.1-2004 models (OfficeLarge)" },
+      miscEquipment: { values: [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.9, 0.9, 0.9, 0.9, 0.8, 0.9, 0.9, 0.9, 0.9, 0.5, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4], source: "PNNL prototype scorecards, 90.1-2004 models (OfficeLarge)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 18.580608, citation: "PNNL prototype scorecards, 90.1-2004 models (OfficeLarge)" },
+    sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
+    lighting: { value: 6.888903, citation: "ASHRAE 90.1 Building Area Method" },
+    miscEquipment: { value: 7.868419, citation: "PNNL prototype scorecards, 90.1-2004 models (OfficeLarge)" },
+    itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
+    notes: "",
+  },
+  {
+    id: "retail-standalone",
+    label: "Standalone Retail",
+    massing: "civic",
+    schedules: {
+      occupancy: { values: [0, 0, 0, 0, 0, 0, 0, 0.1, 0.2, 0.5, 0.5, 0.7, 0.7, 0.7, 0.7, 0.8, 0.7, 0.5, 0.5, 0.3, 0.3, 0, 0, 0], source: "PNNL prototype scorecards, 90.1-2004 models (RetailStandalone)" },
+      lighting: { values: [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.2, 0.4, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.5, 0.5, 0.5, 0.2, 0.05, 0.05], source: "PNNL prototype scorecards, 90.1-2004 models (RetailStandalone)" },
+      miscEquipment: { values: [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.4, 0.6, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.7, 0.7, 0.2, 0.2, 0.2], source: "PNNL prototype scorecards, 90.1-2004 models (RetailStandalone)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 7.246437, citation: "PNNL prototype scorecards, 90.1-2004 models (RetailStandalone)" },
     sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
     lighting: { value: 9.041685, citation: "ASHRAE 90.1 Building Area Method" },
-    miscEquipment: { value: 2.690978, citation: "Standard 90.1 User Manual" },
+    miscEquipment: { value: 5.220497, citation: "PNNL prototype scorecards, 90.1-2004 models (RetailStandalone)" },
     itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
     notes: "",
   },
   {
-    id: "school",
-    label: "School",
-    areaPerPerson: { value: 6.967728, citation: "Standard 90.1 User Manual" },
+    id: "retail-stripmall",
+    label: "Strip Mall",
+    massing: "civic",
+    schedules: {
+      occupancy: { values: [0, 0, 0, 0, 0, 0, 0, 0, 0.0333, 0.0867, 0.1033, 0.21, 0.2867, 0.5033, 0.4, 0.38, 0.33, 0.57, 0.4467, 0.32, 0.1533, 0.1, 0.1, 0.0167], source: "PNNL prototype scorecards, 90.1-2004 models (RetailStripmall)" },
+      lighting: { values: [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.14, 0.5903, 0.9506, 0.9506, 0.9506, 0.9506, 0.9506, 0.9506, 0.9506, 0.9506, 0.9506, 0.9506, 0.6808, 0.411, 0.411, 0.2305], source: "PNNL prototype scorecards, 90.1-2004 models (RetailStripmall)" },
+      miscEquipment: { values: [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.2, 0.6333, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.6333, 0.3333, 0.3333, 0.2], source: "PNNL prototype scorecards, 90.1-2004 models (RetailStripmall)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 6.224504, citation: "PNNL prototype scorecards, 90.1-2004 models (RetailStripmall)" },
+    sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
+    lighting: { value: 9.041685, citation: "ASHRAE 90.1 Building Area Method" },
+    miscEquipment: { value: 4.2948, citation: "PNNL prototype scorecards, 90.1-2004 models (RetailStripmall)" },
+    itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
+    notes: "",
+  },
+  {
+    id: "school-primary",
+    label: "Primary School",
+    massing: "school",
+    schedules: {
+      occupancy: { values: [0, 0, 0, 0, 0, 0, 0, 0, 0.8734, 0.918, 0.918, 0.918, 0.8555, 0.918, 0.8555, 0.8898, 0.6671, 0.6145, 0.6145, 0.6145, 0.598, 0, 0, 0], source: "PNNL prototype scorecards, 90.1-2004 models (SchoolPrimary)" },
+      lighting: { values: [0.1773, 0.1773, 0.1773, 0.1773, 0.1773, 0.1773, 0.1773, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.1773, 0.1773, 0.1773], source: "PNNL prototype scorecards, 90.1-2004 models (SchoolPrimary)" },
+      miscEquipment: { values: [0.3383, 0.3383, 0.3383, 0.3383, 0.3383, 0.3383, 0.3383, 0.3383, 0.9124, 0.9124, 0.9171, 0.9171, 0.9171, 0.9124, 0.9124, 0.9101, 0.9101, 0.3383, 0.3383, 0.3383, 0.3383, 0.3383, 0.3383, 0.3383], source: "PNNL prototype scorecards, 90.1-2004 models (SchoolPrimary)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 4.366443, citation: "PNNL prototype scorecards, 90.1-2004 models (SchoolPrimary)" },
     sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
     lighting: { value: 7.750015, citation: "ASHRAE 90.1 Building Area Method" },
-    miscEquipment: { value: 5.381955, citation: "Standard 90.1 User Manual" },
+    miscEquipment: { value: 12.173983, citation: "PNNL prototype scorecards, 90.1-2004 models (SchoolPrimary)" },
     itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
     notes: "",
   },
   {
-    id: "warehouse",
-    label: "Warehouse",
-    areaPerPerson: { value: 139.35456, citation: "Standard 90.1 User Manual" },
-    sensiblePerPerson: { value: 73.267768, citation: "ASHRAE Handbook Fundamentals" },
-    lighting: { value: 4.84376, citation: "ASHRAE 90.1 Building Area Method" },
-    miscEquipment: { value: 1.076391, citation: "Standard 90.1 User Manual" },
-    itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
-    notes: "",
-  },
-  {
-    id: "residential-single",
-    label: "Single Family Home",
-    areaPerPerson: { value: 69.67728, citation: "Standard 90.1 User Manual" },
+    id: "school-secondary",
+    label: "Secondary School",
+    massing: "school",
+    schedules: {
+      occupancy: { values: [0, 0, 0, 0, 0, 0, 0, 0, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0, 0, 0], source: "PNNL prototype scorecards, 90.1-2004 models (SchoolSecondary)" },
+      lighting: { values: [0.1773, 0.1773, 0.1773, 0.1773, 0.1773, 0.1773, 0.1773, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.1773, 0.1773, 0.1773], source: "PNNL prototype scorecards, 90.1-2004 models (SchoolSecondary)" },
+      miscEquipment: { values: [0.3419, 0.3419, 0.3419, 0.3419, 0.3419, 0.3419, 0.3419, 0.3419, 0.9242, 0.9242, 0.9275, 0.9275, 0.9275, 0.9242, 0.9242, 0.9226, 0.9226, 0.3419, 0.3419, 0.3419, 0.3419, 0.3419, 0.3419, 0.3419], source: "PNNL prototype scorecards, 90.1-2004 models (SchoolSecondary)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 3.0658, citation: "PNNL prototype scorecards, 90.1-2004 models (SchoolSecondary)" },
     sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
-    lighting: { value: 4.84376, citation: "ASHRAE 90.1 Building Area Method" },
-    miscEquipment: { value: 5.381955, citation: "Standard 90.1 User Manual" },
+    lighting: { value: 7.750015, citation: "ASHRAE 90.1 Building Area Method" },
+    miscEquipment: { value: 11.022244, citation: "PNNL prototype scorecards, 90.1-2004 models (SchoolSecondary)" },
     itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
     notes: "",
   },
   {
-    id: "residential-multi",
-    label: "Multi-Family",
-    areaPerPerson: { value: 55.741824, citation: "Standard 90.1 User Manual" },
+    id: "healthcare-outpatient",
+    label: "Outpatient Healthcare",
+    massing: "office",
+    schedules: {
+      occupancy: { values: [0.05, 0.05, 0.05, 0.05, 0.2, 0.2, 0.5, 0.9, 0.9, 0.9, 0.8912, 0.8912, 0.5612, 0.9, 0.5524, 0.9, 0.9, 0.9, 0.5, 0.5, 0.2, 0.2, 0.05, 0.05], source: "PNNL prototype scorecards, 90.1-2004 models (OutPatientHealthCare)" },
+      lighting: { values: [0.1, 0.1, 0.1, 0.1, 0.3, 0.3, 0.6, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.6, 0.6, 0.3, 0.3, 0.1, 0.1], source: "PNNL prototype scorecards, 90.1-2004 models (OutPatientHealthCare)" },
+      miscEquipment: { values: [0.3, 0.3, 0.3, 0.3, 0.5, 0.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.5, 0.5, 0.3, 0.3, 0.3, 0.3], source: "PNNL prototype scorecards, 90.1-2004 models (OutPatientHealthCare)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 7.989661, citation: "PNNL prototype scorecards, 90.1-2004 models (OutPatientHealthCare)" },
     sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
-    lighting: { value: 4.84376, citation: "ASHRAE 90.1 Building Area Method" },
-    miscEquipment: { value: 5.381955, citation: "Standard 90.1 User Manual" },
+    lighting: { value: 8.718767, citation: "ASHRAE 90.1 Building Area Method" },
+    miscEquipment: { value: 19.256636, citation: "PNNL prototype scorecards, 90.1-2004 models (OutPatientHealthCare)" },
     itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
     notes: "",
   },
   {
-    id: "library",
-    label: "Library",
-    areaPerPerson: { value: 25.548336, citation: "Standard 90.1 User Manual" },
+    id: "hospital",
+    label: "Hospital",
+    massing: "lab",
+    schedules: {
+      occupancy: { values: [0.1621, 0.1621, 0.1621, 0.1621, 0.1621, 0.1621, 0.1621, 0.2621, 0.5405, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.5405, 0.3811, 0.3811, 0.2811, 0.2811, 0.1621, 0.1621], source: "PNNL prototype scorecards, 90.1-2004 models (Hospital)" },
+      lighting: { values: [0.2942, 0.2942, 0.2942, 0.2942, 0.2942, 0.2942, 0.2942, 0.5, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.3971, 0.3971, 0.3971, 0.3971, 0.3971, 0.3971, 0.3971, 0.2942], source: "PNNL prototype scorecards, 90.1-2004 models (Hospital)" },
+      miscEquipment: { values: [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.7, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.4], source: "PNNL prototype scorecards, 90.1-2004 models (Hospital)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 28.985749, citation: "PNNL prototype scorecards, 90.1-2004 models (Hospital)" },
     sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
-    lighting: { value: 8.934046, citation: "ASHRAE 90.1 Building Area Method" },
-    miscEquipment: { value: 8.072933, citation: "Standard 90.1 User Manual" },
+    lighting: { value: 8.718767, citation: "ASHRAE 90.1 Building Area Method" },
+    miscEquipment: { value: 14.36982, citation: "PNNL prototype scorecards, 90.1-2004 models (Hospital)" },
     itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
     notes: "",
   },
   {
     id: "laboratory",
     label: "Laboratory",
-    areaPerPerson: { value: 23.22576, citation: "Standard 90.1 User Manual" },
+    massing: "lab",
+    schedules: {
+      occupancy: { values: [0, 0, 0, 0, 0, 0, 0.1, 0.2, 0.95, 0.95, 0.9757, 0.95, 0.5135, 0.95, 0.9757, 0.95, 0.95, 0.3, 0.1, 0.1, 0.1, 0.1, 0.05, 0.05], source: "PNNL prototype scorecards, 90.1-2004 models (OfficeMedium)" },
+      lighting: { values: [0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.1, 0.3, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.5, 0.3, 0.3, 0.2, 0.2, 0.1, 0.05], source: "PNNL prototype scorecards, 90.1-2004 models (OfficeMedium)" },
+      miscEquipment: { values: [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.9, 0.9, 0.9, 0.9, 0.8, 0.9, 0.9, 0.9, 0.9, 0.5, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4], source: "PNNL prototype scorecards, 90.1-2004 models (OfficeMedium)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 28.985749, citation: "PNNL prototype scorecards, 90.1-2004 models (Hospital)" },
     sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
     lighting: { value: 9.795158, citation: "ASHRAE 90.1 Building Area Method" },
-    miscEquipment: { value: 21.527821, citation: "Standard 90.1 User Manual" },
+    miscEquipment: { value: 14.36982, citation: "PNNL prototype scorecards, 90.1-2004 models (Hospital)" },
+    itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
+    notes: "Hospital equipment on an office schedule: similar benches and plant, ordinary business hours. PNNL publishes no laboratory prototype.",
+  },
+  {
+    id: "hotel-small",
+    label: "Small Hotel",
+    massing: "multifamily",
+    schedules: {
+      occupancy: { values: [0.8364, 0.8364, 0.8364, 0.8364, 0.8364, 0.8596, 0.7224, 0.4529, 0.4773, 0.2885, 0.2202, 0.2149, 0.195, 0.2332, 0.199, 0.3157, 0.5215, 0.5088, 0.4835, 0.6702, 0.6692, 0.7677, 0.8417, 0.8364], source: "PNNL prototype scorecards, 90.1-2004 models (HotelSmall)" },
+      lighting: { values: [0.3417, 0.3077, 0.2669, 0.2669, 0.2669, 0.3622, 0.5265, 0.6357, 0.6121, 0.6121, 0.5033, 0.5033, 0.5015, 0.5033, 0.5033, 0.5033, 0.5033, 0.4982, 0.7086, 0.8378, 0.9024, 0.8122, 0.6531, 0.4166], source: "PNNL prototype scorecards, 90.1-2004 models (HotelSmall)" },
+      miscEquipment: { values: [0.1207, 0.1207, 0.1207, 0.1207, 0.1207, 0.1702, 0.6311, 0.8718, 0.5027, 0.4973, 0.2908, 0.2817, 0.2711, 0.2891, 0.2891, 0.2817, 0.2871, 0.4839, 0.4693, 0.4574, 0.5931, 0.621, 0.3273, 0.1207], source: "PNNL prototype scorecards, 90.1-2004 models (HotelSmall)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 13.006426, citation: "PNNL prototype scorecards, 90.1-2004 models (HotelSmall)" },
+    sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
+    lighting: { value: 6.02779, citation: "ASHRAE 90.1 Building Area Method" },
+    miscEquipment: { value: 10.193423, citation: "PNNL prototype scorecards, 90.1-2004 models (HotelSmall)" },
     itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
     notes: "",
+  },
+  {
+    id: "hotel-large",
+    label: "Large Hotel",
+    massing: "multifamily",
+    schedules: {
+      occupancy: { values: [0.9417, 0.9417, 0.9417, 0.9417, 0.9417, 0.9417, 0.7292, 0.4125, 0.4125, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.3042, 0.5167, 0.5167, 0.5167, 0.7292, 0.7292, 0.8375, 0.9417, 0.9417], source: "PNNL prototype scorecards, 90.1-2004 models (HotelLarge)" },
+      lighting: { values: [0.2083, 0.1583, 0.1042, 0.1042, 0.1042, 0.2083, 0.4167, 0.525, 0.4167, 0.4167, 0.2625, 0.2625, 0.2625, 0.2625, 0.2625, 0.2625, 0.2625, 0.2625, 0.6292, 0.8375, 0.9417, 0.8375, 0.6292, 0.3125], source: "PNNL prototype scorecards, 90.1-2004 models (HotelLarge)" },
+      miscEquipment: { values: [0.2465, 0.2203, 0.1941, 0.1941, 0.1941, 0.2465, 0.5351, 0.7072, 0.459, 0.459, 0.3095, 0.3095, 0.3095, 0.3095, 0.3095, 0.3095, 0.3095, 0.4137, 0.5971, 0.6935, 0.7906, 0.781, 0.5304, 0.3107], source: "PNNL prototype scorecards, 90.1-2004 models (HotelLarge)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 7.060631, citation: "PNNL prototype scorecards, 90.1-2004 models (HotelLarge)" },
+    sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
+    lighting: { value: 6.02779, citation: "ASHRAE 90.1 Building Area Method" },
+    miscEquipment: { value: 10.408701, citation: "PNNL prototype scorecards, 90.1-2004 models (HotelLarge)" },
+    itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
+    notes: "",
+  },
+  {
+    id: "warehouse",
+    label: "Warehouse",
+    massing: "home",
+    schedules: {
+      occupancy: { values: [0, 0, 0, 0, 0, 0, 0.11, 0.21, 1, 1, 1, 1, 0.53, 1, 1, 1, 1, 0.32, 0, 0, 0, 0, 0, 0], source: "PNNL prototype scorecards, 90.1-2004 models (Warehouse)" },
+      lighting: { values: [0.1039, 0.1039, 0.1039, 0.1039, 0.1039, 0.1039, 0.1064, 0.5912, 0.751, 0.8461, 0.8461, 0.8461, 0.8417, 0.8461, 0.8461, 0.8461, 0.751, 0.6005, 0.1039, 0.1039, 0.1039, 0.1039, 0.1039, 0.1039], source: "PNNL prototype scorecards, 90.1-2004 models (Warehouse)" },
+      miscEquipment: { values: [0.2524, 0.2524, 0.2524, 0.2524, 0.2524, 0.2524, 0.2524, 0.2622, 1, 1, 1, 1, 0.2838, 1, 1, 1, 1, 0.2622, 0.2524, 0.2524, 0.2524, 0.2524, 0.2524, 0.2524], source: "PNNL prototype scorecards, 90.1-2004 models (Warehouse)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 43.292817, citation: "PNNL prototype scorecards, 90.1-2004 models (Warehouse)" },
+    sensiblePerPerson: { value: 73.267768, citation: "ASHRAE Handbook Fundamentals" },
+    lighting: { value: 4.84376, citation: "ASHRAE 90.1 Building Area Method" },
+    miscEquipment: { value: 2.088199, citation: "PNNL prototype scorecards, 90.1-2004 models (Warehouse)" },
+    itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
+    notes: "Drawn with the single-family shed: the closest shape in the massing set, not a likeness.",
+  },
+  {
+    id: "restaurant-quick",
+    label: "Quick Service Restaurant",
+    massing: "civic",
+    schedules: {
+      occupancy: { values: [0.05, 0, 0, 0, 0, 0.05, 0.1, 0.4, 0.4, 0.4, 0.2, 0.5, 0.8, 0.7, 0.4, 0.2, 0.25, 0.5, 0.8, 0.8, 0.8, 0.5, 0.35, 0.2], source: "PNNL prototype scorecards, 90.1-2004 models (RestaurantFastFood)" },
+      lighting: { values: [0.15, 0.15, 0.15, 0.15, 0.15, 0.2, 0.4, 0.4, 0.6, 0.6, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.5, 0.3], source: "PNNL prototype scorecards, 90.1-2004 models (RestaurantFastFood)" },
+      miscEquipment: { values: [0.03, 0.02, 0.03, 0.02, 0.05, 0.12, 0.13, 0.15, 0.18, 0.21, 0.26, 0.29, 0.27, 0.25, 0.23, 0.23, 0.26, 0.26, 0.24, 0.22, 0.2, 0.18, 0.09, 0.03], source: "PNNL prototype scorecards, 90.1-2004 models (RestaurantFastFood)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 1.300643, citation: "PNNL prototype scorecards, 90.1-2004 models (RestaurantFastFood)" },
+    sensiblePerPerson: { value: 73.267768, citation: "ASHRAE Handbook Fundamentals" },
+    lighting: { value: 8.611128, citation: "ASHRAE 90.1 Building Area Method" },
+    miscEquipment: { value: 116.788428, citation: "PNNL prototype scorecards, 90.1-2004 models (RestaurantFastFood)" },
+    itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
+    notes: "Dining zone only: the kitchen is excluded because this tool has no exhaust model.",
+  },
+  {
+    id: "restaurant-full",
+    label: "Full Service Restaurant",
+    massing: "civic",
+    schedules: {
+      occupancy: { values: [0.05, 0, 0, 0, 0, 0.05, 0.1, 0.4, 0.4, 0.4, 0.2, 0.5, 0.8, 0.7, 0.4, 0.2, 0.25, 0.5, 0.8, 0.8, 0.8, 0.5, 0.35, 0.2], source: "PNNL prototype scorecards, 90.1-2004 models (RestaurantSitDown)" },
+      lighting: { values: [0.15, 0.15, 0.15, 0.15, 0.15, 0.2, 0.4, 0.4, 0.6, 0.6, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.5, 0.3], source: "PNNL prototype scorecards, 90.1-2004 models (RestaurantSitDown)" },
+      miscEquipment: { values: [0.03, 0.02, 0.03, 0.02, 0.05, 0.12, 0.13, 0.15, 0.18, 0.21, 0.26, 0.29, 0.27, 0.25, 0.23, 0.23, 0.26, 0.26, 0.24, 0.22, 0.2, 0.18, 0.09, 0.03], source: "PNNL prototype scorecards, 90.1-2004 models (RestaurantSitDown)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 1.300643, citation: "PNNL prototype scorecards, 90.1-2004 models (RestaurantSitDown)" },
+    sensiblePerPerson: { value: 73.267768, citation: "ASHRAE Handbook Fundamentals" },
+    lighting: { value: 8.611128, citation: "ASHRAE 90.1 Building Area Method" },
+    miscEquipment: { value: 64.927908, citation: "PNNL prototype scorecards, 90.1-2004 models (RestaurantSitDown)" },
+    itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
+    notes: "Dining zone only: the kitchen is excluded because this tool has no exhaust model.",
+  },
+  {
+    id: "apartment-midrise",
+    label: "Mid-rise Apartment",
+    massing: "multifamily",
+    schedules: {
+      occupancy: { values: [0.9687, 0.9687, 0.9687, 0.9687, 0.9687, 0.9687, 0.9687, 0.8961, 0.2202, 0.1523, 0.1523, 0.1523, 0.1211, 0.1523, 0.1211, 0.1523, 0.1766, 0.2519, 0.9058, 0.9058, 0.9058, 0.9687, 0.9687, 0.9687], source: "PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)" },
+      lighting: { values: [0.0166, 0.0166, 0.0166, 0.0166, 0.0385, 0.0769, 0.0824, 0.0769, 0.061, 0.05, 0.05, 0.05, 0.0469, 0.05, 0.05, 0.0665, 0.1049, 0.1152, 0.1536, 0.181, 0.181, 0.1262, 0.0714, 0.033], source: "PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)" },
+      miscEquipment: { values: [0.4462, 0.4075, 0.3881, 0.3784, 0.3784, 0.4269, 0.5334, 0.6453, 0.6706, 0.6803, 0.6997, 0.7094, 0.6978, 0.6706, 0.6609, 0.69, 0.8062, 0.9844, 0.9791, 0.9112, 0.8725, 0.8337, 0.6981, 0.5722], source: "PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 34.374125, citation: "PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)" },
+    sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
+    lighting: { value: 4.84376, citation: "ASHRAE 90.1 Building Area Method" },
+    miscEquipment: { value: 6.673624, citation: "PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)" },
+    itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
+    notes: "",
+  },
+  {
+    id: "apartment-highrise",
+    label: "High-rise Apartment",
+    massing: "multifamily",
+    schedules: {
+      occupancy: { values: [0.9875, 0.9875, 0.9875, 0.9875, 0.9875, 0.9875, 0.9875, 0.9134, 0.2051, 0.1359, 0.1359, 0.1359, 0.1234, 0.1359, 0.1234, 0.1359, 0.1606, 0.2568, 0.9233, 0.9233, 0.9233, 0.9875, 0.9875, 0.9875], source: "PNNL prototype scorecards, 90.1-2004 models (ApartmentHighRise)" },
+      lighting: { values: [0.0134, 0.0134, 0.0134, 0.0134, 0.0358, 0.0749, 0.0805, 0.0749, 0.0448, 0.0336, 0.0336, 0.0336, 0.0323, 0.0336, 0.0336, 0.0504, 0.0895, 0.114, 0.1531, 0.181, 0.181, 0.1252, 0.0693, 0.0302], source: "PNNL prototype scorecards, 90.1-2004 models (ApartmentHighRise)" },
+      miscEquipment: { values: [0.4485, 0.409, 0.3892, 0.3794, 0.3794, 0.4288, 0.5374, 0.6481, 0.6643, 0.6741, 0.6939, 0.7038, 0.6931, 0.6643, 0.6544, 0.684, 0.8025, 0.9937, 0.9916, 0.9225, 0.883, 0.8435, 0.7053, 0.5769], source: "PNNL prototype scorecards, 90.1-2004 models (ApartmentHighRise)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 34.931543, citation: "PNNL prototype scorecards, 90.1-2004 models (ApartmentHighRise)" },
+    sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
+    lighting: { value: 4.84376, citation: "ASHRAE 90.1 Building Area Method" },
+    miscEquipment: { value: 6.673624, citation: "PNNL prototype scorecards, 90.1-2004 models (ApartmentHighRise)" },
+    itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
+    notes: "",
+  },
+  {
+    id: "residential-single",
+    label: "Single Family Home",
+    massing: "home",
+    schedules: {
+      occupancy: { values: [0.9687, 0.9687, 0.9687, 0.9687, 0.9687, 0.9687, 0.9687, 0.8961, 0.2202, 0.1523, 0.1523, 0.1523, 0.1211, 0.1523, 0.1211, 0.1523, 0.1766, 0.2519, 0.9058, 0.9058, 0.9058, 0.9687, 0.9687, 0.9687], source: "PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)" },
+      lighting: { values: [0.0166, 0.0166, 0.0166, 0.0166, 0.0385, 0.0769, 0.0824, 0.0769, 0.061, 0.05, 0.05, 0.05, 0.0469, 0.05, 0.05, 0.0665, 0.1049, 0.1152, 0.1536, 0.181, 0.181, 0.1262, 0.0714, 0.033], source: "PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)" },
+      miscEquipment: { values: [0.4462, 0.4075, 0.3881, 0.3784, 0.3784, 0.4269, 0.5334, 0.6453, 0.6706, 0.6803, 0.6997, 0.7094, 0.6978, 0.6706, 0.6609, 0.69, 0.8062, 0.9844, 0.9791, 0.9112, 0.8725, 0.8337, 0.6981, 0.5722], source: "PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)" },
+      itEquipment: { values: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], source: "Flat by definition — IT does not follow a building schedule" },
+    },
+    areaPerPerson: { value: 34.374125, citation: "PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)" },
+    sensiblePerPerson: { value: 58.614214, citation: "ASHRAE Handbook Fundamentals" },
+    lighting: { value: 4.84376, citation: "ASHRAE 90.1 Building Area Method" },
+    miscEquipment: { value: 6.673624, citation: "PNNL prototype scorecards, 90.1-2004 models (ApartmentMidRise)" },
+    itEquipment: { value: 0, citation: "No published default exists — pick an IT space type or enter a value" },
+    notes: "Uses the Mid-rise Apartment prototype: PNNL publishes no single-family model.",
   },
 ]);
 
 /** The one the tool opens on. */
-export const DEFAULT_PRESET_ID = 'office';
+export const DEFAULT_PRESET_ID = 'office-medium';
 
 export function presetById(id: string): GainPreset | undefined {
   return GAIN_PRESETS.find((p) => p.id === id);
