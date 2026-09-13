@@ -44,9 +44,17 @@ Revisit when a fourth tool needs EPW.
 - [x] **08 Framing, export, share, a11y** — 238 tests. Copy centralised in
       `src/config/copy.ts` for Patrick to edit; scope statement and assumptions
       on the page; share link; units toggle; headings and field labels.
-- [ ] **Deploy** — everything is built and verified against `preview:worker`.
-      Not run: publishing to heatbalance.peasestudio.com is Patrick's call and
-      needs his Cloudflare account.
+- [x] **Deploy** — live at heatbalance.peasestudio.com, 13 Sep 2026.
+- [ ] **Sourced gain densities** — templates in `docs/gain-data/`, with Patrick.
+      Until they come back every density carries a "Provisional" citation and
+      the preset is named "Office (provisional)". **No importer exists yet**; it
+      gets written against the returned sheets rather than against a guess at
+      their shape.
+- [ ] **Copy review** — `src/config/copy.ts`, four `DRAFT_NOTES` open.
+- [ ] **peasestudio.com tool card** — `SITE_RECORD` drafted, not yet added to
+      the site's curated index.
+- [ ] **Widen the ERA5-vs-DDY comparison** — measured for Boston only (2.2 K).
+      Now just a matter of dropping four more archives on the tool.
 
 ## v2
 

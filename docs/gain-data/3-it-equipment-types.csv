@@ -1,0 +1,5 @@
+it_type,label,watts_per_ft2_of_it_room,typical_share_of_building_area,building_average_w_per_ft2,space_fraction_phi,source,notes
+none,No IT space,0,0,0,1,n/a,Default for v1.
+idf-closet,IDF / telecom closet,,,,1,,"Small, usually no dedicated cooling, heat reaches the space."
+server-room,Server room,,,,,,"Often separately cooled — phi may be well under 1."
+data-hall,Data hall / white space,,,,,,"Nearly always rejects heat outdoors — phi near 0 unless recovered."

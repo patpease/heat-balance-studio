@@ -1,0 +1,17 @@
+space_type,label,occupancy_ft2_per_person,people_sensible_btu_h,lighting_w_per_ft2,misc_equip_w_per_ft2,it_equip_w_per_ft2,source_occupancy,source_people_sensible,source_lighting,source_misc_equip,source_it_equip,notes
+office-open,Office — open plan,200,256,0.604,0.650,0,UNVERIFIED — placeholder from worked example,UNVERIFIED — placeholder from worked example,UNVERIFIED — placeholder from worked example,UNVERIFIED — placeholder from worked example,Ships at zero by design — see sheet 3,"Ships in v1. Every source cell must be filled before release. IT is 0 here because that is the shipped default; the worked example uses 1.0 W/m2 and is not a default."
+office-private,Office — private,,,,,,,,,,,
+office-closed,Office — enclosed,,,,,,,,,,,
+conference,Conference / meeting,,,,,,,,,,,
+classroom,Classroom,,,,,,,,,,,
+lecture-hall,Lecture hall,,,,,,,,,,,
+retail,Retail sales floor,,,,,,,,,,,
+restaurant,Restaurant dining,,,,,,,,,,,
+residential-multi,Residential — multifamily dwelling unit,,,,,,,,,,,
+residential-single,Residential — single family,,,,,,,,,,,
+hotel-guestroom,Hotel guest room,,,,,,,,,,,
+warehouse,Warehouse — bulk storage,,,,,,,,,,,
+gym,Gymnasium / fitness,,,,,,,,,,,
+library,Library reading room,,,,,,,,,,,
+laboratory,Laboratory — dry bench,,,,,,,,,,,
+patient-room,Patient room,,,,,,,,,,,
