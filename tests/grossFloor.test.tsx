@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { EnvelopePanel } from '../src/ui/EnvelopePanel';
 import { areasFromBox, DEFAULT_BOX } from '../src/engine/sketchBox';
+import { wallToFloorRatio } from '../src/engine/ua';
 import { DEFAULT_ENVELOPE } from '../src/model/defaults';
 import type { Envelope, UnitSystem } from '../src/model/types';
 import {
@@ -127,5 +128,66 @@ describe('Create surfaces', () => {
   it('is named for what it does', () => {
     panel(DEFAULT_ENVELOPE);
     expect(screen.getByText('Create surfaces')).toBeTruthy();
+  });
+});
+
+/**
+ * Where the wall-to-floor ratio lives.
+ *
+ * It has moved twice, and both moves were forced by a container that could not
+ * hold it. It sat beside the box helper, where it was the third thing on a row
+ * with space for two. It then sat in the panel's title bar, where title, ratio
+ * and export button came to 624 px in a 620 px bar and the button dropped to a
+ * second line.
+ *
+ * The gross floor area row is where it belongs on the merits rather than on the
+ * pixels: wall-to-floor is a ratio of areas whose denominator is gross floor,
+ * and that row had two meaningless em dashes under the U and R columns doing
+ * nothing. These tests pin the placement so the title bar cannot quietly
+ * reacquire a third item.
+ */
+describe('the wall-to-floor ratio sits on the gross floor area row', () => {
+  const grossRow = () =>
+    Array.from(document.querySelectorAll('tbody tr')).find((row) =>
+      /Gross floor area/.test(row.textContent ?? ''),
+    )!;
+
+  it('renders on that row, exactly once in the panel', () => {
+    const { container } = panel(DEFAULT_ENVELOPE);
+    expect(grossRow().textContent).toMatch(/Wall-to-floor/);
+    expect((container.textContent ?? '').match(/Wall-to-floor/g)).toHaveLength(1);
+  });
+
+  it('shows the ratio to two places', () => {
+    panel(DEFAULT_ENVELOPE);
+    expect(grossRow().textContent).toMatch(
+      new RegExp('Wall-to-floor\\s*' + wallToFloorRatio(DEFAULT_ENVELOPE).toFixed(2)),
+    );
+  });
+
+  it('takes the two columns that have no meaning on this row', () => {
+    // U and R do not apply to a floor area. They were em dashes.
+    panel(DEFAULT_ENVELOPE);
+    const spanned = Array.from(grossRow().querySelectorAll('td')).find(
+      (cell) => cell.colSpan === 2,
+    );
+    expect(spanned).toBeDefined();
+    expect(spanned!.textContent).toMatch(/Wall-to-floor/);
+    expect(grossRow().textContent).not.toMatch(/—/);
+  });
+
+  it('keeps the panel title bar to two items', () => {
+    // Title and export button. A third pushed the button onto its own line.
+    panel(DEFAULT_ENVELOPE);
+    const heading = screen.getByRole('heading', { level: 2 });
+    const bar = heading.parentElement!;
+    expect(bar.children).toHaveLength(2);
+    expect(bar.textContent).not.toMatch(/Wall-to-floor/);
+  });
+
+  it('still names the worst hour in full', () => {
+    // The article was trimmed only to make room for the ratio.
+    panel(DEFAULT_ENVELOPE);
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toMatch(/the worst hour/);
   });
 });

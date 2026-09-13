@@ -195,24 +195,15 @@ export function EnvelopePanel({
           zIndex: 1,
         }}
       >
+        {/* Two items, not three. Wall-to-floor lived here for one revision and
+            the bar could not hold it: title, ratio and export button came to
+            624 px in a 620 px bar, so the button wrapped to a second line. It
+            has gone to the gross floor area row, which is a better home anyway
+            — and with the bar back to two items the title keeps its article. */}
         <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>
-          {/* "worst hour", not "the worst hour". The bar holds the title, the
-              ratio and the export button, and at the tracking this eyebrow uses
-              those came to 624 px in a 620 px bar — the definite article was
-              costing 44 of them and carrying none of the meaning. */}
           Building envelope — {String(shownHour).padStart(2, '0')}:00
-          {scrubHour === null ? ', worst hour' : ''}
+          {scrubHour === null ? ', the worst hour' : ''}
         </h2>
-        {/* A headline metric, and a property of the envelope rather than of the
-            box helper it used to sit beside — where it was also the third thing
-            on a row that could only hold two.
-
-            No `marginLeft: auto`. The row is already `space-between`, and an
-            auto margin on the middle item swallows the free space that spreads
-            the other two — which pushed the PNG button onto a second line. */}
-        <span style={{ fontSize: 11, color: 'var(--muted)' }}>
-          Wall-to-floor {wallToFloorRatio(envelope).toFixed(2)}
-        </span>
         <span style={{ display: 'flex', gap: 6, pointerEvents: 'auto' }}>
           <button type="button" onClick={onExport} disabled={exporting} style={overlayButton}>
             {exporting ? 'Exporting…' : 'PNG'}
@@ -336,8 +327,15 @@ export function EnvelopePanel({
                   }
                 />
               </td>
-              <td style={{ ...cell, color: 'var(--muted)' }}>—</td>
-              <td style={{ ...cell, color: 'var(--muted)' }}>—</td>
+              {/* The U and R columns are meaningless on this row and were two
+                  em dashes. Wall-to-floor is a RATIO OF AREAS with gross floor
+                  as its denominator, so the one row in the table that is not a
+                  surface is exactly where it belongs — and it reads as a
+                  property of the number beside it rather than of the panel. */}
+              <td colSpan={2} style={{ ...cell, color: 'var(--muted)', fontSize: 11 }}>
+                Wall-to-floor{' '}
+                <span style={{ color: 'var(--ink)' }}>{wallToFloorRatio(envelope).toFixed(2)}</span>
+              </td>
               <td style={{ textAlign: 'right', padding: '2px 0', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)' }}>
                 drives the gains
               </td>
