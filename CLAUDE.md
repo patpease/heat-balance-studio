@@ -100,6 +100,22 @@ number that no user ever had.
 - **A `k` floor that draws a stub arrow for a 0 W term.** People at 06:00 is
   exactly zero. An unoccupied hour must draw no people arrow at all, or the
   drawing asserts a gain that is not there.
+- **A cache rule that matches a PATH being applied to a FAILURE.** `_headers`
+  stamps `/assets/*` with `max-age=31536000, immutable`, and that matched the
+  404 too. Every deploy has a window where the new index.html is live before an
+  edge has the new bundle; a browser loading the site then caches the 404 **for
+  a year** and shows a blank page from that moment on — no console error worth
+  acting on, and a reload is served from the same poisoned entry. It took this
+  tool down on a real deploy. The worker now sets `no-store` on any non-2xx
+  from `ASSETS.fetch`. Psychrometric Studio had the same rule and a worse
+  version of the symptom: `not_found_handling: "single-page-application"` meant
+  a missing asset answered **200 with the HTML shell**, so there was no 404 to
+  catch and the browser cached HTML at a .js URL for a year.
+- **Trusting curl to tell you the page is fine.** It returned 200 throughout,
+  because the origin WAS healthy — the poisoned copy was in the browser. The
+  test that settles it in one call is fetching the identical URL two ways from
+  inside the page: `fetch(url)` against `fetch(url, { cache: 'reload' })`.
+  Different statuses means the cache, not the server.
 - **A `<select>` whose value matches no option.** It does not render blank —
   the browser falls back to the FIRST option. The building-type picker read
   "Assembly" while the page showed the office worked example, and nothing about
