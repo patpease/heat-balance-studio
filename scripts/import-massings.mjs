@@ -54,9 +54,47 @@ const ARROW_REACH = 88 * 2.3 + 34;
  * Room for a label at the arrow START, running outward from the building.
  *
  * This was 130 when labels were parked past the arrowhead. They sit against the
- * building now, so the crop only has to hold the text itself.
+ * building now, so the crop only has to hold the text itself — but it has to
+ * hold ALL of it. The longest is "MISC EQUIPMENT": 14 characters of IBM Plex
+ * Mono at 13 px, whose advance is 0.6 em, plus 1.4 of tracking each — about
+ * 129 units, and the halo stroke adds 5 on either side.
  */
-const LABEL_ALLOWANCE = 60;
+const LABEL_WIDTH = 140;
+const LABEL_HEIGHT = 42;
+
+/**
+ * The three slots that leave the building vertically, re-aimed to 45°.
+ *
+ * A roof arrow straight up and two floor arrows straight down made the crop
+ * 236 units taller at each end than it had to be, and the drawing is sized by
+ * the panel's WIDTH — so every unit of height it did not need came straight off
+ * how big it could be drawn. At 45° the same arrow reaches 167 units up instead
+ * of 236, and the width it borrows in exchange is free: the ground line already
+ * runs the full canvas, so nothing an arrow does horizontally widens the crop.
+ */
+const DIAGONAL_SLOTS = new Set(['loss-roof', 'loss-ground-floor', 'loss-exposed-floor']);
+
+/**
+ * Which way a re-aimed arrow leans.
+ *
+ * Where the canvas already chose a horizontal side, keep it — the civic and
+ * home roofs are pitched and their arrows were drawn leaving the slope at -64°
+ * and -62°, so they already lean right and should keep leaning right. Only the
+ * arrows drawn dead vertical have no side to preserve, and those take the side
+ * of the building they sit on, which is what keeps the two floor arrows from
+ * meeting under the middle of the slab.
+ *
+ * Deriving it rather than tabulating it per slot is the lesson from the labels:
+ * a table keyed on the slot looked right on the office and was wrong on the
+ * school, which mirrors it.
+ */
+function diagonal(anchor, centreX) {
+  const radians = (anchor.rotate * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const up = Math.sin(radians) < 0;
+  const right = Math.abs(cos) > 0.05 ? cos > 0 : anchor.x >= centreX;
+  return up ? (right ? -45 : -135) : (right ? 45 : 135);
+}
 
 /**
  * Shift a path in x. Absolute M/L/C/Z only — anything else returns null and the
@@ -153,21 +191,36 @@ function extract(label) {
 
   // Crop to the drawing. Soil is excluded deliberately: it runs to the bottom of
   // the canvas and framing to it would shrink every building to a smudge.
-  const all = [
+  const body = [
     ...shell.flatMap((p) => points(p.d)),
     ...glyphs.flatMap((p) => points(p.d)),
     ...points(attr(groundLine, 'd')),
     [personHead.cx - personHead.r, personHead.cy - personHead.r],
     [personHead.cx + personHead.r, personHead.cy + personHead.r],
-    // An arrow reaches SHAFT_LENGTH x MAX_SCALE = 202 units from its anchor,
-    // and a loss label sits just beyond that with its text running outward. The
-    // old allowance was 96 — less than half the real reach — so a long arrow and
-    // its label were simply cut off by the crop. That is what made the text
-    // unreadable exactly when the arrow was biggest.
-    ...anchors.flatMap((a) => [
-      [a.x - ARROW_REACH - LABEL_ALLOWANCE, a.y - ARROW_REACH],
-      [a.x + ARROW_REACH + LABEL_ALLOWANCE, a.y + ARROW_REACH],
-    ]),
+  ];
+
+  // Re-aim the vertical arrows before cropping, so the crop sees where they
+  // actually go.
+  const bodyXs = body.map((p) => p[0]);
+  const centreX = (Math.min(...bodyXs) + Math.max(...bodyXs)) / 2;
+  for (const a of anchors) if (DIAGONAL_SLOTS.has(a.slot)) a.rotate = diagonal(a, centreX);
+
+  const all = [
+    ...body,
+    // An arrow reaches SHAFT_LENGTH x MAX_SCALE = 202 units from its anchor
+    // plus its head, and a label sits at the START with its text running
+    // outward. Reserving that in EVERY direction — which is what this did — put
+    // 236 units of nothing above a floor arrow and below a roof one. The
+    // direction is in the data, so spend the room where the arrow actually
+    // goes and spend only label width on the rest.
+    ...anchors.flatMap((a) => {
+      const radians = (a.rotate * Math.PI) / 180;
+      return [
+        [a.x + ARROW_REACH * Math.cos(radians), a.y + ARROW_REACH * Math.sin(radians)],
+        [a.x - LABEL_WIDTH, a.y - LABEL_HEIGHT],
+        [a.x + LABEL_WIDTH, a.y + LABEL_HEIGHT],
+      ];
+    }),
   ];
   const xs = all.map((p) => p[0]), ys = all.map((p) => p[1]);
   const pad = 14;

@@ -8,6 +8,7 @@ import { GROUND_DRIFT_LIMIT_K } from '../model/defaults';
 import type { Conditions, DesignDay, Site, UnitSystem } from '../model/types';
 import { deltaToF, LABELS, toF, toFt } from '../model/units';
 import { grouped } from './format';
+import { HowItWorks } from './HowItWorks';
 
 /**
  * Location, and the weather that follows from it.
@@ -24,10 +25,18 @@ import { grouped } from './format';
  * invisibly, and a design day derived for the wrong town never announces
  * itself.
  *
- * **The search and the weather file sit side by side, not stacked.** They are
- * two ways to answer the same question, and stacking them spent 220 px of a
- * 900 px screen on an either/or. The matches list and any message appear below
- * both, full width, because either column can produce them.
+ * **The weather-file drop zone is hidden, and the code is deliberately still
+ * here.** Dropping an EPW gave a worse hourly profile than the derived design
+ * day — a single recorded year against the average shape of ten — and the
+ * `.ddy` beside it advertised published ASHRAE design conditions, which made
+ * the tool look like a load calculation it has never been. `WEATHER_FILE_UI`
+ * switches the panel back on; the parser, the drop handlers and their tests are
+ * untouched, so nothing has to be rebuilt to reinstate it.
+ *
+ * **The half-row it leaves goes to `HowItWorks`.** The location field and the
+ * explanation sit side by side rather than stacked, which is what kept this
+ * panel to one row in the first place. The matches list and any message appear
+ * below both, full width, because either column can produce them.
  *
  * **This panel prints temperatures, so it needs `units`.** It shipped without
  * them and stayed in Fahrenheit under SI — a number that is still plausible,
@@ -43,6 +52,14 @@ export interface LocationPanelProps {
   readonly units: UnitSystem;
   readonly onApply: (site: Site, designDay: DesignDay, conditions: Conditions) => void;
 }
+
+/**
+ * Whether the weather-file column is rendered at all.
+ *
+ * Typed rather than inferred as `false`, so the branch below stays live code to
+ * the compiler and the handlers it reads do not become unused.
+ */
+const WEATHER_FILE_UI: boolean = false;
 
 export function LocationPanel({ site, designDay, conditions, units, onApply }: LocationPanelProps) {
   const [query, setQuery] = useState('');
@@ -216,6 +233,7 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
       <span style={{ fontSize: 10, color: 'var(--muted)' }}>{designDay.provenance}</span>
       </section>
 
+      {WEATHER_FILE_UI ? (
       <div
         onDragOver={(event) => {
           event.preventDefault();
@@ -264,6 +282,9 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
           <code>.epw</code> supplies the published ASHRAE minimum.
         </span>
       </div>
+      ) : (
+        <HowItWorks />
+      )}
       </div>
 
       {note && (

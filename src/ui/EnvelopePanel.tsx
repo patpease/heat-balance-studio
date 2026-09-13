@@ -196,9 +196,23 @@ export function EnvelopePanel({
         }}
       >
         <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>
+          {/* "worst hour", not "the worst hour". The bar holds the title, the
+              ratio and the export button, and at the tracking this eyebrow uses
+              those came to 624 px in a 620 px bar — the definite article was
+              costing 44 of them and carrying none of the meaning. */}
           Building envelope — {String(shownHour).padStart(2, '0')}:00
-          {scrubHour === null ? ', the worst hour' : ''}
+          {scrubHour === null ? ', worst hour' : ''}
         </h2>
+        {/* A headline metric, and a property of the envelope rather than of the
+            box helper it used to sit beside — where it was also the third thing
+            on a row that could only hold two.
+
+            No `marginLeft: auto`. The row is already `space-between`, and an
+            auto margin on the middle item swallows the free space that spreads
+            the other two — which pushed the PNG button onto a second line. */}
+        <span style={{ fontSize: 11, color: 'var(--muted)' }}>
+          Wall-to-floor {wallToFloorRatio(envelope).toFixed(2)}
+        </span>
         <span style={{ display: 'flex', gap: 6, pointerEvents: 'auto' }}>
           <button type="button" onClick={onExport} disabled={exporting} style={overlayButton}>
             {exporting ? 'Exporting…' : 'PNG'}
@@ -206,7 +220,7 @@ export function EnvelopePanel({
         </span>
       </div>
 
-      <div style={{ padding: '26px 8px 0' }}>
+      <div style={{ padding: '22px 8px 0' }}>
         <SectionDrawing
           type={massing}
           terms={terms}
@@ -230,7 +244,7 @@ export function EnvelopePanel({
                     textTransform: 'uppercase',
                     color: 'var(--muted)',
                     fontWeight: 500,
-                    padding: '5px 0',
+                    padding: '3px 0',
                     borderBottom: '1px solid var(--border)',
                   }}
                 >
@@ -255,7 +269,7 @@ export function EnvelopePanel({
                     opacity: empty ? 0.55 : 1,
                   }}
                 >
-                  <td style={{ padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
                     {surface.label}
                   </td>
                   <td style={cell}>
@@ -289,7 +303,7 @@ export function EnvelopePanel({
                       onCommit={(next) => next > 0 && setSurface(surface.id, { uValue: rToU(next, units) })}
                     />
                   </td>
-                  <td style={{ textAlign: 'right', padding: '4px 0', borderBottom: '1px solid var(--border)', fontVariantNumeric: 'tabular-nums', color: empty ? undefined : 'var(--loss)' }}>
+                  <td style={{ textAlign: 'right', padding: '2px 0', borderBottom: '1px solid var(--border)', fontVariantNumeric: 'tabular-nums', color: empty ? undefined : 'var(--loss)' }}>
                     {empty ? '—' : `${grouped(heatFlow(term?.watts ?? 0))} ${labels.heatFlow}`}
                   </td>
                 </tr>
@@ -300,7 +314,7 @@ export function EnvelopePanel({
                 the tool reports, and it was previously settable only through
                 the box helper. */}
             <tr>
-              <td style={{ padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
+              <td style={{ padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
                 Gross floor area
               </td>
               <td style={cell}>
@@ -324,7 +338,7 @@ export function EnvelopePanel({
               </td>
               <td style={{ ...cell, color: 'var(--muted)' }}>—</td>
               <td style={{ ...cell, color: 'var(--muted)' }}>—</td>
-              <td style={{ textAlign: 'right', padding: '4px 0', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)' }}>
+              <td style={{ textAlign: 'right', padding: '2px 0', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)' }}>
                 drives the gains
               </td>
             </tr>
@@ -338,7 +352,9 @@ export function EnvelopePanel({
           </p>
         )}
 
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 10, alignItems: 'flex-end' }}>
+        {/* 10, not 14: five fields and their button clear 612 px at this gap
+            and wrapped to three lines at the old one. */}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8, alignItems: 'flex-end' }}>
           {boxFields.map(({ key, caption, aria, decimals }) => (
             <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 2, fontSize: 11 }}>
               <span className="eyebrow">{caption}</span>
@@ -375,9 +391,6 @@ export function EnvelopePanel({
           >
             Create surfaces
           </button>
-          <span style={{ fontSize: 11, color: 'var(--muted)' }}>
-            Wall-to-floor {wallToFloorRatio(envelope).toFixed(2)}
-          </span>
         </div>
       </div>
     </section>

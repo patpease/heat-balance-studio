@@ -40,18 +40,18 @@ const OFFICE_ANCHORS: ArrowAnchor[] = [
   { slot: 'gain-people', x: 300, y: 396, rotate: -108 },
   { slot: 'gain-lighting', x: 406, y: 272, rotate: 174 },
   { slot: 'gain-misc-equipment', x: 481, y: 406, rotate: -72 },
-  { slot: 'loss-roof', x: 400, y: 202, rotate: -90 },
+  { slot: 'loss-roof', x: 400, y: 202, rotate: -45 },
   { slot: 'loss-walls', x: 176, y: 336, rotate: 180 },
   { slot: 'loss-windows', x: 636, y: 258, rotate: 0 },
-  { slot: 'loss-ground-floor', x: 470, y: 470, rotate: 90 },
-  { slot: 'loss-exposed-floor', x: 222, y: 470, rotate: 90 },
+  { slot: 'loss-ground-floor', x: 470, y: 470, rotate: 45 },
+  { slot: 'loss-exposed-floor', x: 222, y: 470, rotate: 135 },
   { slot: 'gain-it-equipment', x: 549, y: 406, rotate: -72 },
 ];
 
 export const OFFICE: BuildingType = {
   id: 'office',
   label: 'Office',
-  viewBox: '-135 -49 1082 770',
+  viewBox: '-134 20 1028 632',
   shell: OFFICE_SHELL,
   glyphs: OFFICE_GLYPHS,
   soil: [
@@ -86,18 +86,18 @@ const SCHOOL_ANCHORS: ArrowAnchor[] = [
   { slot: 'gain-people', x: 284, y: 390, rotate: -98 },
   { slot: 'gain-lighting', x: 456, y: 442, rotate: 178 },
   { slot: 'gain-misc-equipment', x: 219, y: 406, rotate: -118 },
-  { slot: 'loss-roof', x: 500, y: 370, rotate: -90 },
+  { slot: 'loss-roof', x: 500, y: 370, rotate: -45 },
   { slot: 'loss-walls', x: 604, y: 418, rotate: 0 },
   { slot: 'loss-windows', x: 158, y: 352, rotate: 180 },
-  { slot: 'loss-ground-floor', x: 500, y: 478, rotate: 90 },
-  { slot: 'loss-exposed-floor', x: 206, y: 478, rotate: 90 },
+  { slot: 'loss-ground-floor', x: 500, y: 478, rotate: 45 },
+  { slot: 'loss-exposed-floor', x: 206, y: 478, rotate: 135 },
   { slot: 'gain-it-equipment', x: 287, y: 406, rotate: -118 },
 ];
 
 export const SCHOOL: BuildingType = {
   id: 'school',
   label: 'School',
-  viewBox: '-153 101 1068 628',
+  viewBox: '-134 141 1028 519',
   shell: SCHOOL_SHELL,
   glyphs: SCHOOL_GLYPHS,
   soil: [
@@ -134,18 +134,18 @@ const LAB_ANCHORS: ArrowAnchor[] = [
   { slot: 'gain-people', x: 306, y: 384, rotate: -108 },
   { slot: 'gain-lighting', x: 396, y: 292, rotate: 174 },
   { slot: 'gain-misc-equipment', x: 497, y: 390, rotate: -74 },
-  { slot: 'loss-roof', x: 460, y: 218, rotate: -90 },
+  { slot: 'loss-roof', x: 460, y: 218, rotate: -45 },
   { slot: 'loss-walls', x: 186, y: 392, rotate: 180 },
   { slot: 'loss-windows', x: 614, y: 280, rotate: 0 },
-  { slot: 'loss-ground-floor', x: 480, y: 474, rotate: 90 },
-  { slot: 'loss-exposed-floor', x: 230, y: 474, rotate: 90 },
+  { slot: 'loss-ground-floor', x: 480, y: 474, rotate: 45 },
+  { slot: 'loss-exposed-floor', x: 230, y: 474, rotate: 135 },
   { slot: 'gain-it-equipment', x: 565, y: 390, rotate: -74 },
 ];
 
 export const LAB: BuildingType = {
   id: 'lab',
   label: 'Laboratory',
-  viewBox: '-134 -33 1059 758',
+  viewBox: '-134 36 1028 620',
   shell: LAB_SHELL,
   glyphs: LAB_GLYPHS,
   soil: [
@@ -180,18 +180,18 @@ const CIVIC_ANCHORS: ArrowAnchor[] = [
   { slot: 'gain-people', x: 330, y: 394, rotate: -112 },
   { slot: 'gain-lighting', x: 416, y: 330, rotate: 176 },
   { slot: 'gain-misc-equipment', x: 491, y: 402, rotate: -70 },
-  { slot: 'loss-roof', x: 390, y: 196, rotate: -64 },
+  { slot: 'loss-roof', x: 390, y: 196, rotate: -45 },
   { slot: 'loss-walls', x: 170, y: 300, rotate: 180 },
   { slot: 'loss-windows', x: 630, y: 422, rotate: 0 },
-  { slot: 'loss-ground-floor', x: 500, y: 486, rotate: 90 },
-  { slot: 'loss-exposed-floor', x: 216, y: 486, rotate: 90 },
+  { slot: 'loss-ground-floor', x: 500, y: 486, rotate: 45 },
+  { slot: 'loss-exposed-floor', x: 216, y: 486, rotate: 135 },
   { slot: 'gain-it-equipment', x: 559, y: 402, rotate: -70 },
 ];
 
 export const CIVIC: BuildingType = {
   id: 'civic',
   label: 'Civic',
-  viewBox: '-141 -55 1082 792',
+  viewBox: '-134 14 1028 654',
   shell: CIVIC_SHELL,
   glyphs: CIVIC_GLYPHS,
   soil: [
@@ -224,18 +224,18 @@ const MULTIFAMILY_ANCHORS: ArrowAnchor[] = [
   { slot: 'gain-people', x: 316, y: 412, rotate: -108 },
   { slot: 'gain-lighting', x: 406, y: 228, rotate: 174 },
   { slot: 'gain-misc-equipment', x: 487, y: 422, rotate: -72 },
-  { slot: 'loss-roof', x: 400, y: 158, rotate: -90 },
+  { slot: 'loss-roof', x: 400, y: 158, rotate: -45 },
   { slot: 'loss-walls', x: 212, y: 290, rotate: 180 },
   { slot: 'loss-windows', x: 600, y: 207, rotate: 0 },
-  { slot: 'loss-ground-floor', x: 474, y: 486, rotate: 90 },
-  { slot: 'loss-exposed-floor', x: 252, y: 486, rotate: 90 },
+  { slot: 'loss-ground-floor', x: 474, y: 486, rotate: 45 },
+  { slot: 'loss-exposed-floor', x: 252, y: 486, rotate: 135 },
   { slot: 'gain-it-equipment', x: 555, y: 422, rotate: -72 },
 ];
 
 export const MULTIFAMILY: BuildingType = {
   id: 'multifamily',
   label: 'Multi-family',
-  viewBox: '-134 -93 1045 830',
+  viewBox: '-134 -24 1028 692',
   shell: MULTIFAMILY_SHELL,
   glyphs: MULTIFAMILY_GLYPHS,
   soil: [
@@ -267,18 +267,18 @@ const HOME_ANCHORS: ArrowAnchor[] = [
   { slot: 'gain-people', x: 320, y: 376, rotate: -108 },
   { slot: 'gain-lighting', x: 386, y: 308, rotate: 172 },
   { slot: 'gain-misc-equipment', x: 477, y: 390, rotate: -72 },
-  { slot: 'loss-roof', x: 480, y: 206, rotate: -62 },
+  { slot: 'loss-roof', x: 480, y: 206, rotate: -45 },
   { slot: 'loss-walls', x: 190, y: 296, rotate: 180 },
   { slot: 'loss-windows', x: 570, y: 306, rotate: 0 },
-  { slot: 'loss-ground-floor', x: 470, y: 446, rotate: 90 },
-  { slot: 'loss-exposed-floor', x: 240, y: 446, rotate: 90 },
+  { slot: 'loss-ground-floor', x: 470, y: 446, rotate: 45 },
+  { slot: 'loss-exposed-floor', x: 240, y: 446, rotate: 135 },
   { slot: 'gain-it-equipment', x: 545, y: 390, rotate: -72 },
 ];
 
 export const HOME: BuildingType = {
   id: 'home',
   label: 'Single-family home',
-  viewBox: '-134 -45 1028 742',
+  viewBox: '-134 24 1028 604',
   shell: HOME_SHELL,
   glyphs: HOME_GLYPHS,
   soil: [

@@ -2,8 +2,8 @@ import { useId, useRef, useState } from 'react';
 
 import type { BalanceResult } from '../engine/balance';
 import type { UnitSystem } from '../model/types';
-import { LABELS, toBtuHFt2 } from '../model/units';
-import { crossing, linearScale, niceCeiling, ticksUpTo } from './scales';
+import { LABELS, toBtuHFt2, toF } from '../model/units';
+import { crossing, linearScale, niceBounds, niceCeiling, ticksBetween, ticksUpTo } from './scales';
 
 /**
  * The 24-hour balance.
@@ -12,8 +12,20 @@ import { crossing, linearScale, niceCeiling, ticksUpTo } from './scales';
  * between the two curves. A Passive House reference line used to be drawn here
  * and has been removed: it is a certification threshold from a scheme this tool
  * has nothing else to do with, and on a chart of one building's own loss and
- * gain it read as a target rather than the aside it was
- * and labelled as a rough benchmark — never as a gate.
+ * gain it read as a target rather than the aside it was meant to be.
+ *
+ * **Outdoor dry-bulb runs on its own axis, on the right.** It is the driver
+ * behind the loss curve and explains its shape — the loss peak IS the
+ * temperature trough — so reading them together is most of the point. It is a
+ * reference and nothing more: it is not in the balance, it never changes the
+ * gap between the curves, and it is drawn dashed in a neutral token so it
+ * cannot be mistaken for a third quantity being compared.
+ *
+ * The second axis is genuinely a second axis, not the first one relabelled: a
+ * temperature is not a heat flux and sharing a scale would put a meaningless
+ * number on one of them. It needs `niceBounds` rather than `niceCeiling`
+ * because a cold design day goes below zero and a zero-based scale would clip
+ * exactly the hours this tool exists for.
  *
  * Hovering emits the hour, which the section drawing then redraws to. That one
  * interaction is what makes the two halves a single tool rather than two panels
@@ -31,7 +43,8 @@ const WIDTH = 880;
  * unaffected — the horizontal scale sets the type size, and that has not moved.
  */
 const HEIGHT = 560;
-const PAD = { top: 22, right: 20, bottom: 46, left: 54 };
+/** `right` is 52, not 20: the outdoor-temperature axis and its labels live there. */
+const PAD = { top: 22, right: 52, bottom: 46, left: 54 };
 
 export interface BalanceChartProps {
   readonly result: BalanceResult;
@@ -55,11 +68,19 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
   const loss = result.hours.map((h) => convert(h.loss / area));
   const gain = result.hours.map((h) => convert(h.gain / area));
 
+  // Reference only. Never in `loss`, `gain` or `net` — this line moves nothing.
+  const outdoor = result.hours.map((h) => (ip ? toF(h.outdoorTemperature) : h.outdoorTemperature));
+
   const { max, step } = niceCeiling(Math.max(...loss, ...gain) * 1.05);
+  // Given the left axis's own interval count, every temperature label lands on
+  // a gridline the flux axis already draws. See niceBounds.
+  const temperature = niceBounds(Math.min(...outdoor), Math.max(...outdoor), Math.round(max / step));
   const x = linearScale([0, 23], [PAD.left, WIDTH - PAD.right]);
   const y = linearScale([0, max], [HEIGHT - PAD.bottom, PAD.top]);
+  const yTemp = linearScale([temperature.min, temperature.max], [HEIGHT - PAD.bottom, PAD.top]);
 
   const points = (values: readonly number[]) => values.map((v, h) => `${x(h).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const tempPoints = outdoor.map((v, h) => `${x(h).toFixed(1)},${yTemp(v).toFixed(1)}`).join(' ');
 
   // Shade every run of hours where loss exceeds gain, closing each region at
   // the exact crossing rather than at the hour boundary — a region that stops
@@ -146,9 +167,43 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
           </g>
         ))}
 
+        {ticksBetween(temperature.min, temperature.max, temperature.step).map((value) => (
+          <g key={`t${value}`}>
+            <line
+              x1={WIDTH - PAD.right}
+              y1={yTemp(value)}
+              x2={WIDTH - PAD.right + 5}
+              y2={yTemp(value)}
+              stroke="var(--border)"
+              strokeWidth="1"
+            />
+            <text
+              x={WIDTH - PAD.right + 9}
+              y={yTemp(value) + 4}
+              textAnchor="start"
+              fontSize="11"
+              fill="var(--muted)"
+              fontFamily="IBM Plex Mono, monospace"
+            >
+              {value % 1 === 0 ? value : value.toFixed(1)}
+            </text>
+          </g>
+        ))}
+
         {deficitRegions.map((pts, i) => (
           <polygon key={i} points={pts} fill={`url(#${hatchId})`} />
         ))}
+
+        <polyline
+          points={tempPoints}
+          fill="none"
+          stroke="var(--muted)"
+          strokeWidth="1.6"
+          strokeDasharray="5 4"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          opacity="0.85"
+        />
 
         <polyline points={points(gain)} fill="none" stroke="var(--gain)" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
         <polyline points={points(loss)} fill="none" stroke="var(--loss)" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
@@ -173,7 +228,7 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
           </text>
         ))}
         <text x={(WIDTH + PAD.left - PAD.right) / 2} y={HEIGHT - 10} textAnchor="middle" fontSize="10.5" fill="var(--muted)" fontFamily="IBM Plex Mono, monospace">
-          hour of the design day, local standard time · {labels.heatFlux}
+          hour of the design day, local standard time · left {labels.heatFlux} · right {labels.temperature}
         </text>
       </svg>
 
@@ -190,6 +245,7 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
       >
         <Key colour="var(--loss)">envelope loss</Key>
         <Key colour="var(--gain)">internal gain</Key>
+        <Key colour="var(--muted)" dashed>outdoor air</Key>
         <span style={{ marginLeft: 'auto', fontVariantNumeric: 'tabular-nums' }}>
           {String(readOut.hour).padStart(2, '0')}:00 ·{' '}
           <span style={{ color: 'var(--loss)' }}>{convert(readOut.loss / area).toFixed(1)}</span> loss ·{' '}
@@ -198,7 +254,10 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
             {readOut.net < 0 ? '−' : '+'}
             {Math.abs(convert(readOut.net / area)).toFixed(1)}
           </span>{' '}
-          {labels.heatFlux}
+          {labels.heatFlux} ·{' '}
+          <span style={{ color: 'var(--muted)' }}>
+            {outdoor[readOut.hour]!.toFixed(1)} {labels.temperature} out
+          </span>
           {active === null && ' · worst hour'}
         </span>
       </figcaption>
@@ -206,10 +265,18 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
   );
 }
 
-function Key({ colour, children }: { colour: string; children: string }) {
+function Key({ colour, dashed = false, children }: { colour: string; dashed?: boolean; children: string }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-      <span style={{ width: 18, height: 3, background: colour, display: 'inline-block' }} />
+      {/* The dashed key is drawn as an SVG rather than a border, so it matches
+          the line on the chart dash for dash instead of approximating it. */}
+      {dashed ? (
+        <svg width="18" height="3" viewBox="0 0 18 3" style={{ display: 'inline-block', overflow: 'visible' }}>
+          <line x1="0" y1="1.5" x2="18" y2="1.5" stroke={colour} strokeWidth="1.6" strokeDasharray="5 4" />
+        </svg>
+      ) : (
+        <span style={{ width: 18, height: 3, background: colour, display: 'inline-block' }} />
+      )}
       {children}
     </span>
   );

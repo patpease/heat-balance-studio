@@ -101,7 +101,7 @@ export function App() {
   };
 
   return (
-    <main style={{ maxWidth: 1340, margin: '0 auto', padding: '10px 20px 40px', display: 'grid', gap: 8 }}>
+    <main style={{ maxWidth: 1340, margin: '0 auto', padding: '10px 20px 40px', display: 'grid', gap: 7 }}>
       {/* One bar. The studio eyebrow, name and the tool's question sit on a
           single line so the fold budget goes to the drawing and the chart. */}
       <header className="panel" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '7px 14px', flexWrap: 'wrap' }}>

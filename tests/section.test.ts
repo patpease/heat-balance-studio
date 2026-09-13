@@ -35,14 +35,52 @@ describe('the building type record', () => {
   });
 
   it('points losses out of the building and gains up into it', () => {
+    // Asserted as DIRECTIONS, not as literal angles. This test used to pin
+    // rotate === -90 for the roof, which is a fact about one revision of the
+    // canvas rather than about the drawing being right — and it failed the day
+    // the vertical arrows were re-aimed to 45°, when nothing it cared about had
+    // changed. West is west whether it is 180° or 135°.
     const by = (slot: string) => OFFICE.anchors.find((a) => a.slot === slot)!;
-    expect(by('loss-walls').rotate).toBe(180); // west, out
-    expect(by('loss-windows').rotate).toBe(0); // east, out
-    expect(by('loss-roof').rotate).toBe(-90); // up, out
-    expect(by('loss-ground-floor').rotate).toBe(90); // down, out
+    const dx = (slot: string) => Math.cos((by(slot).rotate * Math.PI) / 180);
+    const dy = (slot: string) => Math.sin((by(slot).rotate * Math.PI) / 180);
+
+    expect(dx('loss-walls')).toBeLessThan(0); // west, out
+    expect(dx('loss-windows')).toBeGreaterThan(0); // east, out
+    expect(dy('loss-roof')).toBeLessThan(0); // up, out
+    expect(dy('loss-ground-floor')).toBeGreaterThan(0); // down, out
+    expect(dy('loss-exposed-floor')).toBeGreaterThan(0); // down, out
     // Gains all point upward-ish, into the space.
     for (const slot of ['gain-people', 'gain-misc-equipment', 'gain-it-equipment']) {
-      expect(Math.sin((by(slot).rotate * Math.PI) / 180)).toBeLessThan(0);
+      expect(dy(slot)).toBeLessThan(0);
+    }
+  });
+
+  /**
+   * The three slots that used to leave the building dead vertical.
+   *
+   * Straight up and straight down cost the crop 236 units at each end, and the
+   * drawing is sized by the panel's width — so height it did not need came
+   * straight off how large it could be drawn.
+   */
+  it('leaves the roof and both floors at 45°, on every massing', () => {
+    for (const type of BUILDING_TYPES) {
+      for (const slot of ['loss-roof', 'loss-ground-floor', 'loss-exposed-floor']) {
+        const anchor = type.anchors.find((a) => a.slot === slot);
+        if (!anchor) continue; // Not every massing draws an exposed floor.
+        expect([45, -45, 135, -135], `${type.id} ${slot}`).toContain(anchor.rotate);
+      }
+    }
+  });
+
+  it('leans the two floor arrows apart rather than into each other', () => {
+    // Both point down. If they also leaned the same way their labels would run
+    // together under the middle of the slab.
+    for (const type of BUILDING_TYPES) {
+      const ground = type.anchors.find((a) => a.slot === 'loss-ground-floor');
+      const exposed = type.anchors.find((a) => a.slot === 'loss-exposed-floor');
+      if (!ground || !exposed) continue;
+      const lean = (r: number) => Math.sign(Math.cos((r * Math.PI) / 180));
+      expect(lean(ground.rotate), type.id).not.toBe(lean(exposed.rotate));
     }
   });
 

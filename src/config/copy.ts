@@ -91,6 +91,28 @@ export const WHAT_IT_DOES = [
 ] as const;
 
 /**
+ * How the tool works, in the order a user meets it.
+ *
+ * This took the space the weather-file drop zone used to occupy. That panel
+ * offered a second route to the same design day, and an empty half-row beside
+ * the location field was worth less than saying what the tool actually wants
+ * from you — which nothing on the first screen previously did.
+ *
+ * The order is the order of the page: location, then envelope, then gains. It
+ * is also the order of the calculation, which is why it reads as a sequence
+ * rather than a list of features.
+ */
+export const HOW_IT_WORKS = {
+  lede: 'Three inputs, in this order.',
+  steps: [
+    { title: 'Location', body: 'the cold design day, hour by hour.' },
+    { title: 'Building envelope', body: 'surfaces, areas and U-values.' },
+    { title: 'Internal gains', body: 'people, lighting and equipment.' },
+  ],
+  answer: 'The chart sets loss against gain, hour by hour. Where loss runs higher, the building is short.',
+} as const;
+
+/**
  * The stated assumptions.
  *
  * These belong in the interface, not in a docs folder. An assumption the user

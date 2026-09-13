@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { crossing, linearScale, niceCeiling, ticksUpTo } from '../src/chart/scales';
+import { crossing, linearScale, niceBounds, niceCeiling, ticksBetween, ticksUpTo } from '../src/chart/scales';
 import { resolveTokens } from '../src/io/exportPng';
 import { solve } from '../src/engine/balance';
 import { SAMPLE_CASE } from '../src/model/sampleProject';
@@ -150,5 +150,91 @@ describe('export token resolution', () => {
     for (const token of used) {
       expect(resolveTokens(`var(${token})`)).not.toContain('var(');
     }
+  });
+});
+
+/**
+ * The second axis.
+ *
+ * Outdoor dry-bulb is plotted beside two heat fluxes, and it is the one series
+ * on the chart that goes below zero. `niceCeiling` cannot hold it: it assumes
+ * the axis starts at zero, which would clip exactly the coldest hours the tool
+ * exists to reason about.
+ */
+describe('niceBounds handles an axis that goes negative', () => {
+  it('reaches below zero rather than clipping to it', () => {
+    const { min, max } = niceBounds(-15.3, 2.1);
+    expect(min).toBeLessThanOrEqual(-15.3);
+    expect(max).toBeGreaterThanOrEqual(2.1);
+  });
+
+  it('snaps both ends to a multiple of the step', () => {
+    const { min, max, step } = niceBounds(-15.3, 2.1);
+    expect(Math.abs(min / step - Math.round(min / step))).toBeLessThan(1e-9);
+    expect(Math.abs(max / step - Math.round(max / step))).toBeLessThan(1e-9);
+  });
+
+  it('contains an all-positive range too — Fahrenheit rarely goes below zero', () => {
+    const { min, max } = niceBounds(4.5, 38.2);
+    expect(min).toBeLessThanOrEqual(4.5);
+    expect(max).toBeGreaterThanOrEqual(38.2);
+  });
+
+  it('opens out a flat profile instead of dividing by a zero span', () => {
+    const { min, max } = niceBounds(10, 10);
+    expect(max).toBeGreaterThan(min);
+    expect(Number.isFinite(min) && Number.isFinite(max)).toBe(true);
+  });
+
+  it('ticksBetween names both ends and nothing beyond them', () => {
+    const { min, max, step } = niceBounds(-15.3, 2.1);
+    const ticks = ticksBetween(min, max, step);
+    expect(ticks[0]).toBeCloseTo(min, 9);
+    expect(ticks.at(-1)).toBeCloseTo(max, 9);
+    for (const t of ticks) {
+      expect(t).toBeGreaterThanOrEqual(min - 1e-9);
+      expect(t).toBeLessThanOrEqual(max + 1e-9);
+    }
+  });
+
+  it('produces no duplicate tick, the trap ticksUpTo documents', () => {
+    const ticks = ticksBetween(-0.6, 0.6, 0.1);
+    expect(new Set(ticks.map((t) => t.toFixed(6))).size).toBe(ticks.length);
+  });
+
+  /**
+   * The reason the interval count is exact rather than a target.
+   *
+   * The temperature axis shares a plot with the flux axis and is given that
+   * axis's own interval count, so both divide the same pixel height into the
+   * same bands and every label on the right lands on a gridline drawn for the
+   * left. A target count agrees on some days and not others — which is the
+   * worst version, because it looks deliberate right up until it does not.
+   */
+  it('returns exactly the intervals asked for, whatever the data', () => {
+    const cases: Array<[number, number]> = [
+      [-15.3, 2.1],   // Boston in Celsius
+      [4.5, 28.9],    // the same day in Fahrenheit
+      [-40, -12],     // entirely below zero
+      [0.02, 0.31],   // a sub-unit span
+      [-3, 1200],     // three orders of magnitude
+      [10, 10],       // flat
+    ];
+    for (const intervals of [2, 3, 4, 5, 6]) {
+      for (const [low, high] of cases) {
+        const { min, max, step } = niceBounds(low, high, intervals);
+        expect(ticksBetween(min, max, step), `${low}..${high} / ${intervals}`)
+          .toHaveLength(intervals + 1);
+        expect(min).toBeLessThanOrEqual(low);
+        expect(max).toBeGreaterThanOrEqual(high);
+      }
+    }
+  });
+
+  it('never names a tick the axis does not reach', () => {
+    // The step widens to cover the data rather than the ceiling being stretched
+    // to fit, so the last tick IS the maximum rather than sitting past it.
+    const { min, max, step } = niceBounds(-15.3, 2.1, 4);
+    expect(ticksBetween(min, max, step).at(-1)).toBeCloseTo(max, 9);
   });
 });

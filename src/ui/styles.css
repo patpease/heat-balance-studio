@@ -80,10 +80,11 @@ h1, .display {
   align-items: stretch;
 }
 
-/* The verdict carries the longer sentence, so it takes the wider half. */
-.pair-verdict {
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-}
+/* The verdict row inherits .pair's even split and does not override it.
+   It used to take 1.15fr for the longer sentence, which cost the tool its
+   symmetry: the verdict ran wider than the envelope panel directly above it and
+   the two columns no longer lined up down the page. An even split is worth more
+   than the few characters per line the wider half bought. */
 
 @media (max-width: 1100px) {
   .pair,

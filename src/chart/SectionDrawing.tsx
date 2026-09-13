@@ -71,15 +71,36 @@ export type Placement = { dx: number; dy: number; anchor: 'start' | 'middle' | '
  * school, which mirrors it: there the wall arrow leaves to the right and the
  * window arrow to the left. The label went to the wrong side of both. The
  * direction is in the data, so read it from there.
+ *
+ * Two things decide every placement: the label must be OUTSIDE the building,
+ * and it must be clear of its own shaft. For the horizontal and vertical
+ * arrows one offset satisfies both. For the 45° arrows they pull apart, and
+ * which one wins depends on where the building is:
+ *
+ *   down-diagonal  the soil is open, so the label sits on the arrow's own side
+ *                  and drops below the shaft. The two floor arrows lean to
+ *                  opposite sides, so their labels run away from each other
+ *                  instead of meeting under the middle of the slab.
+ *   up-diagonal    below is the roof, so the label cannot drop. It crosses to
+ *                  the far side of the anchor instead, where the shaft is not.
+ *                  Only the roof arrow points up, so nothing is there to hit.
  */
 export function lossPlacement(rotate: number, slot: string): Placement {
   const radians = (rotate * Math.PI) / 180;
   const cos = Math.cos(radians);
   const sin = Math.sin(radians);
 
+  // Diagonal: both components carry weight, so neither rule below applies.
+  if (Math.abs(cos) > 0.3 && Math.abs(sin) > 0.3) {
+    const right = cos > 0;
+    return sin > 0
+      ? { dx: right ? 14 : -14, dy: 30, anchor: right ? 'start' : 'end' }
+      : { dx: right ? -14 : 14, dy: -14, anchor: right ? 'end' : 'start' };
+  }
+
   if (cos > 0.3) return { dx: 8, dy: 20, anchor: 'start' };
   if (cos < -0.3) return { dx: -8, dy: 20, anchor: 'end' };
-  // Vertical. Both floor arrows point down, so they take opposite sides of
+  // Dead vertical. Both floor arrows point down, so they take opposite sides of
   // their own anchors and cannot run into one another.
   const side = slot === 'loss-exposed-floor' ? -1 : 1;
   return sin > 0
@@ -144,11 +165,19 @@ export function SectionDrawing({
       role="img"
       aria-label={`${type.label} section: envelope heat loss against internal heat gain`}
       preserveAspectRatio="xMidYMid meet"
-      /* Without a cap the drawing is sized by the panel's width — 626 px wide
-         made it 297 px tall, which on a 900 px screen pushed the verdict below
-         the fold. 184 leaves the fold about 27 px of slack for a long location
-         name or a wrapped verdict sentence. It scales down inside the box and stays centred. */
-      style={{ display: 'block', width: '100%', height: 'auto', maxHeight: 232 }}
+      /* Without a cap the drawing is sized by the panel's width, which on a
+         900 px screen pushes the verdict below the fold. The cap is therefore
+         set by the fold budget and nothing else, and it is what makes the
+         drawing HEIGHT-bound: at 628 px wide the box could scale the artwork by
+         0.61 and the cap allows 0.40, so every unit of viewBox height the crop
+         does not need is a unit of size the building gets back.
+
+         That is why the vertical arrows were re-aimed to 45° — the crop went
+         from 770 units tall to 632 — and why this number is 250 rather than the
+         232 it sat at before. Together with the fold the box-fields row gave
+         back when it stopped wrapping to three lines, they draw the building
+         47% larger and still leave the verdict above 900 px. */
+      style={{ display: 'block', width: '100%', height: 'auto', maxHeight: 280 }}
     >
       <defs>
         <filter id={sketchId} x="-12%" y="-12%" width="124%" height="124%">
