@@ -12,6 +12,7 @@
  * a value without going through one of them.
  */
 
+import type { GainPreset } from './gainPresets';
 import { customSchedule } from './schedules';
 import type { Gains, Schedule } from './types';
 
@@ -133,3 +134,32 @@ export const IT_PRESETS: readonly ItPreset[] = Object.freeze([
     note: 'Nearly always rejects its heat outdoors. Counting it as space heat is optimistic.',
   },
 ]);
+
+/**
+ * Apply a building-type preset.
+ *
+ * This replaces every density and re-badges the gains with the preset's label,
+ * which is the one edit path that *sets* the badge rather than clearing it —
+ * the numbers now genuinely are that preset's numbers.
+ *
+ * Schedules are deliberately left alone. Sheet 2 has not come back, so there
+ * are no per-type profiles to swap in; pretending otherwise by rewriting the
+ * strips would tell the user a warehouse had a warehouse schedule when it has
+ * an office one. It also means a user who has dragged a strip keeps that work
+ * when they try a different building type, which is the behaviour you want
+ * while comparing.
+ */
+export function applyGainPreset(gains: Gains, preset: GainPreset): Gains {
+  return {
+    ...gains,
+    occupancy: {
+      ...gains.occupancy,
+      areaPerPerson: preset.areaPerPerson.value ?? gains.occupancy.areaPerPerson,
+      sensiblePerPerson: preset.sensiblePerPerson.value ?? gains.occupancy.sensiblePerPerson,
+    },
+    lighting: { powerDensity: preset.lighting.value ?? 0 },
+    miscEquipment: { powerDensity: preset.miscEquipment.value ?? 0 },
+    itEquipment: { ...gains.itEquipment, powerDensity: preset.itEquipment.value ?? 0 },
+    preset: preset.label,
+  };
+}

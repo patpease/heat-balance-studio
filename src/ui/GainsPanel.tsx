@@ -1,10 +1,11 @@
 import { useState } from 'react';
 
 import { occupantCount } from '../engine/gains';
-import { IT_PRESETS, setDensity, setOccupancyMode, setScheduleHour } from '../model/editGains';
+import { applyGainPreset, IT_PRESETS, setDensity, setOccupancyMode, setScheduleHour } from '../model/editGains';
 import type { DensityField, ScheduleField } from '../model/editGains';
 import { HELP } from '../config/copy';
 import { OFFICE_DENSITIES } from '../model/defaults';
+import { GAIN_PRESETS, SCHEDULES_ARE_PROVISIONAL } from '../model/gainPresets';
 import type { Gains, UnitSystem } from '../model/types';
 import { fromSqFt, fromWattsPerSqFt, LABELS, toBtuH, toSqFt, toWattsPerSqFt } from '../model/units';
 import { NumberCell } from './NumberCell';
@@ -17,6 +18,13 @@ import { ScheduleBars } from './ScheduleBars';
  * verdict is decided: IT runs flat through the night while misc drops to a
  * standby floor. A watt of 24/7 load is worth roughly three times a watt of
  * scheduled load to this answer, and no single-row model can say that.
+ *
+ * The building-type picker sets all four densities at once from
+ * `model/gainPresets.ts`, which is generated from the sourced sheet. It does
+ * NOT touch the schedules — there are no per-type profiles yet, and rewriting
+ * the strips would claim a warehouse had a warehouse schedule when it has an
+ * office one. The line under the picker says so rather than leaving the user to
+ * infer it.
  *
  * No advanced field appears here. φ — the share of IT power that reaches the
  * conditioned space — is in the schema and the engine applies it, but v1 holds
@@ -74,6 +82,18 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
 
   const people = occupantCount(gains, floorArea);
 
+  /**
+   * Which type the picker is showing, or null when the gains are not one.
+   *
+   * An unmatched preset MUST render its own option. A bare `value=""` with no
+   * matching option makes the browser fall back to the FIRST one, so the
+   * control sat on "Assembly" while the page showed the office worked example —
+   * a select that confidently names the wrong building type is worse than one
+   * that admits it does not know. This happens for the worked example, for any
+   * edited state, and for a share link from a build with different presets.
+   */
+  const selected = GAIN_PRESETS.find((preset) => preset.label === gains.preset) ?? null;
+
   const density = (
     field: DensityField,
     value: number,
@@ -130,6 +150,53 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
           {gains.preset ?? 'Edited'}
         </span>
       </header>
+
+      <div
+        style={{
+          display: 'flex',
+          gap: 10,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          padding: '10px 18px',
+          borderBottom: '1px solid var(--border)',
+        }}
+      >
+        <label htmlFor="building-type" className="eyebrow" style={{ fontSize: 10 }}>
+          Building type
+        </label>
+        <select
+          id="building-type"
+          value={selected?.id ?? ''}
+          onChange={(event) => {
+            const preset = GAIN_PRESETS.find((candidate) => candidate.id === event.target.value);
+            if (preset) onChange(applyGainPreset(gains, preset));
+          }}
+          style={{
+            font: 'inherit',
+            fontSize: 12,
+            padding: '5px 7px',
+            background: 'var(--page)',
+            color: 'var(--ink)',
+            border: '1px solid var(--border)',
+          }}
+        >
+          {selected === null && (
+            <option value="">{gains.preset ?? 'Edited'} — not a listed type</option>
+          )}
+          {GAIN_PRESETS.map((preset) => (
+            <option key={preset.id} value={preset.id}>
+              {preset.label}
+            </option>
+          ))}
+        </select>
+        {SCHEDULES_ARE_PROVISIONAL && (
+          <span style={{ fontSize: 10.5, color: 'var(--muted)', maxWidth: '58ch' }}>
+            Densities are sourced per type; the <strong>schedules below are the office
+            profile</strong> for every type, pending data. The overnight fraction moves this
+            tool's answer more than the density it scales.
+          </span>
+        )}
+      </div>
 
       <div style={{ padding: '6px 18px 16px' }}>
         {ROWS.map((row) => {

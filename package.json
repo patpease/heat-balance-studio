@@ -13,7 +13,9 @@
     "test:watch": "vitest",
     "preview": "vite preview --port 4185 --strictPort",
     "preview:worker": "npm run build && wrangler dev --port 8789",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy",
+    "import:gains": "node scripts/import-gain-data.mjs",
+    "gains:schedule-sheet": "node scripts/regen-schedule-sheet.mjs"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.3.0",

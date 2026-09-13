@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import { gainTerms, occupantCount, termAtHour } from '../src/engine/gains';
 import { IT_PRESETS, setDensity, setOccupancyMode, setSchedule, setScheduleHour } from '../src/model/editGains';
-import { DEFAULT_GAINS, OFFICE_DENSITIES } from '../src/model/defaults';
+import { DEFAULT_GAINS, OFFICE_DENSITIES, OFFICE_PRESET } from '../src/model/defaults';
 import { ALWAYS_ON, OFFICE_OCCUPANCY } from '../src/model/schedules';
 import { SAMPLE_GAINS } from '../src/model/sampleProject';
 
 describe('the source badge never outlives the number it described', () => {
   it('starts as a named preset', () => {
-    expect(DEFAULT_GAINS.preset).toBe('Office (provisional)');
+    expect(DEFAULT_GAINS.preset).toBe(OFFICE_PRESET.label);
   });
 
   it('drops on any density edit', () => {
@@ -31,14 +31,14 @@ describe('the source badge never outlives the number it described', () => {
 
   it('survives a no-op edit, because nothing actually changed', () => {
     const same = setScheduleHour(DEFAULT_GAINS, 'occupancy', 0, DEFAULT_GAINS.schedules.occupancy.fractions[0]!);
-    expect(same.preset).toBe('Office (provisional)');
+    expect(same.preset).toBe(OFFICE_PRESET.label);
     expect(same).toBe(DEFAULT_GAINS);
   });
 
   it('survives switching how occupancy is expressed', () => {
     // Density vs headcount is a way of saying the same thing, not a new number.
     const switched = setOccupancyMode(DEFAULT_GAINS, 'count');
-    expect(switched.preset).toBe('Office (provisional)');
+    expect(switched.preset).toBe(OFFICE_PRESET.label);
     expect(switched.occupancy.mode).toBe('count');
   });
 });

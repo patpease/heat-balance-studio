@@ -15,6 +15,8 @@
  * would look authoritative and be wrong most of the time.
  */
 
+import { DEFAULT_PRESET_ID, presetById } from './gainPresets';
+import type { GainPreset } from './gainPresets';
 import {
   ALWAYS_ON,
   OFFICE_LIGHTING,
@@ -46,32 +48,32 @@ export interface DensityDefault {
   readonly citation: string;
 }
 
+/**
+ * The office row of the imported sheet, which is where the opening numbers now
+ * come from. These used to be hand-typed placeholders; they are generated.
+ */
+export const OFFICE_PRESET: GainPreset = presetById(DEFAULT_PRESET_ID) ?? (() => {
+  // A missing office row is a build error, not a runtime fallback: every other
+  // default in this file is derived from it.
+  throw new Error(`gainPresets has no "${DEFAULT_PRESET_ID}" row`);
+})();
+
+/** A null in the sheet means "no default". The engine still needs a number. */
+function densityOf(density: { value: number | null; citation: string }): DensityDefault {
+  return { value: density.value ?? 0, citation: density.citation };
+}
+
 export const OFFICE_DENSITIES = {
   /** m² per person. */
-  areaPerPerson: {
-    value: 18.6,
-    citation: 'Provisional — pending sourcing against ASHRAE 90.1 App. G',
-  },
+  areaPerPerson: densityOf(OFFICE_PRESET.areaPerPerson),
   /** W per person, sensible only. */
-  sensiblePerPerson: {
-    value: 75,
-    citation: 'Provisional — pending sourcing against ASHRAE Fundamentals Ch. 18',
-  },
+  sensiblePerPerson: densityOf(OFFICE_PRESET.sensiblePerPerson),
   /** W/m². */
-  lighting: {
-    value: 6.5,
-    citation: 'Provisional — pending sourcing against ASHRAE 90.1 Table 9.5.1',
-  },
+  lighting: densityOf(OFFICE_PRESET.lighting),
   /** W/m². */
-  miscEquipment: {
-    value: 7.0,
-    citation: 'Provisional — pending sourcing against ASHRAE 90.1 App. G',
-  },
-  /** W/m². Zero by design: see the note at the top of this file. */
-  itEquipment: {
-    value: 0,
-    citation: 'No published default exists — pick an IT space type or enter a value',
-  },
+  miscEquipment: densityOf(OFFICE_PRESET.miscEquipment),
+  /** W/m². Zero: the sheet leaves IT blank, which is "no default", not a value. */
+  itEquipment: densityOf(OFFICE_PRESET.itEquipment),
 } as const satisfies Record<string, DensityDefault>;
 
 export const DEFAULT_CONDITIONS: Conditions = {
@@ -101,7 +103,7 @@ export const DEFAULT_GAINS: Gains = {
     miscEquipment: OFFICE_MISC_EQUIPMENT,
     itEquipment: ALWAYS_ON,
   },
-  preset: 'Office (provisional)',
+  preset: OFFICE_PRESET.label,
 };
 
 /**
