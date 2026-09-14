@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 
 import { BalanceChart } from '../chart/BalanceChart';
 import { BRAND } from '../config/branding';
+import { SiteFooter } from './SiteFooter.js';
 import { TAGLINE } from '../config/copy';
 import { solve } from '../engine/balance';
 import { downloadBlob, exportPng } from '../io/exportPng';
@@ -256,6 +257,8 @@ export function App() {
       />
 
       <ScopePanel />
+
+      <SiteFooter />
     </main>
   );
 }
