@@ -18,9 +18,8 @@
     />
 
     <!--
-      Social preview. No og:image: the artwork here is SVG, which most unfurlers
-      will not render, and pointing at one produces a broken card rather than no
-      card. A raster is the open item.
+      Social preview. og:image is absolute: a root-relative path is resolved
+      against the unfurler's own host by several of them, which fetches nothing.
     -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Heat Balance Studio" />
@@ -30,7 +29,10 @@
       property="og:description"
       content="Pick a building type, name a US city, and see hour by hour whether the building makes more heat than it loses on a cold design day."
     />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content="https://heatbalance.peasestudio.com/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <div id="root"></div>
