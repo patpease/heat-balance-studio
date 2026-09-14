@@ -10,11 +10,27 @@
       media="(prefers-color-scheme: dark)"
       href="/heat-balance-icon-dark.svg"
     />
-    <title>Heat Balance Studio</title>
+    <title>Heat Balance Studio — Envelope Loss vs Internal Gain</title>
+    <link rel="canonical" href="https://heatbalance.peasestudio.com/" />
     <meta
       name="description"
-      content="Can this building be designed to need no heating at all? An early-stage, envelope-only heat balance screen."
+      content="Can this building be designed to need no heating at all? Pick a building type, name a US city, and see hour by hour whether it makes more heat than it loses."
     />
+
+    <!--
+      Social preview. No og:image: the artwork here is SVG, which most unfurlers
+      will not render, and pointing at one produces a broken card rather than no
+      card. A raster is the open item.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Heat Balance Studio" />
+    <meta property="og:title" content="Heat Balance Studio — Envelope Loss vs Internal Gain" />
+    <meta property="og:url" content="https://heatbalance.peasestudio.com/" />
+    <meta
+      property="og:description"
+      content="Pick a building type, name a US city, and see hour by hour whether the building makes more heat than it loses on a cold design day."
+    />
+    <meta name="twitter:card" content="summary" />
   </head>
   <body>
     <div id="root"></div>

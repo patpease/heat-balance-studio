@@ -39,6 +39,18 @@ h1, .display {
   color: var(--muted);
 }
 
+/* The studio eyebrow is a link, but it is an endorsement rather than a call to
+   action: no underline until hover or focus. */
+.eyebrow-link {
+  text-decoration: none;
+}
+
+.eyebrow-link:hover,
+.eyebrow-link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);

@@ -107,7 +107,9 @@ export function App() {
       <header className="panel" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '7px 14px', flexWrap: 'wrap' }}>
         <Mark size={26} />
         <h1 style={{ fontSize: 18, margin: 0 }}>{BRAND.name}</h1>
-        <span className="eyebrow" style={{ fontSize: 9.5 }}>{BRAND.studio}</span>
+        <a className="eyebrow eyebrow-link" href={BRAND.studioUrl} style={{ fontSize: 9.5 }}>
+          {BRAND.studio}
+        </a>
         <p style={{ margin: 0, fontSize: 11.5, color: 'var(--muted)' }}>{TAGLINE}</p>
         <div style={{ flex: 1 }} />
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>

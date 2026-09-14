@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  One route. The tool has no client-side router; its whole state lives in the
+  share link's query string, so there is nothing else for a crawler to reach.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://heatbalance.peasestudio.com/</loc>
+  </url>
+</urlset>

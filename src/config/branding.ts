@@ -8,6 +8,12 @@
 export const BRAND = {
   name: 'Heat Balance Studio',
   studio: 'Pease Studio',
+  /**
+   * Where the studio eyebrow points. The tool sits on its own subdomain, so
+   * this is the only route a reader — or a crawler — has back to the site that
+   * publishes it.
+   */
+  studioUrl: 'https://peasestudio.com/',
   host: 'heatbalance.peasestudio.com',
 } as const;
 
