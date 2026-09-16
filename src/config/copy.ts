@@ -127,13 +127,14 @@ export const ASSUMPTIONS = [
   'Steady state, hour by hour. No thermal mass, so no coasting overnight on stored heat — a heavyweight building is penalised here relative to reality.',
   'One zone, one setpoint. No stratification, no distribution loss.',
   'U-values are assembly averages including thermal bridges. The tool has no bridge model, so that is your job.',
-  'Every surface faces outdoor air or the ground. A wall to an unheated garage has to be entered as an outdoor wall, which overstates its loss.',
+  'A surface facing an unheated but sheltered space — a garage, an attic, a stair core — takes a b factor below 1 on its row. Left at 1 it is treated as facing outdoor air, which overstates its loss.',
   'IT heat goes where you say it goes. Air-cooled IT warms the room and counts as a gain. Chilled-water IT does not — it is offered instead as heat a recovery chiller could deliver. Rejected IT counts for nothing.',
   'Recovered heat is credited at 1.29 kW of heating per kW of IT, the condenser heat of a chiller running at a cooling COP of 3.5. What is NOT modelled: the hot-water temperature that chiller can make, whether your emitters can use it, distribution losses, and whether the recovered heat can physically get to the rooms that need it.',
   'Floor area is gross conditioned area — every per-area figure the tool reports is divided by it, and it is the more generous of the conventions in use.',
   'Gains come from the PNNL prototype models, which are the 90.1-2004 vintage. Their lighting runs well above current code, so this tool takes lighting from the 90.1 Building Area Method and everything else from the prototypes.',
   'Kitchens, laundries and machine rooms are left out of the equipment density. Their load is cooking and washing, most of which leaves through an exhaust hood, and this tool has no exhaust to send it up.',
   'Schedules are weekday profiles. A heating design day is a cold weekday, so the weekend profiles the source publishes are not used.',
+  'The design day carries its real diurnal swing unless you switch it to flat. Results are therefore not directly comparable to a load calculation sized on the ASHRAE heating design day, which is isothermal by convention — switch the design day to flat to compare like with like.',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -229,6 +230,10 @@ export const HELP = {
     'What is cooling the racks decides what their heat is worth. Air-cooled equipment warms the room it sits in, so it is a gain like any other. Chilled water takes the heat out of the room — but a heat recovery chiller makes that same chilled water while producing heating hot water for the rest of the building, so the heat is not lost, it is recovered. Rejected outdoors, through a dry cooler or a packaged unit with no recovery, it is worth nothing here.',
   schedule:
     'Drag a bar to edit, or use the arrow keys. The overnight floor decides the answer: a row that drops to zero at night flatters every building.',
+  flatDesignDay:
+    'The ASHRAE heating design day is isothermal by convention — one temperature for all 24 hours. This tool derives a real diurnal profile instead, which is the honest screen, but it means the answer will not match a load calculation sized on a flat day. Turn this on to compare like with like; leave it off to see the building as it actually behaves.',
+  bufferFactor:
+    'b, the temperature-difference factor. 1.00 for a surface facing outdoor air. Lower for one facing an unheated but sheltered space — a garage, an attic, a stair core — which sits somewhere between inside and outside. 0.5 is the usual first guess for an unheated buffer. Ground floors are driven by ground temperature instead, so b does not apply.',
   sketchBox:
     'Five dimensions instead of five areas, for when you have a massing in mind rather than a takeoff. Everything it fills in stays editable.',
   weatherFile:

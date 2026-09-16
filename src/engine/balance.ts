@@ -152,8 +152,27 @@ export interface SolveInput {
   readonly designDay: DesignDay;
 }
 
+/**
+ * The design day as the analysis will use it.
+ *
+ * Flattening replaces all 24 hours with the minimum, which is what the ASHRAE
+ * heating design day is by convention. Everything downstream reads the result
+ * of this, so the chart's outdoor-air line goes flat too — which is the point:
+ * a user comparing against a load calculation should SEE that the swing is gone
+ * rather than take it on trust.
+ */
+function profileFor(designDay: DesignDay, conditions: Conditions): DesignDay {
+  if (!conditions.flatDesignDay) return designDay;
+  return {
+    ...designDay,
+    dailyRange: 0,
+    hours: designDay.hours.map((h) => ({ ...h, tdb: designDay.minimum })),
+  };
+}
+
 export function solve(input: SolveInput): BalanceResult {
-  const { envelope, gains, conditions, designDay } = input;
+  const { envelope, gains, conditions } = input;
+  const designDay = profileFor(input.designDay, conditions);
   const ua = conductance(envelope);
   const ground = groundLoss(envelope, conditions);
   const terms = gainTerms(gains, envelope.floorArea);

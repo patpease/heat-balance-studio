@@ -235,6 +235,21 @@ export interface Conditions {
   /** °C — resolved by resolveGroundTemperature(). */
   readonly groundTemperature: number;
   readonly groundTemperatureBasis: GroundTemperatureBasis;
+  /**
+   * Hold the design day flat at its minimum for all 24 hours.
+   *
+   * Off by default, and off is the honest screen: a real cold day has a diurnal
+   * swing, and averaging it away understates the daytime gains that make a
+   * building self-heating. It exists because the ASHRAE heating design day IS
+   * isothermal by convention, so a load calculation someone wants to check this
+   * against was sized on a flat day. Without the toggle the two numbers differ
+   * and neither party knows why.
+   *
+   * A condition of the analysis rather than a property of the weather: the
+   * derived `DesignDay` keeps its real profile and its provenance, and this
+   * says what to do with it.
+   */
+  readonly flatDesignDay: boolean;
 }
 
 // ---------------------------------------------------------------------------

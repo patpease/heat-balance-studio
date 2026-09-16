@@ -99,6 +99,10 @@ export const SAMPLE_CONDITIONS: Conditions = {
   indoorSetpoint: DEFAULT_SETPOINT_C,
   groundTemperature: GROUND_RULE_OF_THUMB_C,
   groundTemperatureBasis: 'rule-of-thumb',
+  // The worked example carries the real diurnal profile. Flattening it would
+  // change every figure in §3.8, which is the one thing the golden case exists
+  // to stop.
+  flatDesignDay: false,
 };
 
 export const SAMPLE_CASE = {

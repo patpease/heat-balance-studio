@@ -165,15 +165,34 @@ describe('the wall-to-floor ratio sits on the gross floor area row', () => {
     );
   });
 
-  it('takes the two columns that have no meaning on this row', () => {
-    // U and R do not apply to a floor area. They were em dashes.
+  it('takes the columns that have no meaning on this row', () => {
+    // U, R and b do not apply to a floor area. They were em dashes.
     panel(DEFAULT_ENVELOPE);
-    const spanned = Array.from(grossRow().querySelectorAll('td')).find(
-      (cell) => cell.colSpan === 2,
-    );
+    const spanned = Array.from(grossRow().querySelectorAll('td')).find((cell) => cell.colSpan > 1);
     expect(spanned).toBeDefined();
     expect(spanned!.textContent).toMatch(/Wall-to-floor/);
     expect(grossRow().textContent).not.toMatch(/—/);
+  });
+
+  it('still spans the full width of the table', () => {
+    // The invariant a colSpan exists to hold, and the one that breaks silently
+    // the next time a column is added: this row must cover exactly as many
+    // columns as the header declares, or every cell below shifts left.
+    panel(DEFAULT_ENVELOPE);
+    const headers = document.querySelectorAll('thead th').length;
+    const spanned = Array.from(grossRow().querySelectorAll('td'))
+      .reduce((total, cell) => total + cell.colSpan, 0);
+    expect(spanned).toBe(headers);
+  });
+
+  it('holds every surface row to the same width too', () => {
+    panel(DEFAULT_ENVELOPE);
+    const headers = document.querySelectorAll('thead th').length;
+    for (const row of document.querySelectorAll('tbody tr')) {
+      const width = Array.from(row.querySelectorAll('td'))
+        .reduce((total, cell) => total + cell.colSpan, 0);
+      expect(width, row.firstElementChild?.textContent ?? '').toBe(headers);
+    }
   });
 
   it('keeps the panel title bar to two items', () => {

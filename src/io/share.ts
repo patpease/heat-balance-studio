@@ -89,7 +89,12 @@ export function encodeState(state: ShareState): string {
       t: state.designDay.hours.map((h) => r(h.tdb, 2)),
       v: state.designDay.provenance,
     },
-    c: [r(state.conditions.indoorSetpoint, 3), r(state.conditions.groundTemperature, 3), state.conditions.groundTemperatureBasis],
+    c: [
+      r(state.conditions.indoorSetpoint, 3),
+      r(state.conditions.groundTemperature, 3),
+      state.conditions.groundTemperatureBasis,
+      state.conditions.flatDesignDay ? 1 : 0,
+    ],
     e: {
       a: r(state.envelope.floorArea, 1),
       h: r(state.envelope.storeyHeight, 2),
@@ -226,6 +231,9 @@ export function decodeState(encoded: string): ShareState | null {
         indoorSetpoint: Number(payload.c[0]) || DEFAULT_SETPOINT_C,
         groundTemperature: Number(payload.c[1]),
         groundTemperatureBasis: payload.c[2],
+        // Absent in every link written before the toggle existed, and absent
+        // reads as off — which is the default and what those links meant.
+        flatDesignDay: payload.c[3] === 1,
       },
       envelope: {
         floorArea: Number(payload.e.a),

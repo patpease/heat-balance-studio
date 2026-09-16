@@ -84,6 +84,7 @@ export const DEFAULT_CONDITIONS: Conditions = {
   indoorSetpoint: DEFAULT_SETPOINT_C,
   groundTemperature: GROUND_RULE_OF_THUMB_C,
   groundTemperatureBasis: 'rule-of-thumb',
+  flatDesignDay: false,
 };
 
 export const DEFAULT_GAINS: Gains = {

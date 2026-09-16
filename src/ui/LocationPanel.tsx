@@ -4,6 +4,7 @@ import { fetchDesignDay, searchPlaces } from '../climate/weatherClient';
 import { readWeatherFile } from '../climate/weatherFile';
 import type { GeocodeMatch } from '../climate/openMeteo';
 import { resolveGroundTemperature } from '../engine/ua';
+import { HELP } from '../config/copy';
 import { GROUND_DRIFT_LIMIT_K } from '../model/defaults';
 import type { Conditions, DesignDay, Site, UnitSystem } from '../model/types';
 import { deltaToF, LABELS, toF, toFt } from '../model/units';
@@ -228,9 +229,54 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
         </span>
         <span style={{ color: 'var(--muted)' }}>{groundNote}</span>
       </div>
-      {/* Its own line: inlined into the strip above it wrapped to a third line
-          in a 645 px column and cost more than it saved. */}
-      <span style={{ fontSize: 10, color: 'var(--muted)' }}>{designDay.provenance}</span>
+      {/* Provenance and the design-day option share a line. One says where the
+          weather came from, the other what is being done with it, and neither
+          fills a 645 px row on its own — the toggle on a row of its own cost
+          29 px and pushed the verdict below the fold.
+
+          The flat-day option belongs here because it is a statement about the
+          weather, not about the building. It was held off with no control and
+          disclosed in the assumptions; the assumption was fine and the silence
+          was not, because the one person who needs it is the one cross-checking
+          against a load calculation and finding a number that will not match. */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', fontSize: 10.5 }}>
+        <span style={{ fontSize: 10, color: 'var(--muted)' }}>{designDay.provenance}</span>
+        {/* No `marginLeft: auto`. Twice now an auto margin in a wrapping flex
+            row has swallowed the free space the items after it needed and
+            pushed them onto a second line — the envelope panel's export button
+            first, this row's second button here. In a `flex-wrap` row, let
+            things flow. */}
+        <span className="eyebrow" style={{ fontSize: 9.5 }}>Design day</span>
+        {([
+          // Short because the row also carries the provenance string, and the
+          // two together have 612 px. The title attribute and the warning line
+          // below carry what the labels cannot.
+          { flat: false, label: 'Diurnal' },
+          { flat: true, label: 'Flat (ASHRAE)' },
+        ]).map(({ flat, label }) => (
+          <button
+            key={label}
+            type="button"
+            aria-pressed={conditions.flatDesignDay === flat}
+            title={HELP.flatDesignDay}
+            onClick={() => onApply(site, designDay, { ...conditions, flatDesignDay: flat })}
+            style={{
+              ...button,
+              fontSize: 9.5,
+              padding: '3px 8px',
+              borderColor: conditions.flatDesignDay === flat ? 'var(--gain)' : 'var(--border)',
+              color: conditions.flatDesignDay === flat ? 'var(--gain)' : 'var(--muted)',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+        {conditions.flatDesignDay && (
+          <span style={{ color: 'var(--loss)', flexBasis: '100%' }}>
+            Held at the minimum for all 24 hours — comparable to a load calculation, not to the building.
+          </span>
+        )}
+      </div>
       </section>
 
       {WEATHER_FILE_UI ? (
