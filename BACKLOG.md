@@ -61,20 +61,46 @@ Revisit when a fourth tool needs EPW.
 - [ ] **Saturday and Sunday schedules.** The source publishes them; only the
       weekday is imported, because a heating design day is the cold weekday.
 - [ ] **Copy review** — `src/config/copy.ts`, four `DRAFT_NOTES` open.
-- [ ] **peasestudio.com tool card** — `SITE_RECORD` drafted, not yet added to
-      the site's curated index.
+- [x] **peasestudio.com tool card** — the MDX is in the content collection at
+      `order: 3`, rewritten 13 Sep 2026 for the PNNL data.
 - [ ] **Widen the ERA5-vs-DDY comparison** — measured for Boston only (2.2 K).
-      Now just a matter of dropping four more archives on the tool.
+      Was "drop four more archives on the tool"; the weather-file UI is hidden
+      now, so this is a script against `climate/weatherFile.ts` instead. The
+      parsers are untouched and still tested.
+- [x] **IT as an absolute kW** — 16 Sep 2026. It was a W/m² density, which meant
+      a server room got bigger when the building did.
+- [x] **Heat recovered from cooling** — 16 Sep 2026. φ is gone, replaced by a
+      cooling medium per IT row; four verdict states; recovery credited at the
+      condenser heat and sized to the heating demand.
+- [x] **Flat design day** — 16 Sep 2026. Exposed in the location strip, off by
+      default.
+- [x] **Thousands separators, outdoor-air line, one-screen layout, theme
+      toggle** — 13–16 Sep 2026.
 
 ## v2
 
-- Ventilation and infiltration — the reserved `ventilation` field.
-- **Entry by building type** — five more `BuildingType` records plus a picker,
-  and the light recolour of the massing set.
-- **Reverse entry** from wall-to-floor ratio, height and shape.
-- Guidance links hanging off the verdict's lever line.
-- Expose the advanced fields held at their defaults in v1: IT `spaceFraction`,
-  `bufferFactor`, the flat-day toggle.
+- [ ] **Ventilation and infiltration** — the reserved `ventilation` field.
+      **The next thing worth building.** It is the largest omission the tool
+      states about itself, the reason a passing result is called optimistic,
+      and the architecture was shaped for it: `balance.ts` reduces a list of
+      labelled term functions, volume is already captured, and a v1 file has no
+      `ventilation` key so there is no migration. Everything else on this list
+      refines a tool whose headline caveat is still in place.
+- [x] **Entry by building type** — 13 Sep 2026. 18 types, 6 massings, and the
+      drawing follows the picker.
+- [ ] **Reverse entry** from wall-to-floor ratio, height and shape.
+- [ ] Guidance links hanging off the verdict's lever line.
+- [x] **The advanced fields held at their defaults in v1** — 16 Sep 2026, and
+      the outcome was not what this line expected:
+      - IT `spaceFraction` (φ) — **not exposed. Removed.** A hidden fraction was
+        the wrong shape of control. It is now a cooling medium per IT row: air
+        into the space, chilled water with the heat recovered, or rejected.
+      - The flat-day toggle — **exposed**, in the location strip.
+      - `bufferFactor` — **exposed, then withdrawn the same day.** A sixth
+        column and a Greek-letter factor cost every user interface for a case
+        most do not have. The engine still applies b and the 'buffer' boundary
+        still works; surfaces are locked to air at b = 1, ground floor to
+        ground. Exposing it is still a UI change whenever it earns one.
 
 ## v3
 
