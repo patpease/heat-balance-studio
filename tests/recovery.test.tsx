@@ -73,7 +73,7 @@ describe('the verdict says which of the three it is', () => {
     const box = verdict(400, 'chilled-water');
     expect(box.textContent).toContain(heatFlow(r.peakUsed, 'IP'));
     expect(box.textContent).not.toContain(heatFlow(r.availableAtWorstHour, 'IP'));
-    expect(box.textContent).toMatch(/sized to the .* rather than to the whole cooling load/);
+    expect(box.textContent).toMatch(/sized to /);
   });
 
   it('reports the machine in the displayed system, like everything else', () => {

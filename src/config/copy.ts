@@ -184,7 +184,7 @@ export const VERDICT = {
    * installed, and the tool is about the art of the possible.
    */
   recoveredNote: (shortfall: string, unit: string, hour: string, needed: string) =>
-    `${shortfall} ${unit} short passively at ${hour}. A heat recovery chiller on the IT loop could cover it, sized to the ${needed} the building needs rather than to the whole cooling load.`,
+    `${shortfall} ${unit} short passively at ${hour}. A heat recovery chiller on the IT loop could cover it, sized to ${needed}.`,
 
   /**
    * Recovery that helps and does not finish the job.
