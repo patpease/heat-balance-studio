@@ -326,12 +326,48 @@ describe('heat recovered from cooling is a third answer, not a bigger gain', () 
     expect(r.recovery!.usedAtWorstHour).toBeCloseTo(-withIt(0, 'air').hours[r.worstHour]!.net, 6);
   });
 
-  it('stays short when recovery is real but not enough', () => {
+  /**
+   * The common case, and the one a binary verdict served worst.
+   *
+   * A comms closet on chilled water against a 58 kW gap recovers something real
+   * and nothing like enough. Called `short` it throws away the part that IS
+   * covered; called `recovered` it claims what the building cannot do.
+   */
+  it('is partly recovered when recovery is real but not enough', () => {
     const r = withIt(20, 'chilled-water');
-    expect(r.status).toBe('short');
+    expect(r.status).toBe('partly-recovered');
     expect(r.recovery).not.toBeNull();
-    // Still worth reporting: it closes some hours, just not all of them.
     expect(r.recovery!.marginPerArea).toBeGreaterThan(r.marginPerArea);
+    expect(r.recovery!.hoursStillShort).toBeGreaterThan(0);
+    expect(r.recovery!.stillShort).toBeGreaterThan(0);
+  });
+
+  it('reports the gap that is LEFT, not the one it started with', () => {
+    // The number the next decision gets made against.
+    const r = withIt(20, 'chilled-water');
+    expect(r.recovery!.stillShort).toBeLessThan(r.peakHeatingLoad);
+    expect(r.recovery!.stillShortPerArea).toBeCloseTo(r.recovery!.stillShort / DEFAULT_ENVELOPE.floorArea, 9);
+  });
+
+  it('keeps plain short for a load with nothing to recover', () => {
+    expect(withIt(20, 'rejected').status).toBe('short');
+    expect(withIt(20, 'air').status).toBe('short');
+  });
+
+  it('measures the remaining gap at the hour that is worst AFTER recovery', () => {
+    // Recovery is flat and the passive gains are not, so the hour that hurts
+    // most can move once the loop is counted.
+    const r = withIt(20, 'chilled-water');
+    const after = r.hours.map((h) => h.net + h.recoverable);
+    const worstAfter = after.indexOf(Math.min(...after));
+    expect(r.recovery!.worstHour).toBe(worstAfter);
+  });
+
+  it('reports no remaining gap once recovery closes the day', () => {
+    const r = withIt(400, 'chilled-water');
+    expect(r.status).toBe('recovered');
+    expect(r.recovery!.stillShort).toBe(0);
+    expect(r.recovery!.hoursStillShort).toBe(0);
   });
 
   it('needs every hour closed, not most of them', () => {

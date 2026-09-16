@@ -66,8 +66,34 @@ describe('the verdict says which of the three it is', () => {
     expect(Number(duty.replace(/,/g, ''))).toBeLessThan(Number(available.replace(/,/g, '')));
   });
 
-  it('says what is still missing when recovery is not enough', () => {
-    expect(verdict(20, 'chilled-water').textContent).toMatch(/closes \d+ of the \d+ short hours/);
+  it('leads with what is still missing when recovery is not enough', () => {
+    const box = verdict(20, 'chilled-water');
+    expect(box.textContent).toMatch(/Partly recovered from cooling/);
+    // The headline number is the gap AFTER recovery, not the one before it.
+    const r = result(20, 'chilled-water');
+    const still = (r.recovery!.stillShortPerArea * 3.412141633) / 10.7639104;
+    expect(box.textContent).toMatch(new RegExp(`still ${still.toFixed(1)} `));
+    expect(box.textContent).toMatch(/closing \d+ of the \d+ hours/);
+  });
+
+  /**
+   * "Closes 0 of the 15 hours" makes a real 5 kW sound like nothing.
+   *
+   * A comms closet on chilled water against a 58 kW gap closes no hours
+   * outright and is still worth putting on the loop. Counting a zero is the
+   * wrong sentence; comparing the two quantities is the right one.
+   */
+  it('compares the quantities rather than counting a zero', () => {
+    const box = verdict(4, 'chilled-water');
+    expect(result(4, 'chilled-water').recovery!.hoursCovered).toBe(0);
+    expect(box.textContent).toMatch(/Partly recovered from cooling/);
+    expect(box.textContent).not.toMatch(/closing 0 of/);
+    expect(box.textContent).toMatch(/against a \d+ kW gap/);
+  });
+
+  it('keeps the loss border for partly recovered — it is still not enough', () => {
+    expect(verdict(20, 'chilled-water').style.borderColor).toBe('var(--loss)');
+    expect(verdict(400, 'chilled-water').style.borderColor).toBe('var(--recover)');
   });
 });
 

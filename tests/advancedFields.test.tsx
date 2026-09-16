@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { EnvelopePanel } from '../src/ui/EnvelopePanel';
@@ -74,10 +74,11 @@ describe('the flat design day', () => {
   });
 });
 
-describe('the buffer factor b', () => {
+describe('the buffer factor b stays in the engine and out of the table', () => {
   it('scales a surface conductance, and always did', () => {
     // The engine has applied b since phase 01 so that exposing it would be a UI
-    // change and not a model change. This is that promise being collected.
+    // change and not a model change. That promise is kept whether or not the
+    // control is on screen — and right now it is not.
     const wall = DEFAULT_ENVELOPE.surfaces.find((s) => s.category === 'wall')!;
     expect(surfaceConductance({ ...wall, bufferFactor: 0.5, boundary: 'buffer' }))
       .toBeCloseTo(surfaceConductance({ ...wall, bufferFactor: 1 }) / 2, 9);
@@ -89,7 +90,16 @@ describe('the buffer factor b', () => {
       .toBeCloseTo(surfaceConductance({ ...floor, bufferFactor: 1 }), 9);
   });
 
-  const panel = (onChange = vi.fn()) => {
+  /**
+   * It had a column for one revision and lost it.
+   *
+   * The capability is real and the concept is sound, but a sixth column and a
+   * Greek-letter factor is a lot of interface for a case most users do not
+   * have — and the cost lands on everyone. A wall to an unheated garage goes in
+   * as an outdoor wall, which overstates its loss in the conservative
+   * direction, and the assumptions say so.
+   */
+  it('has no control in the surface table', () => {
     render(
       <EnvelopePanel
         envelope={DEFAULT_ENVELOPE}
@@ -98,51 +108,22 @@ describe('the buffer factor b', () => {
         designDay={SAMPLE_DESIGN_DAY}
         units="SI"
         scrubHour={null}
-        onChange={onChange}
+        onChange={vi.fn()}
         onExport={vi.fn()}
         exporting={false}
       />,
     );
-    return onChange;
-  };
-
-  it('has a column, and it starts at 1', () => {
-    panel();
-    expect((screen.getByLabelText('Walls b factor') as HTMLInputElement).value).toBe('1.00');
+    expect(screen.queryByLabelText(/b factor/)).toBeNull();
+    expect(Array.from(document.querySelectorAll('thead th')).map((h) => h.textContent)).not.toContain('b');
   });
 
-  it('shows no control on the ground floor', () => {
-    panel();
-    expect(screen.queryByLabelText('Ground floor b factor')).toBeNull();
-  });
-
-  it('turns the surface into a buffer boundary when b drops below 1', () => {
-    // One control, not two. A separate boundary picker could disagree with the
-    // number beside it, and then the tool has two answers to one question.
-    const onChange = panel();
-    fireEvent.change(screen.getByLabelText('Walls b factor'), { target: { value: '0.5' } });
-    fireEvent.blur(screen.getByLabelText('Walls b factor'));
-
-    const wall = onChange.mock.calls.at(-1)![0].surfaces.find((s: { category: string }) => s.category === 'wall');
-    expect(wall.bufferFactor).toBe(0.5);
-    expect(wall.boundary).toBe('buffer');
-  });
-
-  it('goes back to outdoor air at b = 1', () => {
-    const onChange = panel();
-    const field = screen.getByLabelText('Roof b factor');
-    fireEvent.change(field, { target: { value: '1' } });
-    fireEvent.blur(field);
-    const roof = onChange.mock.calls.at(-1)![0].surfaces.find((s: { category: string }) => s.category === 'roof');
-    expect(roof.boundary).toBe('air');
-  });
-
-  it('clamps to 0–1 rather than taking a typo into the balance', () => {
-    const onChange = panel();
-    const field = screen.getByLabelText('Windows b factor');
-    fireEvent.change(field, { target: { value: '7' } });
-    fireEvent.blur(field);
-    const windows = onChange.mock.calls.at(-1)![0].surfaces.find((s: { category: string }) => s.category === 'window');
-    expect(windows.bufferFactor).toBe(1);
+  it('locks every surface to the boundary its category implies', () => {
+    // Nothing in the UI can move these, so the shipped defaults ARE the rule.
+    for (const surface of DEFAULT_ENVELOPE.surfaces) {
+      expect(surface.bufferFactor, surface.label).toBe(1);
+      expect(surface.boundary, surface.label).toBe(
+        surface.category === 'groundFloor' ? 'ground' : 'air',
+      );
+    }
   });
 });

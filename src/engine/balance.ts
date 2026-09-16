@@ -56,20 +56,26 @@ export interface BalancePoint {
 /**
  * Three answers, not two.
  *
- * `self-heating` the passive gains cover the losses, every hour. The building
- *                needs no heating plant at all on this design day.
- * `recovered`    the passive gains do not, but a heat recovery chiller on the
- *                IT cooling loop closes the gap. Not passive — the building is
- *                running machinery — but the heat is a by-product of cooling it
- *                had to do anyway, which is about as efficient as heating gets.
- * `short`        still short after recovery.
+ * `self-heating`     the passive gains cover the losses, every hour. The
+ *                    building needs no heating plant at all on this design day.
+ * `recovered`        the passive gains do not, but a heat recovery chiller on
+ *                    the IT cooling loop closes the gap. Not passive — the
+ *                    building is running machinery — but the heat is a
+ *                    by-product of cooling it had to do anyway, which is about
+ *                    as efficient as heating gets.
+ * `partly-recovered` recovery is real and does not close the day. The common
+ *                    case: a 4 kW comms closet on chilled water against a
+ *                    58 kW gap. Reporting it as plain `short` throws away the
+ *                    part that IS covered, and reporting it as `recovered`
+ *                    would be a claim the building cannot meet.
+ * `short`            nothing recoverable, or recovery worth nothing.
  *
- * The middle state exists because the binary hid it. A data hall on chilled
- * water used to read as self-heating, which was wrong, or as short, which was
- * unfair: the honest answer is that the heat is there and it takes a machine to
- * move it.
+ * The two middle states exist because the binary hid them. A data hall on
+ * chilled water used to read as self-heating, which was wrong, or as short,
+ * which was unfair: the honest answer is that the heat is there and it takes a
+ * machine to move it.
  */
-export type BalanceStatus = 'self-heating' | 'recovered' | 'short';
+export type BalanceStatus = 'self-heating' | 'recovered' | 'partly-recovered' | 'short';
 
 /** What recovery is worth, when there is any to be had. */
 export interface Recovery {
@@ -81,8 +87,16 @@ export interface Recovery {
   readonly peakUsed: number;
   /** Hours that would be short passively and are not, once recovery is counted. */
   readonly hoursCovered: number;
-  /** W/m² at the worst hour AFTER recovery. Negative means still short. */
+  /** Hours still short once recovery is counted. */
+  readonly hoursStillShort: number;
+  /** The worst hour AFTER recovery, which need not be the worst passive one. */
+  readonly worstHour: number;
+  /** W/m² at that hour. Negative means still short. */
   readonly marginPerArea: number;
+  /** W still missing at that hour, 0 when recovery closes the day. */
+  readonly stillShort: number;
+  /** W/m² still missing at that hour. */
+  readonly stillShortPerArea: number;
 }
 
 export interface Lever {
@@ -235,8 +249,21 @@ export function solve(input: SolveInput): BalanceResult {
   // 23 hours and leaves one open has not closed the day.
   const anyRecoverable = hours.some((h) => h.recoverable > 0);
   const shortAfterRecovery = hours.filter((h) => h.net + h.recoverable < 0).length;
+  // The worst hour once recovery is counted, which is not always the worst
+  // passive hour: recovery is flat and the passive gains are not, so the hour
+  // that hurts most can move.
+  const worstAfter = hours.reduce(
+    (a, h) => (h.net + h.recoverable < a.net + a.recoverable ? h : a),
+    hours[0]!,
+  );
   const status: BalanceStatus =
-    deficitHours === 0 ? 'self-heating' : shortAfterRecovery === 0 ? 'recovered' : 'short';
+    deficitHours === 0
+      ? 'self-heating'
+      : shortAfterRecovery === 0
+        ? 'recovered'
+        : anyRecoverable
+          ? 'partly-recovered'
+          : 'short';
 
   const recoveryResult: Recovery | null = anyRecoverable
     ? {
@@ -251,7 +278,12 @@ export function solve(input: SolveInput): BalanceResult {
           ...hours.map((h) => Math.min(h.recoverable, Math.max(0, -h.net))),
         ),
         hoursCovered: hours.filter((h) => h.net < 0 && h.net + h.recoverable >= 0).length,
-        marginPerArea: area > 0 ? (worst.net + worst.recoverable) / area : 0,
+        hoursStillShort: shortAfterRecovery,
+        worstHour: worstAfter.hour,
+        marginPerArea: area > 0 ? (worstAfter.net + worstAfter.recoverable) / area : 0,
+        stillShort: Math.max(0, -(worstAfter.net + worstAfter.recoverable)),
+        stillShortPerArea:
+          area > 0 ? Math.max(0, -(worstAfter.net + worstAfter.recoverable)) / area : 0,
       }
     : null;
 

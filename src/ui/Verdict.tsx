@@ -43,14 +43,31 @@ export function Verdict({ result, units }: VerdictProps) {
   const hour = `${String(result.worstHour).padStart(2, '0')}:00`;
 
   const shortfall = flux(result.peakHeatingLoadPerArea).toFixed(1);
+  /** After recovery, at the hour that is worst after recovery. */
+  const afterRecovery = result.recovery
+    ? {
+        shortfall: flux(result.recovery.stillShortPerArea).toFixed(1),
+        hour: `${String(result.recovery.worstHour).padStart(2, '0')}:00`,
+      }
+    : null;
+
   const headline =
     result.status === 'self-heating'
       ? VERDICT.clear(flux(result.marginPerArea).toFixed(1), labels.heatFlux, hour)
       : result.status === 'recovered'
         ? VERDICT.recovered()
-        : VERDICT.short(shortfall, labels.heatFlux, hour);
+        : result.status === 'partly-recovered' && afterRecovery
+          ? VERDICT.partlyRecovered(afterRecovery.shortfall, labels.heatFlux, afterRecovery.hour)
+          : VERDICT.short(shortfall, labels.heatFlux, hour);
 
-  /** The accent this answer is drawn in. Three states, three tokens. */
+  /**
+   * The accent this answer is drawn in.
+   *
+   * Four states, three tokens — deliberately. `partly-recovered` is still an
+   * answer of "not enough", so it keeps the loss border and says the recovery
+   * part in the recovery colour inside. A fourth border would imply a fourth
+   * degree of success when there are only three.
+   */
   const accent =
     result.status === 'self-heating'
       ? 'var(--gain)'
@@ -72,12 +89,12 @@ export function Verdict({ result, units }: VerdictProps) {
             kw(result.recovery.peakUsed),
             kw(result.recovery.availableAtWorstHour),
           )
-        : result.status === 'short' && result.recovery.hoursCovered > 0
-          ? VERDICT.recoveredPartly(
+        : result.status === 'partly-recovered'
+          ? VERDICT.partlyRecoveredNote(
+              kw(result.recovery.availableAtWorstHour),
+              kw(result.peakHeatingLoad),
               result.recovery.hoursCovered,
               result.deficitHours,
-              flux(Math.abs(result.recovery.marginPerArea)).toFixed(1),
-              labels.heatFlux,
             )
           : null;
 

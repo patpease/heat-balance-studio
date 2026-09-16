@@ -49,8 +49,10 @@ describe('the location strip follows the unit switch', () => {
   });
 
   it('shows the ground temperature in the displayed system', () => {
-    expect(location('IP')).toContain('ground 55 °F');
-    expect(location('SI')).toContain('ground 13 °C');
+    // The wording says what the number does — held constant for all 24 hours —
+    // rather than where it came from. The unit is what this test is about.
+    expect(location('IP')).toContain('assumed constant at 55 °F');
+    expect(location('SI')).toContain('assumed constant at 13 °C');
   });
 
   it('converts the ground-drift limit as a DIFFERENCE, not a temperature', () => {

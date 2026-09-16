@@ -156,10 +156,20 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
   /** A temperature DIFFERENCE. Never `temp` — see the note above. */
   const drift = ip ? deltaToF(GROUND_DRIFT_LIMIT_K).toFixed(1) : String(GROUND_DRIFT_LIMIT_K);
 
+  /**
+   * The ground line says what the number DOES, not where it came from.
+   *
+   * It used to read "55 °F, the rule of thumb", which names a provenance the
+   * reader has no way to act on and says nothing about the modelling choice
+   * that actually matters: the ground is held at one temperature for all 24
+   * hours while the air outside swings. That is the assumption someone needs to
+   * see, and it is the same assumption on both branches — only the basis for
+   * the number differs, and the derived branch still names its own.
+   */
   const groundNote =
     conditions.groundTemperatureBasis === 'rule-of-thumb'
-      ? `ground ${temp(conditions.groundTemperature).toFixed(0)} ${labels.temperature}, the rule of thumb`
-      : `ground ${temp(conditions.groundTemperature).toFixed(1)} ${labels.temperature}, this site’s annual mean — more than ${drift} ${labels.temperatureDelta} from the rule of thumb`;
+      ? `ground temperature assumed constant at ${temp(conditions.groundTemperature).toFixed(0)} ${labels.temperature}`
+      : `ground temperature assumed constant at ${temp(conditions.groundTemperature).toFixed(1)} ${labels.temperature}, this site’s annual mean — more than ${drift} ${labels.temperatureDelta} from the default`;
 
   return (
     <div style={{ display: 'grid', gap: 10 }}>
@@ -248,11 +258,12 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
             things flow. */}
         <span className="eyebrow" style={{ fontSize: 9.5 }}>Design day</span>
         {([
-          // Short because the row also carries the provenance string, and the
-          // two together have 612 px. The title attribute and the warning line
-          // below carry what the labels cannot.
+          // Two words, because the row also carries the provenance string and
+          // the two together have 612 px. Naming ASHRAE in the label bought
+          // nothing a hover does not: the title attribute carries the whole
+          // explanation, and the warning line appears when it is on.
           { flat: false, label: 'Diurnal' },
-          { flat: true, label: 'Flat (ASHRAE)' },
+          { flat: true, label: 'Flat' },
         ]).map(({ flat, label }) => (
           <button
             key={label}

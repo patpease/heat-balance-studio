@@ -230,15 +230,14 @@ export function EnvelopePanel({
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
-              {['Surface', `Area, ${labels.area}`, `U, ${labels.uValue}`, `R, ${labels.rValue}`, 'b', 'Loss at current hour'].map((h) => (
+              {['Surface', `Area, ${labels.area}`, `U, ${labels.uValue}`, `R, ${labels.rValue}`, 'Loss at current hour'].map((h) => (
                 <th
                   key={h}
                   style={{
                     textAlign: h === 'Surface' ? 'left' : 'right',
                     fontSize: 10,
-                    letterSpacing: '0.06em',
+                    letterSpacing: '0.12em',
                     textTransform: 'uppercase',
-                    whiteSpace: 'nowrap',
                     color: 'var(--muted)',
                     fontWeight: 500,
                     padding: '3px 0',
@@ -300,36 +299,15 @@ export function EnvelopePanel({
                       onCommit={(next) => next > 0 && setSurface(surface.id, { uValue: rToU(next, units) })}
                     />
                   </td>
-                  {/* b, the temperature-difference factor. Held at 1 with no
-                      control until now, which made the 'buffer' boundary
-                      unreachable and forced a wall to an unheated garage to be
-                      entered as an outdoor wall. The engine has always applied
-                      it, so this is the UI change the model was shaped for.
-
-                      Ground-coupled surfaces take a different driving
-                      temperature, so b does not apply and the cell says so. */}
-                  <td style={cell}>
-                    {surface.boundary === 'ground' ? (
-                      <span style={{ color: 'var(--muted)', paddingRight: 6 }}>—</span>
-                    ) : (
-                      <NumberCell
-                        label={`${surface.label} b factor`}
-                        value={surface.bufferFactor}
-                        decimals={2}
-                        onCommit={(next) => {
-                          const b = Math.min(1, Math.max(0, next));
-                          // The boundary follows the number rather than being a
-                          // second control that can disagree with it: anything
-                          // under 1 IS a buffer, and 1 is outdoor air.
-                          setSurface(surface.id, {
-                            bufferFactor: b,
-                            boundary: b < 1 ? 'buffer' : 'air',
-                          });
-                        }}
-                        style={{ width: 52 }}
-                      />
-                    )}
-                  </td>
+                  {/* b, the temperature-difference factor, had a column here
+                      for one revision and does not any more. The engine still
+                      applies it and the 'buffer' boundary still works — what
+                      was wrong was spending a column of a five-row table, and a
+                      concept, on a case most users do not have. A wall to an
+                      unheated garage is entered as an outdoor wall, which
+                      overstates its loss in the conservative direction and is
+                      disclosed in the assumptions. Exposing it is still a UI
+                      change whenever it earns one. */}
                   <td style={{ textAlign: 'right', padding: '2px 0', borderBottom: '1px solid var(--border)', fontVariantNumeric: 'tabular-nums', color: empty ? undefined : 'var(--loss)' }}>
                     {empty ? '—' : `${grouped(heatFlow(term?.watts ?? 0))} ${labels.heatFlow}`}
                   </td>
@@ -368,7 +346,7 @@ export function EnvelopePanel({
                   as its denominator, so the one row in the table that is not a
                   surface is exactly where it belongs — and it reads as a
                   property of the number beside it rather than of the panel. */}
-              <td colSpan={3} style={{ ...cell, color: 'var(--muted)', fontSize: 11 }}>
+              <td colSpan={2} style={{ ...cell, color: 'var(--muted)', fontSize: 11 }}>
                 Wall-to-floor{' '}
                 <span style={{ color: 'var(--ink)' }}>{wallToFloorRatio(envelope).toFixed(2)}</span>
               </td>
