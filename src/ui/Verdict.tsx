@@ -6,6 +6,15 @@ import { LABELS, toBtuHFt2, toF } from '../model/units';
 /**
  * The verdict, in three parts: where you are, the lever, what this is not.
  *
+ * **And in three STATES, not two.** A building whose IT sits on chilled water
+ * is not passively self-heating — the room never receives that heat — but it is
+ * not short either: a recovery chiller on the loop it already runs turns the
+ * same heat into heating hot water. Calling that "not self-heating yet" would
+ * send someone chasing envelope work they do not need; calling it self-heating
+ * would be a claim about a passive building that is not true. The third state
+ * says what is actually happening, and the panel takes a third border colour so
+ * it reads as its own answer at a glance rather than a qualified pass.
+ *
  * The framing is the art of the possible. The tool exists to make someone want
  * to chase a self-heating building and show them where to push — not to certify
  * that they got there. A sentence that points forward cannot be screenshotted
@@ -33,9 +42,44 @@ export function Verdict({ result, units }: VerdictProps) {
   const labels = LABELS[units];
   const hour = `${String(result.worstHour).padStart(2, '0')}:00`;
 
-  const headline = result.selfHeating
-    ? VERDICT.clear(flux(result.marginPerArea).toFixed(1), labels.heatFlux, hour)
-    : VERDICT.short(flux(result.peakHeatingLoadPerArea).toFixed(1), labels.heatFlux, hour);
+  const shortfall = flux(result.peakHeatingLoadPerArea).toFixed(1);
+  const headline =
+    result.status === 'self-heating'
+      ? VERDICT.clear(flux(result.marginPerArea).toFixed(1), labels.heatFlux, hour)
+      : result.status === 'recovered'
+        ? VERDICT.recovered()
+        : VERDICT.short(shortfall, labels.heatFlux, hour);
+
+  /** The accent this answer is drawn in. Three states, three tokens. */
+  const accent =
+    result.status === 'self-heating'
+      ? 'var(--gain)'
+      : result.status === 'recovered'
+        ? 'var(--recover)'
+        : 'var(--loss)';
+
+  // kW both times: recovery is plant, and plant is sized in kW in both systems.
+  const kw = (watts: number) => Math.round(watts / 1000).toLocaleString('en-US');
+
+  const recoveryNote =
+    result.recovery === null
+      ? null
+      : result.status === 'recovered'
+        ? VERDICT.recoveredNote(
+            shortfall,
+            labels.heatFlux,
+            hour,
+            kw(result.recovery.peakUsed),
+            kw(result.recovery.availableAtWorstHour),
+          )
+        : result.status === 'short' && result.recovery.hoursCovered > 0
+          ? VERDICT.recoveredPartly(
+              result.recovery.hoursCovered,
+              result.deficitHours,
+              flux(Math.abs(result.recovery.marginPerArea)).toFixed(1),
+              labels.heatFlux,
+            )
+          : null;
 
   const lever = result.lever
     ? (result.selfHeating ? VERDICT.leverClear : VERDICT.leverShort)(
@@ -47,13 +91,27 @@ export function Verdict({ result, units }: VerdictProps) {
   return (
     <section
       className="panel"
-      style={{ padding: '8px 14px', borderColor: result.selfHeating ? 'var(--gain)' : 'var(--loss)' }}
+      style={{ padding: '8px 14px', borderColor: accent }}
     >
-      <h2 className="eyebrow" style={{ font: 'inherit', margin: '0 0 6px' }}>Where this stands</h2>
+      <h2 className="eyebrow" style={{ font: 'inherit', margin: '0 0 4px' }}>Where this stands</h2>
 
-      <p className="display" style={{ fontSize: 16, lineHeight: 1.25, margin: '0 0 5px' }}>
+      <p className="display" style={{ fontSize: 16, lineHeight: 1.25, margin: '0 0 3px' }}>
         {headline}
       </p>
+
+      {recoveryNote && (
+        <p
+          style={{
+            margin: '0 0 3px',
+            fontSize: 12,
+            color: 'var(--recover)',
+            maxWidth: '62ch',
+            lineHeight: 1.45,
+          }}
+        >
+          {recoveryNote}
+        </p>
+      )}
 
       {lever && (
         <p style={{ margin: 0, fontSize: 12, color: 'var(--gain)', maxWidth: '62ch', lineHeight: 1.45 }}>{lever}</p>

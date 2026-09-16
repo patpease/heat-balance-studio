@@ -21,7 +21,7 @@
 import type { GainPreset } from './gainPresets';
 import { presetSchedules } from './presetSchedules';
 import { customSchedule } from './schedules';
-import type { Gains, Schedule } from './types';
+import type { Gains, ItCooling, Schedule } from './types';
 
 export type DensityField =
   | 'areaPerPerson'
@@ -123,30 +123,42 @@ export interface ItPreset {
   readonly label: string;
   /** kW, absolute. The same number in IP and SI. */
   readonly kilowatts: number;
+  /** How a space of this kind is normally cooled. The user can still change it. */
+  readonly cooling: ItCooling;
   readonly note: string;
 }
 
 export const IT_PRESETS: readonly ItPreset[] = Object.freeze([
-  { id: 'none', label: 'None', kilowatts: 0, note: 'No dedicated IT space.' },
+  { id: 'none', label: 'None', kilowatts: 0, cooling: 'air', note: 'No dedicated IT space.' },
   {
     id: 'idf',
     label: 'IDF closet',
     kilowatts: 4,
-    note: 'A telecom or comms closet — a rack or two. Usually no dedicated cooling, so its heat reaches the space.',
+    cooling: 'air',
+    note: 'A telecom or comms closet — a rack or two. Rarely worth a chilled-water branch, so its heat warms the room.',
   },
   {
     id: 'server-room',
     label: 'Server room',
     kilowatts: 50,
-    note: 'Often separately cooled — some of this heat may never reach the occupied space.',
+    cooling: 'chilled-water',
+    note: 'Usually on chilled water, which puts its heat where a recovery chiller can reach it.',
   },
   {
     id: 'data-hall',
     label: 'Data hall',
     kilowatts: 400,
-    note: 'Nearly always rejects its heat outdoors. Counting it as space heat is optimistic.',
+    cooling: 'chilled-water',
+    note: 'Chilled water almost always. At this size the recovered heat is worth more than the building can usually take.',
   },
 ]);
+
+/** Change what is cooling the IT. An edit like any other — the badge drops. */
+export function setItCooling(gains: Gains, cooling: ItCooling): Gains {
+  if (gains.itEquipment.cooling === cooling) return gains;
+  const next = edited(gains);
+  return { ...next, itEquipment: { ...next.itEquipment, cooling } };
+}
 
 /**
  * Apply a building-type preset.

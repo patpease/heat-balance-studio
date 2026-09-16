@@ -128,7 +128,8 @@ export const ASSUMPTIONS = [
   'One zone, one setpoint. No stratification, no distribution loss.',
   'U-values are assembly averages including thermal bridges. The tool has no bridge model, so that is your job.',
   'Every surface faces outdoor air or the ground. A wall to an unheated garage has to be entered as an outdoor wall, which overstates its loss.',
-  'All IT heat reaches the space. A separately-cooled server room that rejects its heat outdoors is counted here as if it warmed the building.',
+  'IT heat goes where you say it goes. Air-cooled IT warms the room and counts as a gain. Chilled-water IT does not — it is offered instead as heat a recovery chiller could deliver. Rejected IT counts for nothing.',
+  'Recovered heat is credited at 1.29 kW of heating per kW of IT, the condenser heat of a chiller running at a cooling COP of 3.5. What is NOT modelled: the hot-water temperature that chiller can make, whether your emitters can use it, distribution losses, and whether the recovered heat can physically get to the rooms that need it.',
   'Floor area is gross conditioned area — every per-area figure the tool reports is divided by it, and it is the more generous of the conventions in use.',
   'Gains come from the PNNL prototype models, which are the 90.1-2004 vintage. Their lighting runs well above current code, so this tool takes lighting from the 90.1 Building Area Method and everything else from the prototypes.',
   'Kitchens, laundries and machine rooms are left out of the equipment density. Their load is cooking and washing, most of which leaves through an exhaust hood, and this tool has no exhaust to send it up.',
@@ -147,12 +148,56 @@ export const VERDICT = {
   clear: (margin: string, unit: string, hour: string) =>
     `Self-heating right through this design day, with ${margin} ${unit} in hand at ${hour}.`,
 
+  /**
+   * The third answer, and the reason it exists.
+   *
+   * A building whose IT sits on chilled water is not passively self-heating —
+   * the room never sees that heat. It is also not short: a recovery chiller on
+   * the loop the building is already running turns the same heat into heating
+   * hot water. Calling that "not self-heating yet" would send someone chasing
+   * envelope improvements they do not need.
+   *
+   * The sentence still points forward, which is the rule the other two follow:
+   * it names what the building is doing rather than certifying a pass.
+   */
+  recovered: () => 'Heating recovered from cooling.',
+
+  /**
+   * Under the recovered headline: the machine, and what it has to do.
+   *
+   * Kept to two lines. The first draft ran to four and pushed the verdict 80 px
+   * below the fold, which is a real cost for a sentence saying what the
+   * headline already said.
+   */
+  recoveredNote: (shortfall: string, unit: string, hour: string, duty: string, available: string) =>
+    `${shortfall} ${unit} short passively at ${hour} — a recovery chiller on this loop makes about ${available} kW of hot water, and ${duty} kW of it covers the gap.`,
+
+  /** Under a short headline, when recovery exists but does not close the day. */
+  recoveredPartly: (hours: number, deficit: number, shortfall: string, unit: string) =>
+    `Recovery from the IT loop closes ${hours} of the ${deficit} short hours; ${shortfall} ${unit} still missing at the worst one.`,
+
   /** The lever. Computed from the worst hour's largest loss term. */
   leverShort: (term: string, share: number) =>
     `${term} is ${share}% of the loss at that hour — that is where the gap closes fastest.`,
 
   leverClear: (term: string, share: number) =>
     `${term} is ${share}% of the loss at that hour; that margin is where ventilation will come out of.`,
+} as const;
+
+/** The cooling-medium picker on the IT row. */
+export const IT_COOLING = {
+  air: {
+    label: 'Air into the space',
+    note: 'No dedicated cooling loop. The heat warms the room and counts as a passive gain.',
+  },
+  'chilled-water': {
+    label: 'Chilled water — heat recovered',
+    note: 'A heat recovery chiller makes the chilled water AND heating hot water from the same heat. Not a passive gain; a recovered one.',
+  },
+  rejected: {
+    label: 'Rejected outdoors',
+    note: 'A dry cooler or packaged unit with no recovery. The heat leaves the site and is worth nothing to this building.',
+  },
 } as const;
 
 export const BALANCE_POINT_NOTE =
@@ -180,6 +225,8 @@ export const HELP = {
     'Laptops, workstations, printers, fridges, AV. Follows occupancy with a standby floor that does not drop to zero.',
   itEquipment:
     'Entered as kilowatts of equipment, not as a density: a server room is a room, and its racks do not multiply when the building around them grows. kW reads the same in IP and SI. These loads run at full power overnight, which is when this tool’s verdict is usually decided. No published default exists — 90.1 does not separate receptacle load, and real values span three orders of magnitude.',
+  itCooling:
+    'What is cooling the racks decides what their heat is worth. Air-cooled equipment warms the room it sits in, so it is a gain like any other. Chilled water takes the heat out of the room — but a heat recovery chiller makes that same chilled water while producing heating hot water for the rest of the building, so the heat is not lost, it is recovered. Rejected outdoors, through a dry cooler or a packaged unit with no recovery, it is worth nothing here.',
   schedule:
     'Drag a bar to edit, or use the arrow keys. The overnight floor decides the answer: a row that drops to zero at night flatters every building.',
   sketchBox:

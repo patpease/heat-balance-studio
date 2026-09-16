@@ -1,12 +1,12 @@
 import { useState } from 'react';
 
 import { occupantCount } from '../engine/gains';
-import { applyGainPreset, IT_PRESETS, setDensity, setOccupancyMode, setScheduleHour } from '../model/editGains';
+import { applyGainPreset, IT_PRESETS, setDensity, setItCooling, setOccupancyMode, setScheduleHour } from '../model/editGains';
 import type { DensityField, ScheduleField } from '../model/editGains';
-import { GAINS_SOURCE_NOTE, HELP } from '../config/copy';
+import { GAINS_SOURCE_NOTE, HELP, IT_COOLING } from '../config/copy';
 import { OFFICE_DENSITIES } from '../model/defaults';
 import { GAIN_PRESETS } from '../model/gainPresets';
-import type { Gains, UnitSystem } from '../model/types';
+import type { Gains, ItCooling, UnitSystem } from '../model/types';
 import { fromSqFt, fromWattsPerSqFt, LABELS, toBtuH, toBtuHFt2, toSqFt, toWattsPerSqFt } from '../model/units';
 import { grouped } from './format';
 import { NumberCell } from './NumberCell';
@@ -310,11 +310,19 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
                       key={preset.id}
                       type="button"
                       title={preset.note}
-                      onClick={() => onChange(setDensity(gains, 'itEquipment', preset.kilowatts))}
+                      onClick={() =>
+                        onChange(
+                          setItCooling(
+                            setDensity(gains, 'itEquipment', preset.kilowatts),
+                            preset.cooling,
+                          ),
+                        )
+                      }
                       style={{
                         ...chip,
                         borderColor:
-                          Math.abs(gains.itEquipment.kilowatts - preset.kilowatts) < 0.001
+                          Math.abs(gains.itEquipment.kilowatts - preset.kilowatts) < 0.001 &&
+                          gains.itEquipment.cooling === preset.cooling
                             ? 'var(--gain)'
                             : 'var(--border)',
                       }}
@@ -327,8 +335,11 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
                   ))}
                   {/* What the load is worth on THIS building. The figure is
                       absolute, so its weight depends entirely on the floor it
-                      is spread over — which is the fact the density hid. */}
-                  {gains.itEquipment.kilowatts > 0 && floorArea > 0 && (
+                      is spread over — which is the fact the density hid.
+
+                      Only meaningful for heat that reaches the room, so it is
+                      not shown when the heat is on a loop or gone outdoors. */}
+                  {gains.itEquipment.kilowatts > 0 && floorArea > 0 && gains.itEquipment.cooling === 'air' && (
                     <span style={{ fontSize: 11, color: 'var(--muted)', alignSelf: 'center' }}>
                       ={' '}
                       {(ip
@@ -341,6 +352,49 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
                 </div>
               )}
 
+              {/* What is cooling the racks decides what their heat is worth —
+                  a gain to this room, heat a recovery chiller can fetch, or
+                  nothing. This replaced a hidden φ that was held at 1.0 and
+                  asserted that every watt of a 400 kW hall warmed the room. */}
+              {row.key === 'itEquipment' && gains.itEquipment.kilowatts > 0 && (
+                <div
+                  role="group"
+                  aria-label="IT cooling"
+                  style={{ display: 'flex', gap: 6, margin: '6px 0 0 132px', flexWrap: 'wrap', alignItems: 'center' }}
+                >
+                  <span style={{ fontSize: 11, color: 'var(--muted)' }}>Cooled by</span>
+                  {(Object.keys(IT_COOLING) as ItCooling[]).map((medium) => {
+                    const active = gains.itEquipment.cooling === medium;
+                    return (
+                      <button
+                        key={medium}
+                        type="button"
+                        title={IT_COOLING[medium].note}
+                        aria-pressed={active}
+                        onClick={() => onChange(setItCooling(gains, medium))}
+                        style={{
+                          ...chip,
+                          borderColor: active
+                            ? medium === 'chilled-water'
+                              ? 'var(--recover)'
+                              : 'var(--gain)'
+                            : 'var(--border)',
+                          color: active && medium === 'chilled-water' ? 'var(--recover)' : undefined,
+                        }}
+                      >
+                        {IT_COOLING[medium].label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {row.key === 'itEquipment' && gains.itEquipment.kilowatts > 0 && (
+                <p style={{ margin: '5px 0 0 132px', fontSize: 11, color: 'var(--muted)', maxWidth: '62ch', lineHeight: 1.45 }}>
+                  {IT_COOLING[gains.itEquipment.cooling].note}
+                </p>
+              )}
+
               {isOpen && (
                 <p style={{ margin: '8px 0 0 132px', fontSize: 11, color: 'var(--muted)', maxWidth: '54ch' }}>
                   {row.help}
@@ -350,6 +404,8 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
                       No published default exists — 90.1 does not separate receptacle load into IT and misc, and real
                       values span three orders of magnitude. The presets are provisional, and they are whole-room
                       loads: picking one does not change when the building around it does.
+                      {' '}
+                      {HELP.itCooling}
                     </>
                   )}
                 </p>

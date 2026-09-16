@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-import { gainTerms, occupantCount, termAtHour } from '../src/engine/gains';
-import { applyGainPreset, IT_PRESETS, setDensity, setOccupancyMode, setSchedule, setScheduleHour } from '../src/model/editGains';
+import { gainTerms, occupantCount, recoveryTerm, RECOVERY_COP, RECOVERY_MULTIPLIER, termAtHour } from '../src/engine/gains';
+import { applyGainPreset, IT_PRESETS, setDensity, setItCooling, setOccupancyMode, setSchedule, setScheduleHour } from '../src/model/editGains';
 import { GAIN_PRESETS } from '../src/model/gainPresets';
 import { DEFAULT_GAINS, OFFICE_DENSITIES, OFFICE_PRESET } from '../src/model/defaults';
 import { ALWAYS_ON, OFFICE_OCCUPANCY } from '../src/model/schedules';
@@ -151,12 +151,54 @@ describe('IT equipment', () => {
     expect(applyGainPreset(withIt, other).itEquipment.kilowatts).toBe(400);
   });
 
-  it('holds φ at 1 with no way to change it in v1', () => {
-    // The engine applies it so that exposing it later is a UI change. Nothing
-    // in editGains can move it — that is the point.
-    expect(DEFAULT_GAINS.itEquipment.spaceFraction).toBe(1);
-    const poked = setDensity(DEFAULT_GAINS, 'itEquipment', 12);
-    expect(poked.itEquipment.spaceFraction).toBe(1);
+  /**
+   * φ is gone, replaced by the question it was a bad proxy for.
+   *
+   * It was a hidden fraction held at 1.0 — every watt of IT warming the room —
+   * which was defensible at a fraction of a W/m² and absurd at 400 kW. It was
+   * also the wrong shape of control: a user does not know what fraction leaks
+   * into the room, and does know what is cooling the racks.
+   */
+  it('asks what is cooling the IT, not what fraction escapes', () => {
+    expect(DEFAULT_GAINS.itEquipment).not.toHaveProperty('spaceFraction');
+    expect(DEFAULT_GAINS.itEquipment.cooling).toBe('air');
+  });
+
+  it('counts air-cooled IT as a passive gain to the space', () => {
+    const gains = setItCooling(setDensity(DEFAULT_GAINS, 'itEquipment', 50), 'air');
+    const it = gainTerms(gains, 6000).find((t) => t.slot === 'gain-it-equipment')!;
+    expect(it.peakWatts).toBe(50_000);
+    expect(recoveryTerm(gains).peakWatts).toBe(0);
+  });
+
+  it('counts chilled-water IT as recoverable and NOT as a gain', () => {
+    // The room does not get this heat. A machine can fetch it.
+    const gains = setItCooling(setDensity(DEFAULT_GAINS, 'itEquipment', 50), 'chilled-water');
+    const it = gainTerms(gains, 6000).find((t) => t.slot === 'gain-it-equipment')!;
+    expect(it.peakWatts).toBe(0);
+    expect(recoveryTerm(gains).peakWatts).toBeCloseTo(50_000 * RECOVERY_MULTIPLIER, 6);
+  });
+
+  it('counts rejected IT as worth nothing at all', () => {
+    const gains = setItCooling(setDensity(DEFAULT_GAINS, 'itEquipment', 50), 'rejected');
+    expect(gainTerms(gains, 6000).find((t) => t.slot === 'gain-it-equipment')!.peakWatts).toBe(0);
+    expect(recoveryTerm(gains).peakWatts).toBe(0);
+  });
+
+  it('credits the compressor work, so recovery beats the load it cooled', () => {
+    // A chiller rejects what it absorbed PLUS the work done moving it. 1.29 kW
+    // of heating per kW of IT at a cooling COP of 3.5.
+    expect(RECOVERY_MULTIPLIER).toBeCloseTo(1 + 1 / RECOVERY_COP, 12);
+    expect(RECOVERY_MULTIPLIER).toBeGreaterThan(1);
+    const gains = setItCooling(setDensity(DEFAULT_GAINS, 'itEquipment', 400), 'chilled-water');
+    expect(recoveryTerm(gains).peakWatts).toBeCloseTo(514_285.7, 0);
+  });
+
+  it('follows the IT schedule, which is why the heat is there at 04:00', () => {
+    const gains = setItCooling(setDensity(DEFAULT_GAINS, 'itEquipment', 50), 'chilled-water');
+    const term = recoveryTerm(gains);
+    expect(term.schedule).toHaveLength(24);
+    expect(term.schedule.every((f) => f === 1)).toBe(true);
   });
 });
 

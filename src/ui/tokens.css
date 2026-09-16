@@ -19,6 +19,12 @@
  * all three or exports and forced themes fall back to an initial value, which
  * for `fill` is opaque black.
  *
+ * `--recover` is not from the canvas. It is the third verdict state — heat
+ * recovered from cooling rather than gained passively — and it is a water blue
+ * because the thing doing the recovering is a chilled-water loop. Measured, not
+ * judged: 5.36:1 on the light panel and 5.64:1 on the dark, so both clear AA at
+ * the 11px sizes the verdict box uses.
+ *
  * One correction applied to the canvas on the way in: `--muted` is #5B6E66 and
  * not the canvas's #6B7F77, which measures 4.05:1 on the panel and fails WCAG
  * AA at the 11px label sizes it is used at. #5B6E66 is 5.16:1 and is already in
@@ -38,6 +44,7 @@
 
   --loss: #A8462E;
   --gain: #2F7D6E;
+  --recover: #2F6E8A;
 
   --massing-fill: #FFFFFF;
   --massing-fill-opacity: 0.72;
@@ -60,6 +67,7 @@
 
     --loss: #E4805A;
     --gain: #55C0A5;
+    --recover: #5AA8C8;
 
     --massing-fill: #2C3238;
     --massing-fill-opacity: 0.7;
@@ -82,6 +90,7 @@
 
   --loss: #E4805A;
   --gain: #55C0A5;
+  --recover: #5AA8C8;
 
   --massing-fill: #2C3238;
   --massing-fill-opacity: 0.7;

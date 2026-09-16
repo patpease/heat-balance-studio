@@ -27,6 +27,13 @@ import { crossing, linearScale, niceBounds, niceCeiling, ticksBetween, ticksUpTo
  * because a cold design day goes below zero and a zero-based scale would clip
  * exactly the hours this tool exists for.
  *
+ * **The gain line is PASSIVE gain, and stays passive.** When IT sits on
+ * chilled water its heat never enters the room, so it is not on that line — a
+ * second line above it shows passive plus what a recovery chiller could
+ * deliver, and the gap between the two IS the recovery. The deficit shading
+ * keeps measuring to the passive line, because that is what the space actually
+ * receives and the shading is the claim people read.
+ *
  * Hovering emits the hour, which the section drawing then redraws to. That one
  * interaction is what makes the two halves a single tool rather than two panels
  * sharing a screen.
@@ -67,6 +74,24 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
   const area = floorArea > 0 ? floorArea : 1;
   const loss = result.hours.map((h) => convert(h.loss / area));
   const gain = result.hours.map((h) => convert(h.gain / area));
+  /**
+   * Passive gain plus the recovery the hour actually USES, capped at the loss.
+   *
+   * Drawn uncapped, a 400 kW hall puts this line four times higher than the
+   * loss curve, the axis stretches to hold it, and the two curves the chart
+   * exists to compare collapse into a band at the bottom. Capped, the line
+   * rises off the passive curve and meets the loss curve exactly where recovery
+   * closes the gap — which is the reading anyone wants from it — and where
+   * recovery falls short it stops in between, leaving the remaining deficit
+   * visible above it.
+   *
+   * The capacity that goes unused is a number, not a shape: the verdict reports
+   * what the machine could deliver against what the hour needs.
+   */
+  const recovered = result.hours.map((h) =>
+    convert(Math.min(h.gain + h.recoverable, Math.max(h.gain, h.loss)) / area),
+  );
+  const hasRecovery = result.recovery !== null;
 
   // Reference only. Never in `loss`, `gain` or `net` — this line moves nothing.
   const outdoor = result.hours.map((h) => (ip ? toF(h.outdoorTemperature) : h.outdoorTemperature));
@@ -205,6 +230,21 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
           opacity="0.85"
         />
 
+        {/* Above the passive line, and drawn first so the two data curves sit
+            over it. Dashed because it is available heat rather than heat the
+            space is getting. */}
+        {hasRecovery && (
+          <polyline
+            points={points(recovered)}
+            fill="none"
+            stroke="var(--recover)"
+            strokeWidth="2"
+            strokeDasharray="7 4"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        )}
+
         <polyline points={points(gain)} fill="none" stroke="var(--gain)" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
         <polyline points={points(loss)} fill="none" stroke="var(--loss)" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
 
@@ -245,6 +285,7 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
       >
         <Key colour="var(--loss)">envelope loss</Key>
         <Key colour="var(--gain)">internal gain</Key>
+        {hasRecovery && <Key colour="var(--recover)" dashed>+ recovered from cooling</Key>}
         <Key colour="var(--muted)" dashed>outdoor air</Key>
         <span style={{ marginLeft: 'auto', fontVariantNumeric: 'tabular-nums' }}>
           {String(readOut.hour).padStart(2, '0')}:00 ·{' '}

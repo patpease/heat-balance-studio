@@ -48,6 +48,47 @@ export function occupantCount(gains: Gains, floorArea: number): number {
  * floor from 3.1 to 3.8 W/m² — a watt of 24/7 load is worth roughly three times
  * a watt of scheduled load to this verdict.
  */
+/** The IT load in watts, whatever happens to it afterwards. */
+function itWatts(gains: Gains): number {
+  return gains.itEquipment.kilowatts * 1000;
+}
+
+/**
+ * The cooling COP assumed for a heat recovery chiller.
+ *
+ * A chiller rejects condenser heat equal to what it absorbed PLUS the work the
+ * compressor did to move it, so the heating it delivers is larger than the load
+ * it cooled. At a cooling COP of 3.5 — mid-range for a water-cooled machine
+ * making useful hot water, and deliberately not the best case — that is
+ * 1 + 1/3.5 = 1.29 kW of heating per kW of IT.
+ *
+ * Fixed and disclosed rather than exposed. It is the kind of number the tool
+ * can default correctly at screening stage, where the question is whether the
+ * strategy is worth pursuing rather than what machine to buy.
+ */
+export const RECOVERY_COP = 3.5;
+
+/** Heating delivered per unit of heat recovered. 1.29 at COP 3.5. */
+export const RECOVERY_MULTIPLIER = 1 + 1 / RECOVERY_COP;
+
+/**
+ * Heating hot water available from recovery, at full IT load.
+ *
+ * Zero unless the IT is on chilled water: air-cooled heat is already counted as
+ * a passive gain, and rejected heat is gone. Follows the IT schedule, which is
+ * flat by definition — the recovery is available exactly when the IT runs, and
+ * IT runs through the night, which is when the building needs it.
+ */
+export function recoveryTerm(gains: Gains): GainTerm {
+  return {
+    slot: 'gain-it-equipment',
+    label: 'Recovered from cooling',
+    peakWatts:
+      gains.itEquipment.cooling === 'chilled-water' ? itWatts(gains) * RECOVERY_MULTIPLIER : 0,
+    schedule: gains.schedules.itEquipment.fractions,
+  };
+}
+
 export function gainTerms(gains: Gains, floorArea: number): GainTerm[] {
   const people = occupantCount(gains, floorArea);
   return [
@@ -75,7 +116,12 @@ export function gainTerms(gains: Gains, floorArea: number): GainTerm[] {
       // No floorArea. This is the one gain that does not scale with the
       // building — see the note on Gains.itEquipment. kW to W is the only
       // conversion it needs, and it is the same in IP and SI.
-      peakWatts: gains.itEquipment.kilowatts * 1000 * gains.itEquipment.spaceFraction,
+      //
+      // Only AIR-cooled IT is a gain to this space. Chilled-water IT is worth
+      // something, but not here and not passively — see `recoveryTerm`. A
+      // zero-watt term draws no arrow and adds nothing, which is exactly right:
+      // a CHW-cooled hall does not warm the room it sits in.
+      peakWatts: gains.itEquipment.cooling === 'air' ? itWatts(gains) : 0,
       schedule: gains.schedules.itEquipment.fractions,
     },
   ];

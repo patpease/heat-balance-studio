@@ -82,7 +82,7 @@ export const SAMPLE_GAINS: Gains = {
   // to the watt — the golden case is unchanged by the move to absolute kW, and
   // balance.test.ts proves it. The shipped DEFAULT is zero; this example
   // carries a value so the ninth arrow has something to draw.
-  itEquipment: { kilowatts: 0.5, spaceFraction: 1 },
+  itEquipment: { kilowatts: 0.5, cooling: 'air' },
   schedules: {
     occupancy: OFFICE_OCCUPANCY,
     lighting: OFFICE_LIGHTING,

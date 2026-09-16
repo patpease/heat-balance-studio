@@ -99,9 +99,9 @@ export const DEFAULT_GAINS: Gains = {
     // kW, absolute. Not from the preset: the prototypes quote a density and
     // leave it blank in any case. See applyGainPreset.
     kilowatts: 0,
-    // φ. Held at 1 in v1 with no control; the assumption is disclosed instead,
-    // because the user cannot change it.
-    spaceFraction: 1,
+    // Irrelevant at 0 kW, but 'air' is the honest default for whatever the
+    // user types next: a load with no stated cooling strategy warms the room.
+    cooling: 'air',
   },
   // The office preset's OWN profiles, not the hand-typed OFFICE_* constants —
   // those stay in schedules.ts for the frozen worked example.

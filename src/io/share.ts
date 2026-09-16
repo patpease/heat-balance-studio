@@ -20,6 +20,7 @@ import type {
   DesignDay,
   Envelope,
   Gains,
+  ItCooling,
   Site,
   Surface,
   UnitSystem,
@@ -47,8 +48,13 @@ export interface ShareState {
  * was W/m² of the floor area travelling in the same payload, so the kilowatts
  * it meant can be recovered exactly — it is the same multiplication the engine
  * used to do at solve time.
+ *
+ * 3: φ became a cooling medium. `i[1]` was a number 0–1 and is now one of
+ * 'air' | 'chilled-water' | 'rejected'. Both older versions carried φ = 1 in
+ * practice, because nothing in the UI could change it — so they migrate to
+ * 'air', which is what φ = 1 meant: every watt into the room.
  */
-const VERSION = 2;
+const VERSION = 3;
 
 /** Round for the wire: areas to 0.1 m², U-values to 3 dp, temperatures to 2. */
 const r = (value: number, places: number): number => Number(value.toFixed(places));
@@ -101,7 +107,7 @@ export function encodeState(state: ShareState): string {
       o: [state.gains.occupancy.mode, r(state.gains.occupancy.areaPerPerson, 3), r(state.gains.occupancy.count, 1), r(state.gains.occupancy.sensiblePerPerson, 1)],
       l: r(state.gains.lighting.powerDensity, 3),
       m: r(state.gains.miscEquipment.powerDensity, 3),
-      i: [r(state.gains.itEquipment.kilowatts, 3), r(state.gains.itEquipment.spaceFraction, 3)],
+      i: [r(state.gains.itEquipment.kilowatts, 3), state.gains.itEquipment.cooling],
       p: state.gains.preset,
       sid: state.gains.sourceId,
       k: [
@@ -123,6 +129,13 @@ export function encodeState(state: ShareState): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+/** `i[1]` across three versions: a φ number before, a medium after. */
+function readCooling(raw: unknown): ItCooling {
+  if (raw === 'air' || raw === 'chilled-water' || raw === 'rejected') return raw;
+  const phi = Number(raw);
+  return Number.isFinite(phi) && phi >= 0.5 ? 'air' : 'rejected';
+}
+
 export function decodeState(encoded: string): ShareState | null {
   try {
     const padded = encoded.replace(/-/g, '+').replace(/_/g, '/');
@@ -134,7 +147,7 @@ export function decodeState(encoded: string): ShareState | null {
     // by returning null rather than half-reading it into a plausible-looking
     // building that is not the one that was sent. An older version we can still
     // read faithfully is migrated instead — see the note on VERSION.
-    if (payload?.v !== VERSION && payload?.v !== 1) return null;
+    if (payload?.v !== VERSION && payload?.v !== 1 && payload?.v !== 2) return null;
 
     const surfaces: Surface[] = payload.e.s.map((entry: unknown[]) => ({
       id: String(entry[0]),
@@ -167,7 +180,11 @@ export function decodeState(encoded: string): ShareState | null {
           payload.v === 1
             ? r((Number(payload.g.i[0]) * Number(payload.e.a)) / 1000, 3)
             : Number(payload.g.i[0]),
-        spaceFraction: Number(payload.g.i[1]),
+        // v1 and v2 carry φ here as a number. φ = 1 meant every watt reached
+        // the room, which is what 'air' means now; anything less meant some of
+        // it went somewhere the tool did not model, and 'rejected' is the
+        // conservative reading of that.
+        cooling: readCooling(payload.g.i[1]),
       },
       schedules: {
         occupancy: customSchedule(schedules[0]!),

@@ -197,8 +197,10 @@ describe('applying a preset', () => {
     }
   });
 
-  it('holds phi, which v1 does not expose', () => {
-    expect(applyGainPreset(DEFAULT_GAINS, warehouse).itEquipment.spaceFraction).toBe(1);
+  it('leaves the IT cooling medium alone — it is not the prototype\'s to set', () => {
+    const chilled = { ...DEFAULT_GAINS, itEquipment: { kilowatts: 50, cooling: 'chilled-water' as const } };
+    expect(applyGainPreset(chilled, warehouse).itEquipment.cooling).toBe('chilled-water');
+    expect(applyGainPreset(chilled, warehouse).itEquipment.kilowatts).toBe(50);
   });
 });
 

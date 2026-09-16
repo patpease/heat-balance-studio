@@ -81,6 +81,28 @@ export interface Envelope {
 // Internal gains
 // ---------------------------------------------------------------------------
 
+/**
+ * Where IT heat goes, which is the whole question about IT heat.
+ *
+ * This replaced φ — a hidden `spaceFraction` held at 1.0, meaning every watt
+ * of IT power warmed the room. That was defensible while the presets were a
+ * fraction of a W/m²; with a 400 kW data hall it asserted 400 kW of free space
+ * heat and flipped the verdict on its own, against a tooltip that said the
+ * opposite. A fraction was also the wrong SHAPE of control: the real question
+ * is not "how much of it leaks into the room" but "what is cooling it", and a
+ * user knows the answer to the second.
+ *
+ *   air            No dedicated cooling. The heat warms the room, and it is a
+ *                  passive gain like any other. A comms closet.
+ *   chilled-water  A chilled-water loop takes the heat. It does NOT warm the
+ *                  room — but a heat recovery chiller can turn it into heating
+ *                  hot water for the rest of the building. Not passive, and
+ *                  not lost either.
+ *   rejected       Straight outdoors, through a dry cooler or a packaged unit
+ *                  with no recovery. Worth nothing to this building.
+ */
+export type ItCooling = 'air' | 'chilled-water' | 'rejected';
+
 export interface Schedule {
   readonly id: string;
   readonly name: string;
@@ -129,13 +151,8 @@ export interface Gains {
      * bug with no symptom, since the value would still look plausible.
      */
     readonly kilowatts: number;
-    /**
-     * φ: the share of IT power released into the conditioned space. A data
-     * hall on its own cooling rejects its heat outdoors and warms nothing.
-     * v1 holds this at 1 and shows no control; the assumption is disclosed
-     * instead, because the user cannot change it.
-     */
-    readonly spaceFraction: number;
+    /** How the heat leaves the equipment, which decides what it is worth. */
+    readonly cooling: ItCooling;
   };
   readonly schedules: {
     readonly occupancy: Schedule;

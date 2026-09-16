@@ -13,7 +13,7 @@
 
 import type { Conditions, Envelope, Gains, DesignDay, SurfaceSlot } from '../model/types';
 import { conductance, groundLoss, wallToFloorRatio } from './ua';
-import { gainTerms, gainAtHour, termAtHour } from './gains';
+import { gainTerms, gainAtHour, recoveryTerm, termAtHour } from './gains';
 
 
 export interface TermResult {
@@ -34,6 +34,14 @@ export interface HourResult {
   readonly gain: number;
   /** gain − loss. Negative means heating is needed this hour. */
   readonly net: number;
+  /**
+   * W of heating hot water a recovery chiller could deliver this hour.
+   *
+   * NOT part of `gain` and NOT part of `net`. This is heat the building can
+   * have if it runs a machine, and the whole point of keeping it separate is
+   * that "self-heating" has to keep meaning what it means.
+   */
+  readonly recoverable: number;
 }
 
 export interface BalancePoint {
@@ -43,6 +51,38 @@ export interface BalancePoint {
   readonly atPeakGain: number;
   /** °C, at the overnight minimum. */
   readonly atMinGain: number;
+}
+
+/**
+ * Three answers, not two.
+ *
+ * `self-heating` the passive gains cover the losses, every hour. The building
+ *                needs no heating plant at all on this design day.
+ * `recovered`    the passive gains do not, but a heat recovery chiller on the
+ *                IT cooling loop closes the gap. Not passive — the building is
+ *                running machinery — but the heat is a by-product of cooling it
+ *                had to do anyway, which is about as efficient as heating gets.
+ * `short`        still short after recovery.
+ *
+ * The middle state exists because the binary hid it. A data hall on chilled
+ * water used to read as self-heating, which was wrong, or as short, which was
+ * unfair: the honest answer is that the heat is there and it takes a machine to
+ * move it.
+ */
+export type BalanceStatus = 'self-heating' | 'recovered' | 'short';
+
+/** What recovery is worth, when there is any to be had. */
+export interface Recovery {
+  /** W available at the worst passive hour. */
+  readonly availableAtWorstHour: number;
+  /** W of it actually needed to close that hour. */
+  readonly usedAtWorstHour: number;
+  /** The most any hour draws. Sizes the machine. */
+  readonly peakUsed: number;
+  /** Hours that would be short passively and are not, once recovery is counted. */
+  readonly hoursCovered: number;
+  /** W/m² at the worst hour AFTER recovery. Negative means still short. */
+  readonly marginPerArea: number;
 }
 
 export interface Lever {
@@ -66,7 +106,12 @@ export interface BalanceResult {
   readonly peakHeatingLoadPerArea: number;
   /** The hour the verdict is decided on — the worst NET hour, not the coldest. */
   readonly worstHour: number;
+  /** PASSIVE self-heating. Unchanged meaning: recovery is not counted here. */
   readonly selfHeating: boolean;
+  /** The three-state answer. `selfHeating` is `status === 'self-heating'`. */
+  readonly status: BalanceStatus;
+  /** Null when nothing is recoverable — an air-cooled or rejected IT load. */
+  readonly recovery: Recovery | null;
   /** Worst hour's net over floor area, W/m². Negative when short. */
   readonly marginPerArea: number;
   /** The largest single loss term at the worst hour, or null if there is none. */
@@ -112,6 +157,7 @@ export function solve(input: SolveInput): BalanceResult {
   const ua = conductance(envelope);
   const ground = groundLoss(envelope, conditions);
   const terms = gainTerms(gains, envelope.floorArea);
+  const recovery = recoveryTerm(gains);
   const area = envelope.floorArea;
 
   const hours: HourResult[] = designDay.hours.map((designHour) => {
@@ -143,6 +189,7 @@ export function solve(input: SolveInput): BalanceResult {
       loss,
       gain,
       net: gain - loss,
+      recoverable: termAtHour(recovery, designHour.hour),
     };
   });
 
@@ -165,6 +212,30 @@ export function solve(input: SolveInput): BalanceResult {
   // worst hour is where the gap actually is, and because it accounts for the
   // ground term correctly — the ground floor is envelope, and a conductance
   // share that quietly drops it would overstate every other row.
+  // Recovery is judged on the same hours the verdict is: a strategy that closes
+  // 23 hours and leaves one open has not closed the day.
+  const anyRecoverable = hours.some((h) => h.recoverable > 0);
+  const shortAfterRecovery = hours.filter((h) => h.net + h.recoverable < 0).length;
+  const status: BalanceStatus =
+    deficitHours === 0 ? 'self-heating' : shortAfterRecovery === 0 ? 'recovered' : 'short';
+
+  const recoveryResult: Recovery | null = anyRecoverable
+    ? {
+        availableAtWorstHour: worst.recoverable,
+        // Only what the hour actually needs. A 514 kW machine covering a 60 kW
+        // gap has not "delivered 514 kW" — it has delivered 60 and could do
+        // more, and reporting the capacity as though it were the duty is how a
+        // screening number becomes a plant size nobody can justify.
+        usedAtWorstHour: Math.min(worst.recoverable, Math.max(0, -worst.net)),
+        peakUsed: Math.max(
+          0,
+          ...hours.map((h) => Math.min(h.recoverable, Math.max(0, -h.net))),
+        ),
+        hoursCovered: hours.filter((h) => h.net < 0 && h.net + h.recoverable >= 0).length,
+        marginPerArea: area > 0 ? (worst.net + worst.recoverable) / area : 0,
+      }
+    : null;
+
   const worstTerms = [...worst.lossTerms].sort((a, b) => b.watts - a.watts);
   const biggest = worstTerms[0];
   const lever: Lever | null =
@@ -188,6 +259,8 @@ export function solve(input: SolveInput): BalanceResult {
     peakHeatingLoadPerArea: area > 0 ? peakHeatingLoad / area : 0,
     worstHour: worst.hour,
     selfHeating: deficitHours === 0,
+    status,
+    recovery: recoveryResult,
     marginPerArea: area > 0 ? worst.net / area : 0,
     lever,
     wallToFloorRatio: wallToFloorRatio(envelope),

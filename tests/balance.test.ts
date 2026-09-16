@@ -5,6 +5,8 @@ import { conductance, resolveGroundTemperature, wallToFloorRatio } from '../src/
 import { occupantCount } from '../src/engine/gains';
 import { fromF, toBtuHFt2, toF } from '../src/model/units';
 import { BOSTON_CASE, BOSTON_ENVELOPE, BOSTON_GAINS, EXPECTED_HOURLY } from './fixtures/boston-office';
+import { DEFAULT_CONDITIONS, DEFAULT_ENVELOPE, DEFAULT_GAINS } from '../src/model/defaults';
+import { SAMPLE_DESIGN_DAY } from '../src/model/sampleProject';
 
 /**
  * The golden case. Every expectation here was computed before the engine
@@ -242,5 +244,102 @@ describe('ground temperature resolver', () => {
     const at = fromF(55) - 3;
     expect(resolveGroundTemperature(at).basis).toBe('rule-of-thumb');
     expect(resolveGroundTemperature(at - 0.001).basis).toBe('derived');
+  });
+});
+
+/**
+ * The third answer.
+ *
+ * A binary verdict had nowhere to put a data hall on chilled water. Counted as
+ * a passive gain it read "self-heating", which is wrong — the room never sees
+ * that heat. Counted as nothing it read "not self-heating yet", which is unfair
+ * — the heat is right there, and a recovery chiller on a loop the building was
+ * already running turns it into heating hot water.
+ *
+ * So: passive first, recovery second, and the two are never added into one
+ * number. `selfHeating` keeps meaning passively self-heating, because that is
+ * the claim people screenshot.
+ */
+describe('heat recovered from cooling is a third answer, not a bigger gain', () => {
+  const withIt = (kW: number, cooling: 'air' | 'chilled-water' | 'rejected') =>
+    solve({
+      envelope: DEFAULT_ENVELOPE,
+      gains: { ...DEFAULT_GAINS, itEquipment: { kilowatts: kW, cooling } },
+      conditions: DEFAULT_CONDITIONS,
+      designDay: SAMPLE_DESIGN_DAY,
+    });
+
+  it('reads short with no IT at all', () => {
+    const r = withIt(0, 'air');
+    expect(r.status).toBe('short');
+    expect(r.selfHeating).toBe(false);
+    expect(r.recovery).toBeNull();
+  });
+
+  it('reads self-heating when air-cooled IT covers the gap passively', () => {
+    // Air-cooled heat IS in the room, so this is a genuine passive claim.
+    const r = withIt(400, 'air');
+    expect(r.status).toBe('self-heating');
+    expect(r.selfHeating).toBe(true);
+    expect(r.recovery).toBeNull();
+  });
+
+  it('reads recovered when the same load is on chilled water', () => {
+    const r = withIt(400, 'chilled-water');
+    expect(r.status).toBe('recovered');
+    // NOT self-heating. The room never gets this heat on its own.
+    expect(r.selfHeating).toBe(false);
+    expect(r.deficitHours).toBeGreaterThan(0);
+    expect(r.recovery).not.toBeNull();
+  });
+
+  it('reads short again when the same load is rejected outdoors', () => {
+    const r = withIt(400, 'rejected');
+    expect(r.status).toBe('short');
+    expect(r.recovery).toBeNull();
+    // Identical to having no IT at all, which is the point of the option.
+    expect(r.marginPerArea).toBeCloseTo(withIt(0, 'air').marginPerArea, 9);
+  });
+
+  it('leaves the passive curves untouched by recovery', () => {
+    // The chart's gain line must not move when the medium changes, or the
+    // deficit shading would be lying about what the space receives.
+    const chilled = withIt(400, 'chilled-water');
+    const none = withIt(0, 'air');
+    expect(chilled.hours.map((h) => h.gain)).toEqual(none.hours.map((h) => h.gain));
+    expect(chilled.hours.map((h) => h.net)).toEqual(none.hours.map((h) => h.net));
+  });
+
+  it('keeps the balance point a PASSIVE number', () => {
+    // It answers "at what outdoor temperature does this building stop needing
+    // heat on its own". Recovery is a machine, so it does not belong in it.
+    expect(withIt(400, 'chilled-water').balancePoint.onMeanGain)
+      .toBeCloseTo(withIt(0, 'air').balancePoint.onMeanGain, 9);
+  });
+
+  it('reports the duty it actually needs, not the capacity it has', () => {
+    // A 514 kW machine covering a 60 kW gap has delivered 60. Reporting the
+    // capacity as the duty is how a screening number becomes a plant size
+    // nobody can justify.
+    const r = withIt(400, 'chilled-water');
+    expect(r.recovery!.availableAtWorstHour).toBeGreaterThan(r.recovery!.usedAtWorstHour);
+    expect(r.recovery!.usedAtWorstHour).toBeCloseTo(-withIt(0, 'air').hours[r.worstHour]!.net, 6);
+  });
+
+  it('stays short when recovery is real but not enough', () => {
+    const r = withIt(20, 'chilled-water');
+    expect(r.status).toBe('short');
+    expect(r.recovery).not.toBeNull();
+    // Still worth reporting: it closes some hours, just not all of them.
+    expect(r.recovery!.marginPerArea).toBeGreaterThan(r.marginPerArea);
+  });
+
+  it('needs every hour closed, not most of them', () => {
+    // A strategy that leaves one hour open has not closed the day.
+    for (const kW of [0, 5, 10, 20, 40, 80, 200, 400]) {
+      const r = withIt(kW, 'chilled-water');
+      const allClosed = r.hours.every((h) => h.net + h.recoverable >= 0);
+      expect(r.status === 'recovered', `${kW} kW`).toBe(allClosed && r.deficitHours > 0);
+    }
   });
 });
