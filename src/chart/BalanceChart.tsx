@@ -29,10 +29,17 @@ import { crossing, linearScale, niceBounds, niceCeiling, ticksBetween, ticksUpTo
  *
  * **The gain line is PASSIVE gain, and stays passive.** When IT sits on
  * chilled water its heat never enters the room, so it is not on that line — a
- * second line above it shows passive plus what a recovery chiller could
- * deliver, and the gap between the two IS the recovery. The deficit shading
- * keeps measuring to the passive line, because that is what the space actually
- * receives and the shading is the claim people read.
+ * filled band above it shows what a recovery chiller could add, and the band IS
+ * the recovery. The deficit shading keeps measuring to the passive line,
+ * because that is what the space actually receives and the shading is the claim
+ * people read.
+ *
+ * **A band rather than a line, because a line disappears at exactly the moment
+ * it matters most.** Capped at the loss curve, the recovery line lay underneath
+ * the loss line in every hour recovery covered — which is to say it was
+ * invisible whenever the answer was "recovered". The band is still visible when
+ * its top edge is hidden, and it reads better anyway: the area between the two
+ * curves is the heat being moved.
  *
  * Hovering emits the hour, which the section drawing then redraws to. That one
  * interaction is what makes the two halves a single tool rather than two panels
@@ -230,19 +237,29 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
           opacity="0.85"
         />
 
-        {/* Above the passive line, and drawn first so the two data curves sit
-            over it. Dashed because it is available heat rather than heat the
-            space is getting. */}
+        {/* The recovery, as the area it fills between the passive gain and
+            where that gain would reach. Drawn before the two data curves so
+            they stay legible over it, and translucent so the deficit hatch it
+            covers still reads underneath — the hatch is the gap, and this is
+            the part of the gap a chiller could close. */}
         {hasRecovery && (
-          <polyline
-            points={points(recovered)}
-            fill="none"
-            stroke="var(--recover)"
-            strokeWidth="2"
-            strokeDasharray="7 4"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
+          <>
+            <polygon
+              points={`${points(gain)} ${points(recovered).split(' ').reverse().join(' ')}`}
+              fill="var(--recover)"
+              fillOpacity="0.3"
+              stroke="none"
+            />
+            <polyline
+              points={points(recovered)}
+              fill="none"
+              stroke="var(--recover)"
+              strokeWidth="1.6"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              opacity="0.9"
+            />
+          </>
         )}
 
         <polyline points={points(gain)} fill="none" stroke="var(--gain)" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
@@ -285,7 +302,7 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
       >
         <Key colour="var(--loss)">envelope loss</Key>
         <Key colour="var(--gain)">internal gain</Key>
-        {hasRecovery && <Key colour="var(--recover)" dashed>+ recovered from cooling</Key>}
+        {hasRecovery && <Key colour="var(--recover)">recovered heat</Key>}
         <Key colour="var(--muted)" dashed>outdoor air</Key>
         <span style={{ marginLeft: 'auto', fontVariantNumeric: 'tabular-nums' }}>
           {String(readOut.hour).padStart(2, '0')}:00 ·{' '}

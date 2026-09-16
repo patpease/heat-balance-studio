@@ -129,7 +129,7 @@ export const ASSUMPTIONS = [
   'U-values are assembly averages including thermal bridges. The tool has no bridge model, so that is your job.',
   'Every surface faces outdoor air or the ground. A wall to an unheated garage has to be entered as an outdoor wall, which overstates its loss.',
   'IT heat goes where you say it goes. Air-cooled IT warms the room and counts as a gain. Chilled-water IT does not — it is offered instead as heat a recovery chiller could deliver. Rejected IT counts for nothing.',
-  'Recovered heat is credited at 1.29 kW of heating per kW of IT, the condenser heat of a chiller running at a cooling COP of 3.5. What is NOT modelled: the hot-water temperature that chiller can make, whether your emitters can use it, distribution losses, and whether the recovered heat can physically get to the rooms that need it.',
+  'Recoverable heat is credited at 1.29 kW of heating per kW of IT, the condenser heat a chiller would reject running at a cooling COP of 3.5, and such a machine would be sized to the heating demand rather than to the whole cooling load. What is NOT modelled: the hot-water temperature it could make, whether your emitters could use it, distribution losses, and whether the heat could physically reach the rooms that need it.',
   'Floor area is gross conditioned area — every per-area figure the tool reports is divided by it, and it is the more generous of the conventions in use.',
   'Gains come from the PNNL prototype models, which are the 90.1-2004 vintage. Their lighting runs well above current code, so this tool takes lighting from the 90.1 Building Area Method and everything else from the prototypes.',
   'Kitchens, laundries and machine rooms are left out of the equipment density. Their load is cooking and washing, most of which leaves through an exhaust hood, and this tool has no exhaust to send it up.',
@@ -170,8 +170,21 @@ export const VERDICT = {
    * below the fold, which is a real cost for a sentence saying what the
    * headline already said.
    */
-  recoveredNote: (shortfall: string, unit: string, hour: string, duty: string, available: string) =>
-    `${shortfall} ${unit} short passively at ${hour} — a recovery chiller on this loop makes about ${available} kW of hot water, and ${duty} kW of it covers the gap.`,
+  /**
+   * Under the recovered headline: the machine, and what it would be sized for.
+   *
+   * **Sized to the heating demand, not to the cooling load.** That is standard
+   * practice and it changes the number worth quoting: a data hall could yield
+   * far more heat than the building can use, and a chiller bought to recover
+   * all of it would be a machine sized for a duty nobody asked for. The heat
+   * recovery chiller covers the heating; whatever cooling is left goes to a
+   * separate device.
+   *
+   * Conditional throughout — "could deliver", not "delivers". Nothing here is
+   * installed, and the tool is about the art of the possible.
+   */
+  recoveredNote: (shortfall: string, unit: string, hour: string, needed: string) =>
+    `${shortfall} ${unit} short passively at ${hour}. A heat recovery chiller on the IT loop could cover it, sized to the ${needed} the building needs rather than to the whole cooling load.`,
 
   /**
    * Recovery that helps and does not finish the job.
@@ -197,8 +210,8 @@ export const VERDICT = {
    */
   partlyRecoveredNote: (available: string, needed: string, covered: number, deficit: number) =>
     covered > 0
-      ? `A recovery chiller on this loop makes about ${available} kW of hot water, closing ${covered} of the ${deficit} hours that need heat. The rest needs the envelope, or a bigger load on the loop.`
-      : `A recovery chiller on this loop makes about ${available} kW of hot water against a ${needed} kW gap at the worst hour. Real, and not the answer on its own.`,
+      ? `A heat recovery chiller on the IT loop could make about ${available}, closing ${covered} of the ${deficit} hours that need heat.`
+      : `A heat recovery chiller on the IT loop could make about ${available}, against a ${needed} gap at the worst hour.`,
 
   /** The lever. Computed from the worst hour's largest loss term. */
   leverShort: (term: string, share: number) =>
@@ -216,11 +229,11 @@ export const IT_COOLING = {
   },
   'chilled-water': {
     label: 'Chilled water — heat recovered',
-    note: 'A heat recovery chiller makes the chilled water AND heating hot water from the same heat. Not a passive gain; a recovered one.',
+    note: 'A heat recovery chiller could make the chilled water and heating hot water from the same heat. Not a passive gain; a recovered one.',
   },
   rejected: {
     label: 'Rejected outdoors',
-    note: 'A dry cooler or packaged unit with no recovery. The heat leaves the site and is worth nothing to this building.',
+    note: 'A dry cooler or packaged unit with no recovery. The heat leaves the site, so none of it is available to this building.',
   },
 } as const;
 
@@ -250,7 +263,7 @@ export const HELP = {
   itEquipment:
     'Entered as kilowatts of equipment, not as a density: a server room is a room, and its racks do not multiply when the building around them grows. kW reads the same in IP and SI. These loads run at full power overnight, which is when this tool’s verdict is usually decided. No published default exists — 90.1 does not separate receptacle load, and real values span three orders of magnitude.',
   itCooling:
-    'What is cooling the racks decides what their heat is worth. Air-cooled equipment warms the room it sits in, so it is a gain like any other. Chilled water takes the heat out of the room — but a heat recovery chiller makes that same chilled water while producing heating hot water for the rest of the building, so the heat is not lost, it is recovered. Rejected outdoors, through a dry cooler or a packaged unit with no recovery, it is worth nothing here.',
+    'What is cooling the racks decides what their heat is worth. Air-cooled equipment warms the room it sits in, so it is a gain like any other. Chilled water takes the heat out of the room — but a heat recovery chiller could make that same chilled water while producing heating hot water for the rest of the building, so the heat need not be lost. Rejected outdoors, through a dry cooler or a packaged unit with no recovery, none of it is available here.',
   schedule:
     'Drag a bar to edit, or use the arrow keys. The overnight floor decides the answer: a row that drops to zero at night flatters every building.',
   flatDesignDay:

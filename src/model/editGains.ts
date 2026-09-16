@@ -142,14 +142,14 @@ export const IT_PRESETS: readonly ItPreset[] = Object.freeze([
     label: 'Server room',
     kilowatts: 50,
     cooling: 'chilled-water',
-    note: 'Usually on chilled water, which puts its heat where a recovery chiller can reach it.',
+    note: 'Usually on chilled water, which puts its heat where a heat recovery chiller could reach it.',
   },
   {
     id: 'data-hall',
     label: 'Data hall',
     kilowatts: 400,
     cooling: 'chilled-water',
-    note: 'Chilled water almost always. At this size the recovered heat is worth more than the building can usually take.',
+    note: 'Chilled water almost always. At this size the heat available to recover is usually more than the building could use.',
   },
 ]);
 

@@ -2,6 +2,7 @@ import { VERDICT } from '../config/copy';
 import type { BalanceResult } from '../engine/balance';
 import type { UnitSystem } from '../model/types';
 import { LABELS, toBtuHFt2, toF } from '../model/units';
+import { heatFlow } from './format';
 
 /**
  * The verdict, in three parts: where you are, the lever, what this is not.
@@ -75,24 +76,30 @@ export function Verdict({ result, units }: VerdictProps) {
         ? 'var(--recover)'
         : 'var(--loss)';
 
-  // kW both times: recovery is plant, and plant is sized in kW in both systems.
-  const kw = (watts: number) => Math.round(watts / 1000).toLocaleString('en-US');
+  /**
+   * In the DISPLAYED system, like every other heat flow on this page.
+   *
+   * These used to be quoted in kW regardless, which left a reader in IP with a
+   * shortfall in Btu/h·ft² and the machine that would cover it in kW — two
+   * units for one comparison, in the one sentence where the comparison is the
+   * whole point.
+   */
+  const flow = (watts: number) => heatFlow(watts, units);
 
   const recoveryNote =
     result.recovery === null
       ? null
       : result.status === 'recovered'
-        ? VERDICT.recoveredNote(
-            shortfall,
-            labels.heatFlux,
-            hour,
-            kw(result.recovery.peakUsed),
-            kw(result.recovery.availableAtWorstHour),
-          )
+        ? // Sized to the heating demand, so the number quoted is what the
+          // building needs — not the larger figure the loop could yield.
+          VERDICT.recoveredNote(shortfall, labels.heatFlux, hour, flow(result.recovery.peakUsed))
         : result.status === 'partly-recovered'
-          ? VERDICT.partlyRecoveredNote(
-              kw(result.recovery.availableAtWorstHour),
-              kw(result.peakHeatingLoad),
+          ? // Here the loop cannot meet the demand, so the machine would be
+            // sized to what is available and the available figure is the one
+            // that matters.
+            VERDICT.partlyRecoveredNote(
+              flow(result.recovery.availableAtWorstHour),
+              flow(result.peakHeatingLoad),
               result.recovery.hoursCovered,
               result.deficitHours,
             )

@@ -8,6 +8,7 @@ import { solve } from '../src/engine/balance';
 import { DEFAULT_CONDITIONS, DEFAULT_ENVELOPE, DEFAULT_GAINS } from '../src/model/defaults';
 import { SAMPLE_DESIGN_DAY } from '../src/model/sampleProject';
 import type { ItCooling } from '../src/model/types';
+import { heatFlow } from '../src/ui/format';
 
 /**
  * The third answer, on the screen.
@@ -56,14 +57,36 @@ describe('the verdict says which of the three it is', () => {
     expect(colour(400, 'rejected')).toBe('var(--loss)');
   });
 
-  it('reports the duty the building needs, not the machine it could buy', () => {
-    const box = verdict(400, 'chilled-water');
+  /**
+   * Sized to the heating demand, not to the cooling load.
+   *
+   * Standard practice, and it decides which number is worth quoting. A data
+   * hall could yield far more heat than the building can use; a machine bought
+   * to recover all of it would be sized for a duty nobody asked for. So the
+   * recovered headline quotes what the building NEEDS and never the larger
+   * figure the loop could give.
+   */
+  it('quotes the heating demand, not the heat the loop could yield', () => {
     const r = result(400, 'chilled-water').recovery!;
-    const available = Math.round(r.availableAtWorstHour / 1000).toLocaleString('en-US');
-    const duty = Math.round(r.peakUsed / 1000).toLocaleString('en-US');
-    expect(box.textContent).toMatch(new RegExp(`${available} kW`));
-    expect(box.textContent).toMatch(new RegExp(`${duty} kW`));
-    expect(Number(duty.replace(/,/g, ''))).toBeLessThan(Number(available.replace(/,/g, '')));
+    expect(r.availableAtWorstHour).toBeGreaterThan(r.peakUsed);
+
+    const box = verdict(400, 'chilled-water');
+    expect(box.textContent).toContain(heatFlow(r.peakUsed, 'IP'));
+    expect(box.textContent).not.toContain(heatFlow(r.availableAtWorstHour, 'IP'));
+    expect(box.textContent).toMatch(/sized to the .* rather than to the whole cooling load/);
+  });
+
+  it('reports the machine in the displayed system, like everything else', () => {
+    // A shortfall in Btu/h·ft² beside a machine in kW is two units for one
+    // comparison, in the sentence where the comparison is the point.
+    const duty = result(400, 'chilled-water').recovery!.peakUsed;
+    expect(verdict(400, 'chilled-water').textContent).toContain(heatFlow(duty, 'IP'));
+
+    cleanup();
+    const si = render(<Verdict result={result(400, 'chilled-water')} units="SI" />)
+      .container.textContent ?? '';
+    expect(si).toContain(heatFlow(duty, 'SI'));
+    expect(si).not.toMatch(/Btu/);
   });
 
   it('leads with what is still missing when recovery is not enough', () => {
@@ -88,7 +111,9 @@ describe('the verdict says which of the three it is', () => {
     expect(result(4, 'chilled-water').recovery!.hoursCovered).toBe(0);
     expect(box.textContent).toMatch(/Partly recovered from cooling/);
     expect(box.textContent).not.toMatch(/closing 0 of/);
-    expect(box.textContent).toMatch(/against a \d+ kW gap/);
+    const r = result(4, 'chilled-water');
+    expect(box.textContent).toContain(heatFlow(r.recovery!.availableAtWorstHour, 'IP'));
+    expect(box.textContent).toContain(heatFlow(r.peakHeatingLoad, 'IP'));
   });
 
   it('keeps the loss border for partly recovered — it is still not enough', () => {
