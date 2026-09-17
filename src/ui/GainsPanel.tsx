@@ -431,6 +431,17 @@ export function GainsPanel({
                         title={IT_COOLING[medium].note}
                         aria-pressed={active}
                         onClick={() => onChange(setItCooling(gains, medium))}
+                        /* Every branch names a colour.
+                         *
+                         * This read `: undefined` for the inactive and
+                         * active-air cases, which does not fall back to the
+                         * `color` `chip` sets two lines above — it DELETES it,
+                         * so the button took the UA's `buttontext`. On an OS
+                         * asking for dark with the app pinned to light that is
+                         * white on cream: 1.04:1, and invisible. The three
+                         * chips here were the only controls in the tool that
+                         * did not set their own colour, which is why they were
+                         * the only ones that showed it. */
                         style={{
                           ...chip,
                           borderColor: active
@@ -438,7 +449,11 @@ export function GainsPanel({
                               ? 'var(--recover)'
                               : 'var(--gain)'
                             : 'var(--border)',
-                          color: active && medium === 'chilled-water' ? 'var(--recover)' : undefined,
+                          color: active
+                            ? medium === 'chilled-water'
+                              ? 'var(--recover)'
+                              : 'var(--gain)'
+                            : 'var(--muted)',
                         }}
                       >
                         {IT_COOLING[medium].label}

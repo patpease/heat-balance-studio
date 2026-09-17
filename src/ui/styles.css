@@ -13,7 +13,21 @@
 
 * { box-sizing: border-box; }
 
+/*
+ * The UA's scheme must follow the THEME, not the operating system.
+ *
+ * With only `light dark` here, a viewer whose OS asks for dark and who then
+ * presses the light button gets light tokens and dark system widgets — and
+ * `buttontext` stays white. Any control that does not set its own colour then
+ * paints white on a cream panel at 1.04:1. That is precisely what happened to
+ * the IT cooling chips; see the note in GainsPanel.
+ *
+ * The bare rule keeps handling the third state, where nothing is pinned and the
+ * OS genuinely decides.
+ */
 html { color-scheme: light dark; }
+html[data-theme="light"] { color-scheme: light; }
+html[data-theme="dark"] { color-scheme: dark; }
 
 body {
   margin: 0;
