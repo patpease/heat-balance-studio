@@ -38,10 +38,11 @@ export interface SectionDrawingProps {
 
 export const LOSS_SLOTS = new Set<SurfaceSlot>([
   'loss-walls',
-  // Not a surface, and still a loss. Left out of this set it drew in the gain
+  // Not surfaces, and still losses. Left out of this set they drew in the gain
   // colour — a terracotta quantity rendered teal, which is the drawing saying
   // the opposite of what the number says.
   'loss-infiltration',
+  'loss-ventilation',
   'loss-windows',
   'loss-roof',
   'loss-ground-floor',
@@ -178,11 +179,14 @@ export function SectionDrawing({
 
          That is why the vertical arrows were re-aimed to 45° — the crop went
          from 770 units tall to 632 — and why this number is 250 rather than the
-         232 it sat at before. 254 rather than 280 because the loss table grew
-         an infiltration row, which is worth more than 26 px of drawing: it is
-         frequently the largest loss in the table. The building is still drawn
-         33% larger than it was before the crop was tightened. */
-      style={{ display: 'block', width: '100%', height: 'auto', maxHeight: 254 }}
+         232 it sat at before — and 232 again now, having gone to 280 and given
+         all of it back. The loss table grew two rows on the way: infiltration
+         and ventilation, which on a code-built office are the two LARGEST
+         entries in it. A drawing of where the heat goes that omitted the two
+         biggest places it goes would be worth less than the pixels. The
+         building is still drawn 22% larger than before the crop was tightened,
+         because the 45° re-aim shortened the crop rather than spending fold. */
+      style={{ display: 'block', width: '100%', height: 'auto', maxHeight: 232 }}
     >
       <defs>
         <filter id={sketchId} x="-12%" y="-12%" width="124%" height="124%">

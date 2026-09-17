@@ -13,7 +13,9 @@
 
 import type { Conditions, Envelope, Gains, DesignDay, SurfaceSlot } from '../model/types';
 import { conductance, groundLoss, wallToFloorRatio } from './ua';
-import { gainTerms, gainAtHour, recoveryTerm, termAtHour } from './gains';
+import { gainTerms, gainAtHour, occupantCount, recoveryTerm, termAtHour } from './gains';
+import { DEFAULT_VENTILATION, ventilationFractions } from '../model/ventilation';
+import type { Ventilation } from '../model/ventilation';
 
 
 export interface TermResult {
@@ -164,6 +166,8 @@ export interface SolveInput {
   readonly gains: Gains;
   readonly conditions: Conditions;
   readonly designDay: DesignDay;
+  /** Absent reads as the default, which is the promise the v1 file made. */
+  readonly ventilation?: Ventilation;
 }
 
 /**
@@ -187,7 +191,12 @@ function profileFor(designDay: DesignDay, conditions: Conditions): DesignDay {
 export function solve(input: SolveInput): BalanceResult {
   const { envelope, gains, conditions } = input;
   const designDay = profileFor(input.designDay, conditions);
-  const ua = conductance(envelope, conditions);
+  // Ventilation needs the occupant count, which is a gains question, and the
+  // occupancy schedule, which is where "follows the people" comes from.
+  const settings = input.ventilation ?? DEFAULT_VENTILATION;
+  const people = occupantCount(gains, envelope.floorArea);
+  const fractions = ventilationFractions(settings, gains.schedules.occupancy);
+  const ua = conductance(envelope, conditions, { settings, people, fractions });
   const ground = groundLoss(envelope, conditions);
   const terms = gainTerms(gains, envelope.floorArea);
   const recovery = recoveryTerm(gains);
@@ -199,10 +208,12 @@ export function solve(input: SolveInput): BalanceResult {
     const lossResults: TermResult[] = ua.terms.map((term) => ({
       slot: term.slot,
       label: term.label,
+      // A term's schedule throttles it. Absent means one, so every term that
+      // does not have one behaves exactly as it did.
       watts:
-        term.driver === 'ground'
+        (term.driver === 'ground'
           ? term.conductance * (conditions.indoorSetpoint - conditions.groundTemperature)
-          : term.conductance * dtAir,
+          : term.conductance * dtAir) * (term.schedule?.[designHour.hour] ?? 1),
     }));
 
     const gainResults: TermResult[] = terms.map((term) => ({
@@ -211,7 +222,9 @@ export function solve(input: SolveInput): BalanceResult {
       watts: termAtHour(term, designHour.hour),
     }));
 
-    const loss = ua.air * dtAir + ground;
+    // Summed from the terms rather than from ua.air, now that one of them is
+    // scheduled: a single air conductance cannot say that the fan was off.
+    const loss = lossResults.reduce((total, term) => total + term.watts, 0);
     const gain = gainAtHour(terms, designHour.hour);
 
     return {

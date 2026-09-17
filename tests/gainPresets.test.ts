@@ -230,10 +230,29 @@ describe('the building type changes the answer', () => {
     expect(new Set(points).size).toBeGreaterThan(13);
   });
 
-  it('leaves the envelope alone — this picker moves gains only', () => {
+  /**
+   * It moves one envelope term, and that is not a leak between the two.
+   *
+   * 62.1 sizes ventilation per person as well as per area, so a building type
+   * with more occupants needs more outdoor air — the coupling is the physics,
+   * not the picker reaching somewhere it should not. The SURFACES are untouched,
+   * which is what this test was really guarding.
+   */
+  it('leaves the surfaces alone — this picker moves gains and the air they need', () => {
     const before = solveWith('office-medium');
     const after = solveWith('warehouse');
-    expect(after.hours[0]!.loss).toBeCloseTo(before.hours[0]!.loss, 9);
+
+    // Every surface term is untouched.
+    const surfaces = (r: typeof before) =>
+      r.hours[0]!.lossTerms.filter((t) => !t.slot.includes('ventilation')).map((t) => t.watts);
+    expect(surfaces(after)).toEqual(surfaces(before));
+
+    // Ventilation moves, because a warehouse holds far fewer people than an
+    // office and 62.1 sizes outdoor air per person as well as per area.
+    const vent = (r: typeof before) =>
+      r.hours[0]!.lossTerms.find((t) => t.slot === 'loss-ventilation')!.watts;
+    expect(vent(after)).toBeLessThan(vent(before));
+
     expect(after.hours[0]!.gain).not.toBeCloseTo(before.hours[0]!.gain, 3);
   });
 });

@@ -11,6 +11,7 @@ import { AIRTIGHTNESS, gradeMatching, leakageOf, M3S_M2_PER_CFM_FT2 } from '../m
 import { buildingType } from '../model/buildingTypes';
 import { GAIN_PRESETS } from '../model/gainPresets';
 import type { Conditions, DesignDay, Envelope, Gains, Surface, SurfaceSlot, UnitSystem } from '../model/types';
+import type { Ventilation } from '../model/ventilation';
 import { fromBtuU, fromFt, fromSqFt, LABELS, rToU, toBtuH, toBtuU, toFt, toSqFt, uToR } from '../model/units';
 import { grouped } from './format';
 import { cellStyle as cell, NumberCell } from './NumberCell';
@@ -33,6 +34,7 @@ export interface EnvelopePanelProps {
   /** The LIVE gains — solving with a default here would make these arrows
    *  disagree with the verdict sitting beside them. */
   readonly gains: Gains;
+  readonly ventilation: Ventilation;
   readonly conditions: Conditions;
   readonly designDay: DesignDay;
   readonly units: UnitSystem;
@@ -58,6 +60,7 @@ const overlayButton: React.CSSProperties = {
 export function EnvelopePanel({
   envelope,
   gains,
+  ventilation,
   conditions,
   designDay,
   units,
@@ -70,8 +73,8 @@ export function EnvelopePanel({
   const [box, setBox] = useState<BoxDimensions>(DEFAULT_BOX);
 
   const result = useMemo(
-    () => solve({ envelope, gains, conditions, designDay }),
-    [envelope, gains, conditions, designDay],
+    () => solve({ envelope, gains, conditions, designDay, ventilation }),
+    [envelope, gains, conditions, designDay, ventilation],
   );
 
   // ONE reference across all 24 hours, so scrubbing later shows the gains
@@ -84,6 +87,12 @@ export function EnvelopePanel({
   const shownHour = scrubHour ?? result.worstHour;
   const infiltrationWatts =
     result.hours[shownHour]!.lossTerms.find((t) => t.slot === 'loss-infiltration')?.watts ?? 0;
+  const ventilationWatts =
+    result.hours[shownHour]!.lossTerms.find((t) => t.slot === 'loss-ventilation')?.watts ?? 0;
+  const ventilationNote =
+    ventilation.effectiveness > 0
+      ? `${Math.round(ventilation.effectiveness * 100)}% recovery`
+      : 'no heat recovery';
   const worst = result.hours[shownHour]!;
   const terms: SectionTerm[] = [...worst.lossTerms, ...worst.gainTerms];
   const labels = LABELS[units];
@@ -330,6 +339,21 @@ export function EnvelopePanel({
                 </tr>
               );
             })}
+            {/* The other air term, and usually the bigger one. Its controls are
+                in the ventilation panel rather than here, because every one of
+                them is a decision and there is no room; its LOSS is here,
+                because this is where it has to compete with the surfaces. */}
+            <tr>
+              <td style={{ padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
+                Ventilation
+              </td>
+              <td colSpan={3} style={{ ...cell, color: 'var(--muted)', fontSize: 11 }}>
+                {ventilationNote}
+              </td>
+              <td style={{ textAlign: 'right', padding: '2px 0', borderBottom: '1px solid var(--border)', fontVariantNumeric: 'tabular-nums', color: 'var(--loss)' }}>
+                {grouped(heatFlow(ventilationWatts))} {labels.heatFlow}
+              </td>
+            </tr>
             {/* Not a surface either: no area, no U, no R. It earns a row
                 because it is a loss like the five above it and frequently the
                 largest of them, and a loss table that left out its biggest

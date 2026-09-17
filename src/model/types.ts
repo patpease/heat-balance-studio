@@ -13,6 +13,7 @@
  */
 
 import type { AirLeakage } from './airtightness';
+import type { Ventilation } from './ventilation';
 
 export type UnitSystem = 'IP' | 'SI';
 
@@ -275,14 +276,21 @@ export interface Conditions {
 // Ventilation — v2. Absent from every v1 file.
 // ---------------------------------------------------------------------------
 
-export interface Ventilation {
-  readonly mode: 'perPerson' | 'perArea' | 'ach';
-  readonly rate: number;
-  /** Sensible effectiveness of heat recovery, 0–1. */
-  readonly recoveryEffectiveness: number;
-  readonly infiltrationAch: number;
-  readonly schedule: Schedule;
-}
+/**
+ * Reserved in v1 and superseded when it was built.
+ *
+ * The real shape is in `model/ventilation.ts`. Three things the reservation got
+ * wrong, all of them only visible once there was a UI to put it behind:
+ *
+ *  - `mode` as a one-of. 62.1 sizes a zone as per-person PLUS per-area, not one
+ *    or the other — a space with nobody in it still ventilates for its finishes.
+ *  - `infiltrationAch` living here. Infiltration is uncontrolled and nothing can
+ *    be recovered from it; it belongs to the envelope, and that is where it went.
+ *  - `schedule` as a full 24-value `Schedule`. A fan runs constantly or follows
+ *    the people, and offering 24 draggable bars for a two-way choice is a way of
+ *    asking a question nobody has that much of an answer to.
+ */
+export type ReservedVentilationV1 = never;
 
 // ---------------------------------------------------------------------------
 // Project
@@ -308,8 +316,8 @@ export interface Project {
   readonly envelope: Envelope;
   readonly gains: Gains;
   /**
-   * v2. A v1 file simply does not carry the key, and v2 reads it as
-   * `?? DEFAULT_VENTILATION` — so there is no migration.
+   * A v1 file simply does not carry the key and it reads as
+   * `?? DEFAULT_VENTILATION` — so there was no migration, as promised.
    */
   readonly ventilation?: Ventilation | null;
 }
@@ -336,6 +344,7 @@ export type BuildingTypeId =
 export type SurfaceSlot =
   | 'loss-walls'
   | 'loss-infiltration'
+  | 'loss-ventilation'
   | 'loss-windows'
   | 'loss-roof'
   | 'loss-ground-floor'

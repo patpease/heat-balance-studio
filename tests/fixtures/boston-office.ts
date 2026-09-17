@@ -46,6 +46,26 @@ export {
 export const EXPECTED_INFILTRATION_W_K = 223.753;
 
 /**
+ * Ventilation, hand-computed, W/K.
+ *
+ *   rate        ASHRAE 62.1 office: 5 cfm/person, 0.06 cfm/ft²
+ *   people      27 exactly, by construction of this example
+ *   per person  5 × 4.719474e-4 × 27          = 0.063713 m³/s
+ *   per area    0.06 × 0.005080 × 500         = 0.152400 m³/s
+ *   design flow                                 0.216113 m³/s = 458 cfm
+ *   recovery    none, so (1 − η) = 1
+ *   at 6 m      × 1206.341                    = 260.706 W/K
+ *
+ * Which makes the air side of this example 717 W/K: 232.5 of surfaces, 223.8 of
+ * leakage and 260.7 of ventilation. Two thirds of the heat leaving the worked
+ * example is air the building moves on purpose or fails to keep out, and the
+ * walls, windows and roof it was originally written about are the smaller
+ * third. That is the whole reason these two terms were the omission worth
+ * closing.
+ */
+export const EXPECTED_VENTILATION_W_K = 260.706;
+
+/**
  * Hourly CONDUCTION loss and gain in W, at a 21.111 °C setpoint with a constant
  * 750 W ground loss, against the committed two-decimal profile.
  *

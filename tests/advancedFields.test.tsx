@@ -7,6 +7,7 @@ import { solve } from '../src/engine/balance';
 import { surfaceConductance } from '../src/engine/ua';
 import { DEFAULT_CONDITIONS, DEFAULT_ENVELOPE, DEFAULT_GAINS } from '../src/model/defaults';
 import { SAMPLE_CONDITIONS, SAMPLE_DESIGN_DAY, SAMPLE_GAINS } from '../src/model/sampleProject';
+import { DEFAULT_VENTILATION } from '../src/model/ventilation';
 
 /**
  * The three fields v1 held at their defaults and showed no control for.
@@ -26,6 +27,7 @@ describe('the flat design day', () => {
     solve({
       envelope: DEFAULT_ENVELOPE,
       gains: DEFAULT_GAINS,
+      ventilation: DEFAULT_VENTILATION,
       conditions: { ...DEFAULT_CONDITIONS, flatDesignDay: flat },
       designDay: SAMPLE_DESIGN_DAY,
     });
@@ -69,6 +71,7 @@ describe('the flat design day', () => {
       conditions: { ...SAMPLE_CONDITIONS, flatDesignDay: true },
       envelope: DEFAULT_ENVELOPE,
       gains: SAMPLE_GAINS,
+      ventilation: DEFAULT_VENTILATION,
     };
     expect(decodeState(encodeState(state))!.conditions.flatDesignDay).toBe(true);
   });
@@ -104,6 +107,7 @@ describe('the buffer factor b stays in the engine and out of the table', () => {
       <EnvelopePanel
         envelope={DEFAULT_ENVELOPE}
         gains={SAMPLE_GAINS}
+        ventilation={DEFAULT_VENTILATION}
         conditions={SAMPLE_CONDITIONS}
         designDay={SAMPLE_DESIGN_DAY}
         units="SI"

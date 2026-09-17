@@ -17,6 +17,8 @@ import { DEFAULT_GAINS, DEFAULT_SETPOINT_C } from '../model/defaults';
 import { customSchedule } from '../model/schedules';
 import { gradeMatching, leakageOf } from '../model/airtightness';
 import type { AirLeakage } from '../model/airtightness';
+import { DEFAULT_VENTILATION, recoveryMatching } from '../model/ventilation';
+import type { Ventilation } from '../model/ventilation';
 import type {
   Conditions,
   DesignDay,
@@ -35,6 +37,7 @@ export interface ShareState {
   readonly conditions: Conditions;
   readonly envelope: Envelope;
   readonly gains: Gains;
+  readonly ventilation: Ventilation;
 }
 
 /**
@@ -103,16 +106,22 @@ export function encodeState(state: ShareState): string {
       // The RATE travels and the grade does not: the grade is derivable from
       // the rate, and sending both put the link two characters over the budget
       // the test below holds it to. One source of truth on the wire.
-      q: r(state.envelope.airtightness.leakage, 6),
+      q: r(state.envelope.airtightness.leakage * 1000, 3),
       h: r(state.envelope.storeyHeight, 2),
       n: state.envelope.storeys,
+      // No `boundary`. It is fully determined by the category — ground floors
+      // are ground-coupled and everything else faces air — and nothing in the
+      // UI can produce anything different, which is asserted in
+      // advancedFields.test.tsx. Five surfaces × seven characters was what the
+      // ventilation block needed to stay inside the length budget. If the
+      // buffer boundary is ever exposed it goes back on the wire, with the
+      // version bump that implies.
       s: state.envelope.surfaces.map((surface) => [
         surface.id,
         surface.category,
         surface.label,
         r(surface.area, 1),
         r(surface.uValue, 4),
-        surface.boundary,
       ]),
     },
     g: {
@@ -129,6 +138,18 @@ export function encodeState(state: ShareState): string {
         packSchedule(state.gains.schedules.itEquipment.fractions),
       ],
     },
+    // Positional and in litres, like every other packed field here. Keyed and
+    // in canonical m³/s it put the link 58 characters over the budget the test
+    // below holds it to — `0.00235974` where `2.36` says the same thing at the
+    // precision a rate is ever specified to. The effectiveness travels and the
+    // device name does not, for the same reason the leakage rate travels
+    // without its grade.
+    n: [
+      r(state.ventilation.perPerson * 1000, 3),
+      r(state.ventilation.perArea * 1000, 4),
+      state.ventilation.schedule === 'occupancy' ? 1 : 0,
+      r(state.ventilation.effectiveness, 3),
+    ],
   };
 
   // base64url: `+`, `/` and `=` all get mangled somewhere along the way — in a
@@ -150,7 +171,8 @@ export function encodeState(state: ShareState): string {
  * kind of helpful.
  */
 function readAirtightness(rawRate: unknown): AirLeakage {
-  const rate = Number(rawRate);
+  // Litres on the wire, m³ in the model.
+  const rate = Number(rawRate) / 1000;
   if (!Number.isFinite(rate) || rate <= 0) return leakageOf('typical');
   // A rate that matches a published grade comes back badged as that grade,
   // which is correct however it was entered — it IS that grade's value.
@@ -183,7 +205,7 @@ export function decodeState(encoded: string): ShareState | null {
       label: String(entry[2]),
       area: Number(entry[3]),
       uValue: Number(entry[4]),
-      boundary: entry[5] as Surface['boundary'],
+      boundary: entry[1] === 'groundFloor' ? ('ground' as const) : ('air' as const),
       bufferFactor: 1,
       orientation: null,
       shgc: null,
@@ -223,6 +245,18 @@ export function decodeState(encoded: string): ShareState | null {
       preset: payload.g.p ?? null,
       sourceId: payload.g.sid ?? null,
     };
+
+    // Absent in every link written before ventilation existed, and absent reads
+    // as the default — which is the promise the reserved field made in v1.
+    const ventilation: Ventilation = Array.isArray(payload.n)
+      ? {
+          perPerson: Number(payload.n[0]) / 1000,
+          perArea: Number(payload.n[1]) / 1000,
+          schedule: payload.n[2] === 1 ? 'occupancy' : 'constant',
+          effectiveness: Math.min(1, Math.max(0, Number(payload.n[3]) || 0)),
+          recovery: recoveryMatching(Number(payload.n[3]) || 0),
+        }
+      : DEFAULT_VENTILATION;
 
     return {
       units: payload.u === 'SI' ? 'SI' : 'IP',
@@ -272,6 +306,7 @@ export function decodeState(encoded: string): ShareState | null {
         surfaces,
       },
       gains: gains.schedules.occupancy.fractions.length === 24 ? gains : DEFAULT_GAINS,
+      ventilation,
     };
   } catch {
     // A truncated or mangled link is common enough to be expected. It must not

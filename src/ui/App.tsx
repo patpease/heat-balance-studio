@@ -20,6 +20,9 @@ import { GainsPanel } from './GainsPanel';
 import { LocationPanel } from './LocationPanel';
 import { Mark } from './Mark';
 import { ScopePanel } from './ScopePanel';
+import { VentilationPanel } from './VentilationPanel';
+import { DEFAULT_VENTILATION } from '../model/ventilation';
+import type { Ventilation } from '../model/ventilation';
 import { ThemeIcon } from './ThemeIcon';
 import { useTheme } from './theme';
 import type { ThemeChoice } from './theme';
@@ -47,6 +50,7 @@ import { BalancePointBand, Verdict } from './Verdict';
 export function App() {
   const shared = useMemo(() => stateFromLocation(), []);
   const theme = useTheme();
+  const [ventilation, setVentilation] = useState<Ventilation>(shared?.ventilation ?? DEFAULT_VENTILATION);
 
   const [units, setUnits] = useState<UnitSystem>(shared?.units ?? 'IP');
   // DEFAULT_ENVELOPE, not SAMPLE_ENVELOPE: the worked example is 500 m² on one
@@ -72,12 +76,16 @@ export function App() {
   const sectionRef = useRef<HTMLDivElement>(null);
 
   const result = useMemo(
-    () => solve({ envelope, gains, conditions, designDay }),
-    [envelope, gains, conditions, designDay],
+    // Ventilation belongs in here too. It was left out when the panel was
+    // wired and the two solves drifted: the envelope table updated when the
+    // heat recovery changed and the verdict beside it did not, because they
+    // were reading different answers to the same question.
+    () => solve({ envelope, gains, conditions, designDay, ventilation }),
+    [envelope, gains, conditions, designDay, ventilation],
   );
 
   const copyLink = async () => {
-    const url = shareUrl({ units, site, designDay, conditions, envelope, gains });
+    const url = shareUrl({ units, site, designDay, conditions, envelope, gains, ventilation });
     try {
       await navigator.clipboard.writeText(url);
       setCopied('Link copied');
@@ -188,6 +196,7 @@ export function App() {
           <EnvelopePanel
             envelope={envelope}
             gains={gains}
+            ventilation={ventilation}
             conditions={conditions}
             designDay={designDay}
             units={units}
@@ -254,6 +263,15 @@ export function App() {
         units={units}
         marker={hoveredHour ?? result.worstHour}
         onChange={setGains}
+      />
+
+      <VentilationPanel
+        ventilation={ventilation}
+        gains={gains}
+        envelope={envelope}
+        conditions={conditions}
+        units={units}
+        onChange={setVentilation}
       />
 
       <ScopePanel />

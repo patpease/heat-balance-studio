@@ -122,7 +122,7 @@ export const HOW_IT_WORKS = {
  */
 export const ASSUMPTIONS = [
   'Sensible heat only. No latent load, no humidity.',
-  'Infiltration is counted, from an air-tightness grade rather than a measured rate — no building has been blower-door tested at concept stage. Mechanical ventilation is NOT counted, and it is now the largest single omission.',
+  'Infiltration and mechanical ventilation are both counted — infiltration from an air-tightness grade, ventilation from ASHRAE 62.1 per-person and per-area rates with whatever heat recovery you specify. Neither is a measured figure; no building has been blower-door tested at concept stage.',
   'No solar gain. Leaving it out is conservative; leaving ventilation out is not. They do not cancel, and the optimistic one is larger in almost every case.',
   'Steady state, hour by hour. No thermal mass, so no coasting overnight on stored heat — a heavyweight building is penalised here relative to reality.',
   'One zone, one setpoint. No stratification, no distribution loss.',
@@ -237,6 +237,10 @@ export const IT_COOLING = {
   },
 } as const;
 
+/** Under the ventilation heading. */
+export const VENTILATION_NOTE =
+  'ASHRAE 62.1 sizes outdoor air per person and per unit of floor — the first for the occupants, the second for the space itself. Sensible heat only, so an enthalpy wheel’s moisture transfer is not counted here.';
+
 export const BALANCE_POINT_NOTE =
   'The outdoor temperature below which this building needs heat. Lower is better. A scheduled building ' +
   'has a band rather than a point, and the spread is the finding: self-heating at lunchtime, nowhere ' +
@@ -266,6 +270,8 @@ export const HELP = {
     'What is cooling the racks decides what their heat is worth. Air-cooled equipment warms the room it sits in, so it is a gain like any other. Chilled water takes the heat out of the room — but a heat recovery chiller could make that same chilled water while producing heating hot water for the rest of the building, so the heat need not be lost. Rejected outdoors, through a dry cooler or a packaged unit with no recovery, none of it is available here.',
   schedule:
     'Drag a bar to edit, or use the arrow keys. The overnight floor decides the answer: a row that drops to zero at night flatters every building.',
+  ventilationSchedule:
+    'A design day is a cold weekday, and the verdict lands between 04:00 and 07:00. A fan running constantly is pulling full outdoor air at the coldest hour; one following occupancy is pulling almost none. The choice is worth more here than it looks.',
   airtightness:
     'How leaky the construction is. Nobody knows their building’s measured leakage at concept stage, so the input is a grade rather than a number: leaky is construction with no continuous air barrier, typical is an air barrier detailed to current code, tight is the Passive House target. The three span more than twenty to one, which is worth seeing on its own.',
   flatDesignDay:

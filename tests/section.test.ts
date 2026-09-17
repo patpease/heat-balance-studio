@@ -33,12 +33,13 @@ describe('the building type record', () => {
    * strange thing for a loss diagram to leave out. It leaves from the top-left
    * shoulder of the shell, which is the one quadrant every massing left empty.
    */
-  it('has ten anchors — the canvas draws eight, IT and infiltration are derived', () => {
-    expect(OFFICE.anchors).toHaveLength(10);
-    expect(OFFICE.anchors.map((a) => a.slot)).toContain('gain-it-equipment');
-    expect(OFFICE.anchors.map((a) => a.slot)).toContain('loss-infiltration');
+  it('has eleven anchors — the canvas draws eight, three are derived', () => {
+    expect(OFFICE.anchors).toHaveLength(11);
+    for (const slot of ['gain-it-equipment', 'loss-infiltration', 'loss-ventilation']) {
+      expect(OFFICE.anchors.map((a) => a.slot)).toContain(slot);
+    }
     for (const type of BUILDING_TYPES) {
-      expect(type.anchors, type.id).toHaveLength(10);
+      expect(type.anchors, type.id).toHaveLength(11);
     }
   });
 

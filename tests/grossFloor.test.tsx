@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { DEFAULT_VENTILATION } from '../src/model/ventilation';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -30,6 +31,7 @@ const panel = (envelope: Envelope, units: UnitSystem = 'SI', onChange = vi.fn())
     <EnvelopePanel
       envelope={envelope}
       gains={SAMPLE_GAINS}
+      ventilation={DEFAULT_VENTILATION}
       conditions={SAMPLE_CONDITIONS}
       designDay={SAMPLE_DESIGN_DAY}
       units={units}

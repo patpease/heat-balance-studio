@@ -17,6 +17,7 @@
  */
 
 import { airHeatCapacity, DESIGN_PRESSURE_FACTOR } from '../model/airtightness';
+import type { Ventilation } from '../model/ventilation';
 import { GROUND_DRIFT_LIMIT_K, GROUND_RULE_OF_THUMB_C } from '../model/defaults';
 import type {
   Conditions,
@@ -68,6 +69,40 @@ export interface LossTerm {
   readonly conductance: number;
   /** Air-coupled terms vary by hour; ground-coupled ones do not. */
   readonly driver: 'air' | 'ground';
+  /**
+   * 24 fractions, when the term is throttled by something other than weather.
+   *
+   * Surfaces and leakage have none — a wall conducts the same at 04:00 as at
+   * noon. A ventilation fan does not: it runs on a schedule, and on a design
+   * day the difference between running constantly and following the people is
+   * the difference between pulling full outdoor air at the coldest hour and
+   * pulling almost none.
+   *
+   * Absent means one, which is why every existing term needed no change.
+   */
+  readonly schedule?: readonly number[];
+}
+
+/**
+ * Ventilation, as a conductance with a schedule on it.
+ *
+ *   V̇_design = Rp × people + Ra × floor        62.1's Ventilation Rate Procedure
+ *   Q(h)     = ρ·c_p · V̇_design · f(h) · (1 − η) · ΔT(h)
+ *
+ * The recovery effectiveness multiplies the conductance rather than being
+ * applied later, because that is what it does: a 75% effective device makes the
+ * ventilation load a quarter of what it was, at every hour, and the term that
+ * reaches the chart should already say so.
+ */
+export function ventilationConductance(
+  ventilation: Ventilation,
+  envelope: Envelope,
+  people: number,
+  conditions: Conditions,
+): number {
+  const flow = ventilation.perPerson * people + ventilation.perArea * envelope.floorArea;
+  const recovered = Math.min(1, Math.max(0, ventilation.effectiveness));
+  return flow * (1 - recovered) * airHeatCapacity(conditions.siteElevation);
 }
 
 /**
@@ -94,7 +129,11 @@ export function surfaceConductance(surface: Surface): number {
  * treats it like the rest. It is frequently the largest term of the lot, which
  * is the whole reason the tool stopped being able to leave it out.
  */
-export function lossTerms(envelope: Envelope, conditions: Conditions): LossTerm[] {
+export function lossTerms(
+  envelope: Envelope,
+  conditions: Conditions,
+  ventilation?: { readonly settings: Ventilation; readonly people: number; readonly fractions: readonly number[] },
+): LossTerm[] {
   return [
     ...envelope.surfaces.map((surface) => ({
       slot: SLOT_BY_CATEGORY[surface.category],
@@ -108,6 +147,22 @@ export function lossTerms(envelope: Envelope, conditions: Conditions): LossTerm[
       conductance: infiltrationConductance(envelope, conditions),
       driver: 'air' as const,
     },
+    ...(ventilation
+      ? [
+          {
+            slot: 'loss-ventilation' as const,
+            label: 'Ventilation',
+            conductance: ventilationConductance(
+              ventilation.settings,
+              envelope,
+              ventilation.people,
+              conditions,
+            ),
+            driver: 'air' as const,
+            schedule: ventilation.fractions,
+          },
+        ]
+      : []),
   ];
 }
 
@@ -121,8 +176,12 @@ export interface Conductance {
   readonly terms: readonly LossTerm[];
 }
 
-export function conductance(envelope: Envelope, conditions: Conditions): Conductance {
-  const terms = lossTerms(envelope, conditions);
+export function conductance(
+  envelope: Envelope,
+  conditions: Conditions,
+  ventilation?: { readonly settings: Ventilation; readonly people: number; readonly fractions: readonly number[] },
+): Conductance {
+  const terms = lossTerms(envelope, conditions, ventilation);
   let air = 0;
   let ground = 0;
   for (const term of terms) {

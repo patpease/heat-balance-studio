@@ -90,10 +90,10 @@ describe('the verdict says which of the three it is', () => {
   });
 
   it('leads with what is still missing when recovery is not enough', () => {
-    const box = verdict(20, 'chilled-water');
+    const box = verdict(50, 'chilled-water');
     expect(box.textContent).toMatch(/Partly recovered from cooling/);
     // The headline number is the gap AFTER recovery, not the one before it.
-    const r = result(20, 'chilled-water');
+    const r = result(50, 'chilled-water');
     const still = (r.recovery!.stillShortPerArea * 3.412141633) / 10.7639104;
     expect(box.textContent).toMatch(new RegExp(`still ${still.toFixed(1)} `));
     expect(box.textContent).toMatch(/closing \d+ of the \d+ hours/);
@@ -120,7 +120,7 @@ describe('the verdict says which of the three it is', () => {
   });
 
   it('keeps the loss border for partly recovered — it is still not enough', () => {
-    expect(verdict(20, 'chilled-water').style.borderColor).toBe('var(--loss)');
+    expect(verdict(50, 'chilled-water').style.borderColor).toBe('var(--loss)');
     expect(verdict(400, 'chilled-water').style.borderColor).toBe('var(--recover)');
   });
 });

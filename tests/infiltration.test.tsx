@@ -14,6 +14,7 @@ import {
 } from '../src/model/airtightness';
 import { DEFAULT_CONDITIONS, DEFAULT_ENVELOPE } from '../src/model/defaults';
 import { SAMPLE_DESIGN_DAY, SAMPLE_GAINS, SAMPLE_CONDITIONS } from '../src/model/sampleProject';
+import { DEFAULT_VENTILATION } from '../src/model/ventilation';
 import type { Envelope, UnitSystem } from '../src/model/types';
 
 afterEach(cleanup);
@@ -104,6 +105,7 @@ describe('the leakage rate can be entered by hand', () => {
       <EnvelopePanel
         envelope={DEFAULT_ENVELOPE}
         gains={SAMPLE_GAINS}
+        ventilation={DEFAULT_VENTILATION}
         conditions={SAMPLE_CONDITIONS}
         designDay={SAMPLE_DESIGN_DAY}
         units={units}

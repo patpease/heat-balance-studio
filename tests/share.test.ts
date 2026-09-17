@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_VENTILATION } from '../src/model/ventilation';
 
 import { decodeState, encodeState, SHARE_PARAM } from '../src/io/share';
 import type { ShareState } from '../src/io/share';
@@ -19,6 +20,7 @@ const base: ShareState = {
   conditions: SAMPLE_CONDITIONS,
   envelope: SAMPLE_ENVELOPE,
   gains: SAMPLE_GAINS,
+  ventilation: DEFAULT_VENTILATION,
 };
 
 describe('a share link survives the round trip', () => {
@@ -186,6 +188,7 @@ describe('a version 1 link is migrated, not misread', () => {
       solve({
         envelope: state.envelope,
         gains: state.gains,
+        ventilation: DEFAULT_VENTILATION,
         conditions: state.conditions,
         designDay: state.designDay,
       }).peakHeatingLoad;

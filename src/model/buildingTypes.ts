@@ -47,6 +47,7 @@ const OFFICE_ANCHORS: ArrowAnchor[] = [
   { slot: 'loss-exposed-floor', x: 222, y: 470, rotate: 135 },
   { slot: 'gain-it-equipment', x: 549, y: 406, rotate: -72 },
   { slot: 'loss-infiltration', x: 204, y: 227, rotate: -135 },
+  { slot: 'loss-ventilation', x: 204, y: 275, rotate: -135 },
 ];
 
 export const OFFICE: BuildingType = {
@@ -94,6 +95,7 @@ const SCHOOL_ANCHORS: ArrowAnchor[] = [
   { slot: 'loss-exposed-floor', x: 206, y: 478, rotate: 135 },
   { slot: 'gain-it-equipment', x: 287, y: 406, rotate: -118 },
   { slot: 'loss-infiltration', x: 186, y: 234, rotate: -135 },
+  { slot: 'loss-ventilation', x: 186, y: 282, rotate: -135 },
 ];
 
 export const SCHOOL: BuildingType = {
@@ -143,6 +145,7 @@ const LAB_ANCHORS: ArrowAnchor[] = [
   { slot: 'loss-exposed-floor', x: 230, y: 474, rotate: 135 },
   { slot: 'gain-it-equipment', x: 565, y: 390, rotate: -74 },
   { slot: 'loss-infiltration', x: 214, y: 172, rotate: -135 },
+  { slot: 'loss-ventilation', x: 214, y: 220, rotate: -135 },
 ];
 
 export const LAB: BuildingType = {
@@ -190,6 +193,7 @@ const CIVIC_ANCHORS: ArrowAnchor[] = [
   { slot: 'loss-exposed-floor', x: 216, y: 486, rotate: 135 },
   { slot: 'gain-it-equipment', x: 559, y: 402, rotate: -70 },
   { slot: 'loss-infiltration', x: 200, y: 174, rotate: -135 },
+  { slot: 'loss-ventilation', x: 200, y: 222, rotate: -135 },
 ];
 
 export const CIVIC: BuildingType = {
@@ -235,6 +239,7 @@ const MULTIFAMILY_ANCHORS: ArrowAnchor[] = [
   { slot: 'loss-exposed-floor', x: 252, y: 486, rotate: 135 },
   { slot: 'gain-it-equipment', x: 555, y: 422, rotate: -72 },
   { slot: 'loss-infiltration', x: 240, y: 183, rotate: -135 },
+  { slot: 'loss-ventilation', x: 240, y: 231, rotate: -135 },
 ];
 
 export const MULTIFAMILY: BuildingType = {
@@ -279,6 +284,7 @@ const HOME_ANCHORS: ArrowAnchor[] = [
   { slot: 'loss-exposed-floor', x: 240, y: 446, rotate: 135 },
   { slot: 'gain-it-equipment', x: 545, y: 390, rotate: -72 },
   { slot: 'loss-infiltration', x: 210, y: 176, rotate: -135 },
+  { slot: 'loss-ventilation', x: 210, y: 224, rotate: -135 },
 ];
 
 export const HOME: BuildingType = {

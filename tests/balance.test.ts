@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { solve } from '../src/engine/balance';
+import { DEFAULT_VENTILATION } from '../src/model/ventilation';
 import { conductance, resolveGroundTemperature, wallToFloorRatio } from '../src/engine/ua';
 import { occupantCount } from '../src/engine/gains';
 import { fromF, toBtuHFt2, toF } from '../src/model/units';
@@ -11,6 +12,7 @@ import {
   BOSTON_GAINS,
   EXPECTED_HOURLY,
   EXPECTED_INFILTRATION_W_K,
+  EXPECTED_VENTILATION_W_K,
 } from './fixtures/boston-office';
 import { DEFAULT_CONDITIONS, DEFAULT_ENVELOPE, DEFAULT_GAINS } from '../src/model/defaults';
 import { SAMPLE_DESIGN_DAY } from '../src/model/sampleProject';
@@ -27,6 +29,8 @@ describe('conductance', () => {
     const ua = conductance(BOSTON_ENVELOPE, BOSTON_CONDITIONS);
     // walls 220.5 × 0.20 = 44.1 · windows 94.5 × 1.20 = 113.4 · roof 500 × 0.15 = 75
     // ...plus infiltration, which is air-coupled and is not a surface.
+    // No ventilation passed, so this is the envelope alone: surfaces plus the
+    // leakage that belongs to them.
     expect(ua.air - EXPECTED_INFILTRATION_W_K).toBeCloseTo(232.5, 3);
     expect(ua.ground).toBeCloseTo(90, 6);
     expect(ua.total - EXPECTED_INFILTRATION_W_K).toBeCloseTo(322.5, 3);
@@ -85,9 +89,12 @@ describe('the hourly balance reproduces the fixture to the watt', () => {
     // existed and not recomputed since. Infiltration is added here by the one
     // hand-computed conductance in the fixture, so the 24 original numbers stay
     // independent evidence rather than becoming engine output.
-    const infiltration =
-      EXPECTED_INFILTRATION_W_K * (BOSTON_CONDITIONS.indoorSetpoint - actual.outdoorTemperature);
-    expect(Math.abs(actual.loss - (loss + infiltration))).toBeLessThan(1);
+    // Both air terms are constant conductances here — the default ventilation
+    // runs around the clock — so each is one multiplication against the hour's
+    // ΔT, and the 24 conduction values stay independent evidence.
+    const dt = BOSTON_CONDITIONS.indoorSetpoint - actual.outdoorTemperature;
+    const air = (EXPECTED_INFILTRATION_W_K + EXPECTED_VENTILATION_W_K) * dt;
+    expect(Math.abs(actual.loss - (loss + air))).toBeLessThan(1);
     expect(Math.abs(actual.gain - gain)).toBeLessThan(1);
   });
 
@@ -120,7 +127,7 @@ describe('the verdict', () => {
    * The lever moved with it, from glazing to infiltration. That is the tool
    * doing its job: the biggest thing to fix is no longer the windows.
    */
-  it('needs heating on all 24 hours once infiltration is counted', () => {
+  it('needs heating on all 24 hours once the air terms are counted', () => {
     expect(result.deficitHours).toBe(24);
     expect(result.selfHeating).toBe(false);
   });
@@ -149,10 +156,10 @@ describe('the verdict', () => {
     expect(seven.gain - six.gain).toBeGreaterThan(seven.loss - six.loss);
   });
 
-  it('is short 31.0 W/m² at the worst hour', () => {
-    expect(Math.round(result.peakHeatingLoad)).toBe(15475);
-    expect(result.peakHeatingLoadPerArea).toBeCloseTo(31.0, 1);
-    expect(result.marginPerArea).toBeCloseTo(-31.0, 1);
+  it('is short 49.9 W/m² at the worst hour', () => {
+    expect(Math.round(result.peakHeatingLoad)).toBe(24968);
+    expect(result.peakHeatingLoadPerArea).toBeCloseTo(49.9, 1);
+    expect(result.marginPerArea).toBeCloseTo(-49.9, 1);
   });
 
 });
@@ -163,26 +170,36 @@ describe('the lever', () => {
    * infiltration at 47%, which is the whole point of having a computed lever
    * rather than a written one: the advice changed because the physics did.
    */
-  it('names infiltration, the largest loss term at the worst hour', () => {
-    expect(result.lever?.slot).toBe('loss-infiltration');
+  it('names ventilation, the largest loss term at the worst hour', () => {
+    expect(result.lever?.slot).toBe('loss-ventilation');
     // 4,129 W of a 9,216 W loss.
-    expect(result.lever?.share).toBeCloseTo(0.469, 3);
+    expect(result.lever?.share).toBeCloseTo(0.353, 3);
   });
 
   it('is null when there is nothing to point at', () => {
+    // No surfaces is no longer enough: ventilation is a loss without being a
+    // surface, so a building with no envelope at all still loses heat through
+    // the air it moves on purpose.
     const nothing = solve({
       ...BOSTON_CASE,
       envelope: { ...BOSTON_ENVELOPE, surfaces: [] },
+      ventilation: { ...DEFAULT_VENTILATION, perPerson: 0, perArea: 0 },
     });
     expect(nothing.lever).toBeNull();
+  });
+
+  it('points at ventilation when that is all there is', () => {
+    const onlyAir = solve({ ...BOSTON_CASE, envelope: { ...BOSTON_ENVELOPE, surfaces: [] } });
+    expect(onlyAir.lever?.slot).toBe('loss-ventilation');
+    expect(onlyAir.lever?.share).toBeCloseTo(1, 6);
   });
 });
 
 describe('balance point', () => {
   it('is reported three ways, because a scheduled building has no single one', () => {
-    expect(result.balancePoint.onMeanGain).toBeCloseTo(12.3, 1);
-    expect(result.balancePoint.atPeakGain).toBeCloseTo(4.1, 1);
-    expect(result.balancePoint.atMinGain).toBeCloseTo(18.6, 1);
+    expect(result.balancePoint.onMeanGain).toBeCloseTo(15.5, 1);
+    expect(result.balancePoint.atPeakGain).toBeCloseTo(10.3, 1);
+    expect(result.balancePoint.atMinGain).toBeCloseTo(19.5, 1);
   });
 
   it('subtracts the constant ground loss rather than charging it to the air side', () => {
@@ -199,7 +216,7 @@ describe('balance point', () => {
     });
     expect(noSlab.balancePoint.onMeanGain).toBeLessThan(result.balancePoint.onMeanGain);
     // No ground term to subtract, over the air side including infiltration.
-    expect(noSlab.balancePoint.onMeanGain).toBeCloseTo(10.7, 1);
+    expect(noSlab.balancePoint.onMeanGain).toBeCloseTo(14.5, 1);
   });
 
   it('charges a ground-coupled surface to the ground, not to the air side', () => {
@@ -252,12 +269,12 @@ describe('gain summary', () => {
 });
 
 describe('the design condition converts for display without changing', () => {
-  it('reports the worst-hour shortfall in IP as 9.8 Btu/h·ft²', () => {
-    expect(toBtuHFt2(result.peakHeatingLoadPerArea)).toBeCloseTo(9.81, 2);
+  it('reports the worst-hour shortfall in IP as 15.8 Btu/h·ft²', () => {
+    expect(toBtuHFt2(result.peakHeatingLoadPerArea)).toBeCloseTo(15.83, 2);
   });
 
-  it('reports the balance point as 54.2 °F', () => {
-    expect(toF(result.balancePoint.onMeanGain)).toBeCloseTo(54.2, 1);
+  it('reports the balance point as 59.9 °F', () => {
+    expect(toF(result.balancePoint.onMeanGain)).toBeCloseTo(59.9, 1);
   });
 });
 
@@ -378,7 +395,7 @@ describe('heat recovered from cooling is a third answer, not a bigger gain', () 
    * covered; called `recovered` it claims what the building cannot do.
    */
   it('is partly recovered when recovery is real but not enough', () => {
-    const r = withIt(20, 'chilled-water');
+    const r = withIt(50, 'chilled-water');
     expect(r.status).toBe('partly-recovered');
     expect(r.recovery).not.toBeNull();
     expect(r.recovery!.marginPerArea).toBeGreaterThan(r.marginPerArea);
@@ -388,20 +405,20 @@ describe('heat recovered from cooling is a third answer, not a bigger gain', () 
 
   it('reports the gap that is LEFT, not the one it started with', () => {
     // The number the next decision gets made against.
-    const r = withIt(20, 'chilled-water');
+    const r = withIt(50, 'chilled-water');
     expect(r.recovery!.stillShort).toBeLessThan(r.peakHeatingLoad);
     expect(r.recovery!.stillShortPerArea).toBeCloseTo(r.recovery!.stillShort / DEFAULT_ENVELOPE.floorArea, 9);
   });
 
   it('keeps plain short for a load with nothing to recover', () => {
-    expect(withIt(20, 'rejected').status).toBe('short');
-    expect(withIt(20, 'air').status).toBe('short');
+    expect(withIt(50, 'rejected').status).toBe('short');
+    expect(withIt(50, 'air').status).toBe('short');
   });
 
   it('measures the remaining gap at the hour that is worst AFTER recovery', () => {
     // Recovery is flat and the passive gains are not, so the hour that hurts
     // most can move once the loop is counted.
-    const r = withIt(20, 'chilled-water');
+    const r = withIt(50, 'chilled-water');
     const after = r.hours.map((h) => h.net + h.recoverable);
     const worstAfter = after.indexOf(Math.min(...after));
     expect(r.recovery!.worstHour).toBe(worstAfter);

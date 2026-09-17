@@ -210,6 +210,11 @@ function extract(label) {
     const minX = Math.min(...shellPoints.map((p) => p[0]));
     const minY = Math.min(...shellPoints.map((p) => p[1]));
     anchors.push({ slot: 'loss-infiltration', x: minX + 40, y: minY + 22, rotate: -135 });
+    // Ventilation runs parallel and below it. The two are the building's air
+    // terms — one it fails to keep out, one it moves on purpose — and they read
+    // as a pair, which is what they are. Parallel rather than crossing, and far
+    // enough apart that the labels clear each other.
+    anchors.push({ slot: 'loss-ventilation', x: minX + 40, y: minY + 70, rotate: -135 });
   }
 
   // Re-aim the vertical arrows before cropping, so the crop sees where they
