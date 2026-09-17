@@ -3,7 +3,17 @@ import { useId, useRef, useState } from 'react';
 import type { BalanceResult } from '../engine/balance';
 import type { UnitSystem } from '../model/types';
 import { LABELS, toBtuHFt2, toF } from '../model/units';
-import { crossing, linearScale, niceBounds, niceCeiling, ticksBetween, ticksUpTo } from './scales';
+import {
+  crossing,
+  linearScale,
+  niceBounds,
+  niceCeiling,
+  signedBounds,
+  ticksAcross,
+  ticksBetween,
+  ticksUpTo,
+} from './scales';
+import { seriesFrom } from './series';
 
 /**
  * The 24-hour balance.
@@ -44,6 +54,35 @@ import { crossing, linearScale, niceBounds, niceCeiling, ticksBetween, ticksUpTo
  * Hovering emits the hour, which the section drawing then redraws to. That one
  * interaction is what makes the two halves a single tool rather than two panels
  * sharing a screen.
+ *
+ * ## The detailed view
+ *
+ * `detailed` replaces the two curves with one line per component — every loss
+ * term and every gain term, in its own hue. It is off by default and does not
+ * persist, because the simple chart is the one that answers the question and
+ * the breakdown is for someone who has already read the answer and wants to
+ * know what made it.
+ *
+ * **It subtracts as much as it adds.** The deficit hatch, the outdoor-air line
+ * and the recovery band all go, and the right-hand axis with them. Nine lines
+ * plus a hatched region plus a dashed reference on a second scale is not a
+ * denser chart, it is an unreadable one — and each of those three answers a
+ * question this view is not being asked. What stays is the two totals, drawn
+ * heavier than the components, so the answer never leaves the screen while you
+ * are reading the parts and every component visibly sums to a line you can see.
+ *
+ * **And it is SIGNED.** Gains above zero, losses below, following the
+ * convention the rest of the tool already uses for a net. On a single-sided
+ * axis a reader has to consult a legend to learn whether a rising line is the
+ * building warming or cooling; across a zero rule, direction is the first thing
+ * they see and the legend is only for identity. The totals are signed too —
+ * drawing the components of the loss below zero and their sum above it would
+ * be the chart contradicting itself.
+ *
+ * The price is real and worth stating: on the simple chart the vertical gap
+ * between the two curves IS the deficit, and across a zero line it is not. The
+ * numeric readout carries the net instead, and the simple view — which is the
+ * one that answers the question — is one button away.
  */
 
 const WIDTH = 880;
@@ -60,15 +99,37 @@ const HEIGHT = 560;
 /** `right` is 52, not 20: the outdoor-temperature axis and its labels live there. */
 const PAD = { top: 22, right: 52, bottom: 46, left: 54 };
 
+/*
+ * A key was drawn inside the SVG here for one revision, so that an exported
+ * PNG could be read without the HTML table beside the live chart. It was
+ * withdrawn: it took 130 px of reserved right margin, and it took them from
+ * every viewing of the chart on the site to serve an export that happens
+ * rarely. The live chart is the primary case and it wins.
+ *
+ * An unlabelled PNG is the accepted cost, not an oversight. If it ever needs
+ * solving, the answer is to build the key into the EXPORT CLONE rather than
+ * into the chart — the clone is already walked and rewritten in exportPng.ts,
+ * and nothing it adds there costs the page a pixel.
+ */
+
 export interface BalanceChartProps {
   readonly result: BalanceResult;
   readonly floorArea: number;
   readonly units: UnitSystem;
   readonly hoveredHour: number | null;
   readonly onHoverHour: (hour: number | null) => void;
+  /** One line per component instead of the two totals alone. Never default. */
+  readonly detailed?: boolean;
 }
 
-export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHour }: BalanceChartProps) {
+export function BalanceChart({
+  result,
+  floorArea,
+  units,
+  hoveredHour,
+  onHoverHour,
+  detailed = false,
+}: BalanceChartProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [focusHour, setFocusHour] = useState<number | null>(null);
   const uid = useId().replace(/:/g, '');
@@ -103,12 +164,26 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
   // Reference only. Never in `loss`, `gain` or `net` — this line moves nothing.
   const outdoor = result.hours.map((h) => (ip ? toF(h.outdoorTemperature) : h.outdoorTemperature));
 
+  // Components are each a part of a total, so the totals still set the axis.
   const { max, step } = niceCeiling(Math.max(...loss, ...gain) * 1.05);
+  // Signed: losses run below zero, so the axis has to hold both directions.
+  const signed = signedBounds(-Math.max(...loss) * 1.05, Math.max(...gain) * 1.05);
   // Given the left axis's own interval count, every temperature label lands on
   // a gridline the flux axis already draws. See niceBounds.
   const temperature = niceBounds(Math.min(...outdoor), Math.max(...outdoor), Math.round(max / step));
-  const x = linearScale([0, 23], [PAD.left, WIDTH - PAD.right]);
-  const y = linearScale([0, max], [HEIGHT - PAD.bottom, PAD.top]);
+  // 20, not PAD.right: the temperature axis is gone in this view and its
+  // margin goes back to the plot.
+  const padRight = detailed ? 20 : PAD.right;
+  const series = detailed ? seriesFrom(result.hours, (watts) => convert(watts / area)) : [];
+  const x = linearScale([0, 23], [PAD.left, WIDTH - padRight]);
+  const y = detailed
+    ? linearScale([signed.min, signed.max], [HEIGHT - PAD.bottom, PAD.top])
+    : linearScale([0, max], [HEIGHT - PAD.bottom, PAD.top]);
+  /** Where zero sits. The baseline in the simple view; a rule inside it here. */
+  const zero = detailed ? y(0) : HEIGHT - PAD.bottom;
+  // The loss total follows its own components below the line. Drawing them
+  // below zero and their sum above it would be the chart contradicting itself.
+  const lossLine = detailed ? loss.map((v) => -v) : loss;
   const yTemp = linearScale([temperature.min, temperature.max], [HEIGHT - PAD.bottom, PAD.top]);
 
   const points = (values: readonly number[]) => values.map((v, h) => `${x(h).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
@@ -163,12 +238,25 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
         ref={svgRef}
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         role="img"
-        aria-label={`Hourly envelope loss against internal gain. ${result.deficitHours} of 24 hours need heating.`}
+        aria-label={
+          detailed
+            ? `Hourly envelope loss against internal gain, broken down into ${series.length} components. ${result.deficitHours} of 24 hours need heating.`
+            : `Hourly envelope loss against internal gain. ${result.deficitHours} of 24 hours need heating.`
+        }
         tabIndex={0}
         preserveAspectRatio="xMidYMid meet"
         /* The chart shares a row with the section and stretches to match it, so
            it takes whatever height is going rather than staying at its own
-           aspect ratio and leaving a gap. */
+           aspect ratio and leaving a gap.
+ 
+           The detailed view was capped lower than this for one revision, to
+           keep its readout table inside the one-screen budget. That is also
+           withdrawn: the live chart is the primary case, and 40 px of drawing
+           on every viewing is a worse trade than the verdict sitting a few
+           pixels below the fold on the one configuration that reaches it —
+           eleven components, which needs both an exposed floor and air-cooled
+           IT. The budget is a promise about the SIMPLE view, which is the one
+           that answers the question. */
         style={{ display: 'block', width: '100%', height: 'auto', maxHeight: 420, touchAction: 'none' }}
         onPointerMove={(event) => onHoverHour(hourFromEvent(event.clientX))}
         onPointerLeave={() => onHoverHour(null)}
@@ -190,16 +278,16 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
           </pattern>
         </defs>
 
-        {ticksUpTo(max, step).map((value) => (
+        {(detailed ? ticksAcross(signed.min, signed.max, signed.step) : ticksUpTo(max, step)).map((value) => (
           <g key={value}>
-            <line x1={PAD.left} y1={y(value)} x2={WIDTH - PAD.right} y2={y(value)} stroke="var(--border)" strokeWidth="1" />
+            <line x1={PAD.left} y1={y(value)} x2={WIDTH - padRight} y2={y(value)} stroke="var(--border)" strokeWidth="1" />
             <text x={PAD.left - 9} y={y(value) + 4} textAnchor="end" fontSize="11" fill="var(--muted)" fontFamily="IBM Plex Mono, monospace">
               {value % 1 === 0 ? value : value.toFixed(1)}
             </text>
           </g>
         ))}
 
-        {ticksBetween(temperature.min, temperature.max, temperature.step).map((value) => (
+        {!detailed && ticksBetween(temperature.min, temperature.max, temperature.step).map((value) => (
           <g key={`t${value}`}>
             <line
               x1={WIDTH - PAD.right}
@@ -222,11 +310,11 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
           </g>
         ))}
 
-        {deficitRegions.map((pts, i) => (
+        {!detailed && deficitRegions.map((pts, i) => (
           <polygon key={i} points={pts} fill={`url(#${hatchId})`} />
         ))}
 
-        <polyline
+        {!detailed && <polyline
           points={tempPoints}
           fill="none"
           stroke="var(--muted)"
@@ -235,14 +323,30 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
           strokeLinejoin="round"
           strokeLinecap="round"
           opacity="0.85"
-        />
+        />}
+
+        {/* One line per component, under the totals. Thinner and slightly
+            translucent, so where several cross the two totals stay the
+            strongest marks on the chart. */}
+        {series.map((one) => (
+          <polyline
+            key={one.slot}
+            points={points(one.values)}
+            fill="none"
+            stroke={one.colour}
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            opacity="0.9"
+          />
+        ))}
 
         {/* The recovery, as the area it fills between the passive gain and
             where that gain would reach. Drawn before the two data curves so
             they stay legible over it, and translucent so the deficit hatch it
             covers still reads underneath — the hatch is the gap, and this is
             the part of the gap a chiller could close. */}
-        {hasRecovery && (
+        {hasRecovery && !detailed && (
           <>
             <polygon
               points={`${points(gain)} ${points(recovered).split(' ').reverse().join(' ')}`}
@@ -263,7 +367,14 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
         )}
 
         <polyline points={points(gain)} fill="none" stroke="var(--gain)" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
-        <polyline points={points(loss)} fill="none" stroke="var(--loss)" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
+        <polyline points={points(lossLine)} fill="none" stroke="var(--loss)" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
+
+        {/* The zero rule, drawn over the data. It is the reading this view is
+            built on — which side of it a line sits on — so it is a stronger
+            mark than a gridline and weaker than a curve. */}
+        {detailed && (
+          <line x1={PAD.left} y1={zero} x2={WIDTH - padRight} y2={zero} stroke="var(--ink)" strokeWidth="1.2" opacity="0.55" />
+        )}
 
         {/* The hour under the pointer, or the worst hour at rest. */}
         <line
@@ -275,24 +386,66 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
           strokeWidth="1.4"
           opacity={active === null ? 1 : 0.5}
         />
-        <circle cx={x(readOut.hour)} cy={y(convert(readOut.loss / area))} r="4" fill="var(--loss)" />
+        <circle cx={x(readOut.hour)} cy={y(convert((detailed ? -readOut.loss : readOut.loss) / area))} r="4" fill="var(--loss)" />
         <circle cx={x(readOut.hour)} cy={y(convert(readOut.gain / area))} r="4" fill="var(--gain)" />
 
-        <line x1={PAD.left} y1={HEIGHT - PAD.bottom} x2={WIDTH - PAD.right} y2={HEIGHT - PAD.bottom} stroke="var(--muted)" strokeWidth="1.4" />
+        <line x1={PAD.left} y1={HEIGHT - PAD.bottom} x2={WIDTH - padRight} y2={HEIGHT - PAD.bottom} stroke="var(--muted)" strokeWidth="1.4" />
         {[0, 3, 6, 9, 12, 15, 18, 21].map((hour) => (
           <text key={hour} x={x(hour)} y={HEIGHT - PAD.bottom + 18} textAnchor="middle" fontSize="11" fill="var(--muted)" fontFamily="IBM Plex Mono, monospace">
             {String(hour).padStart(2, '0')}
           </text>
         ))}
-        <text x={(WIDTH + PAD.left - PAD.right) / 2} y={HEIGHT - 10} textAnchor="middle" fontSize="10.5" fill="var(--muted)" fontFamily="IBM Plex Mono, monospace">
-          hour of the design day, local standard time · left {labels.heatFlux} · right {labels.temperature}
+        <text x={(WIDTH + PAD.left - padRight) / 2} y={HEIGHT - 10} textAnchor="middle" fontSize="10.5" fill="var(--muted)" fontFamily="IBM Plex Mono, monospace">
+          hour of the design day, local standard time · {labels.heatFlux}
+          {!detailed && ` · right ${labels.temperature}`}
         </text>
       </svg>
+
+      {/* The legend is a READOUT here, not a key.
+ 
+          Eleven names and eleven numbers wrapped as inline items line up with
+          nothing: the reader is comparing magnitudes, and magnitudes compared
+          down a ragged column are magnitudes not compared. So it becomes a
+          grid — swatch, name, value — where every cell shares a column and
+          every number is right-aligned against the next.
+ 
+          The values are the hour under the pointer, or the worst hour at rest,
+          which is the same hour the section drawing and the playheads are
+          already showing. Nothing here introduces a second idea of "now". */}
+      {detailed && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(178px, 1fr))',
+            columnGap: 20,
+            rowGap: 3,
+            marginTop: 10,
+            fontSize: 11,
+            color: 'var(--muted)',
+          }}
+        >
+          <Reading colour="var(--loss)" label="envelope loss" value={-convert(readOut.loss / area)} heavy />
+          <Reading colour="var(--gain)" label="internal gain" value={convert(readOut.gain / area)} heavy />
+          {series.map((one) => (
+            <Reading
+              key={one.slot}
+              colour={one.colour}
+              label={one.label.toLowerCase()}
+              value={one.values[readOut.hour] ?? 0}
+            />
+          ))}
+        </div>
+      )}
 
       <figcaption
         style={{
           display: 'flex',
-          gap: 18,
+          // columnGap, not gap: React warns on a rerender that mixes a
+          // shorthand with a longhand for the same property, and `gap` beside
+          // `rowGap` is exactly that. Same trap as the border shorthand on the
+          // gross-floor cell in EnvelopePanel.
+          columnGap: 18,
+          rowGap: 5,
           flexWrap: 'wrap',
           alignItems: 'baseline',
           marginTop: 10,
@@ -300,10 +453,15 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
           color: 'var(--muted)',
         }}
       >
-        <Key colour="var(--loss)">envelope loss</Key>
-        <Key colour="var(--gain)">internal gain</Key>
-        {hasRecovery && <Key colour="var(--recover)">recovered heat</Key>}
-        <Key colour="var(--muted)" dashed>outdoor air</Key>
+        {!detailed && <Key colour="var(--loss)" heavy>envelope loss</Key>}
+        {!detailed && <Key colour="var(--gain)" heavy>internal gain</Key>}
+        {hasRecovery && !detailed && <Key colour="var(--recover)">recovered heat</Key>}
+        {!detailed && <Key colour="var(--muted)" dashed>outdoor air</Key>}
+        {detailed && (
+          <span style={{ color: 'var(--muted)' }}>
+            gains above the line, losses below · {labels.heatFlux}
+          </span>
+        )}
         <span style={{ marginLeft: 'auto', fontVariantNumeric: 'tabular-nums' }}>
           {String(readOut.hour).padStart(2, '0')}:00 ·{' '}
           <span style={{ color: 'var(--loss)' }}>{convert(readOut.loss / area).toFixed(1)}</span> loss ·{' '}
@@ -312,9 +470,12 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
             {readOut.net < 0 ? '−' : '+'}
             {Math.abs(convert(readOut.net / area)).toFixed(1)}
           </span>{' '}
-          {labels.heatFlux} ·{' '}
+          {/* "delta", because the figure is a DIFFERENCE between two of the
+              numbers beside it and read without a label it looks like a third
+              quantity of the same kind. */}
+          {labels.heatFlux} delta ·{' '}
           <span style={{ color: 'var(--muted)' }}>
-            {outdoor[readOut.hour]!.toFixed(1)} {labels.temperature} out
+            {outdoor[readOut.hour]!.toFixed(1)} {labels.temperature} air temperature
           </span>
           {active === null && ' · worst hour'}
         </span>
@@ -323,7 +484,59 @@ export function BalanceChart({ result, floorArea, units, hoveredHour, onHoverHou
   );
 }
 
-function Key({ colour, dashed = false, children }: { colour: string; dashed?: boolean; children: string }) {
+/**
+ * One row of the detailed readout: swatch, name, value.
+ *
+ * A three-column grid rather than a flex row, so the name column and the
+ * number column line up across every cell of the outer grid — which is the
+ * whole reason this stopped being a legend.
+ */
+function Reading({
+  colour,
+  label,
+  value,
+  heavy = false,
+}: {
+  colour: string;
+  label: string;
+  value: number;
+  heavy?: boolean;
+}) {
+  return (
+    <span
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '18px 1fr auto',
+        alignItems: 'center',
+        gap: 7,
+        color: heavy ? 'var(--body)' : 'var(--muted)',
+      }}
+    >
+      <span style={{ width: 18, height: heavy ? 3 : 2, background: colour, display: 'inline-block' }} />
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+      {/* Tabular figures and an explicit sign on both directions: a column
+          where only the negatives carry a mark reads as a column of magnitudes
+          with some typos in it. */}
+      <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--ink)' }}>
+        {value > 0 ? '+' : value < 0 ? '−' : ''}
+        {Math.abs(value).toFixed(2)}
+      </span>
+    </span>
+  );
+}
+
+function Key({
+  colour,
+  dashed = false,
+  heavy = false,
+  children,
+}: {
+  colour: string;
+  dashed?: boolean;
+  /** The two totals, which are drawn thicker on the chart and here. */
+  heavy?: boolean;
+  children: string;
+}) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
       {/* The dashed key is drawn as an SVG rather than a border, so it matches
@@ -333,7 +546,7 @@ function Key({ colour, dashed = false, children }: { colour: string; dashed?: bo
           <line x1="0" y1="1.5" x2="18" y2="1.5" stroke={colour} strokeWidth="1.6" strokeDasharray="5 4" />
         </svg>
       ) : (
-        <span style={{ width: 18, height: 3, background: colour, display: 'inline-block' }} />
+        <span style={{ width: 18, height: heavy ? 3 : 2, background: colour, display: 'inline-block' }} />
       )}
       {children}
     </span>

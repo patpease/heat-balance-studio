@@ -105,12 +105,12 @@ describe('the outdoor readout follows the unit switch', () => {
 
   it('reads °F under IP', () => {
     const worst = result.hours[result.worstHour]!;
-    expect(shown('IP')).toContain(`${toF(worst.outdoorTemperature).toFixed(1)} °F out`);
+    expect(shown('IP')).toContain(`${toF(worst.outdoorTemperature).toFixed(1)} °F air temperature`);
   });
 
   it('reads °C under SI', () => {
     const worst = result.hours[result.worstHour]!;
-    expect(shown('SI')).toContain(`${worst.outdoorTemperature.toFixed(1)} °C out`);
+    expect(shown('SI')).toContain(`${worst.outdoorTemperature.toFixed(1)} °C air temperature`);
   });
 
   it('labels the right axis with the temperature unit, not the flux unit', () => {

@@ -149,3 +149,53 @@ export function crossing(
   const t = d0 / (d0 - d1);
   return { x: x0 + (x1 - x0) * t, y: y0Loss + (y1Loss - y0Loss) * t };
 }
+
+/**
+ * A signed axis with zero on a gridline.
+ *
+ * The detailed chart puts gains above zero and losses below, following the
+ * sign convention the rest of the tool already uses: a negative net is a
+ * building that is short. Which means the axis has to cross zero, and zero has
+ * to be a rule the reader can trust rather than a value that happens to fall
+ * between two labels.
+ *
+ * **Fitted to the data, not forced symmetric.** A building losing ten times
+ * what it makes is the normal case, and a symmetric axis would spend half the
+ * chart on empty space above the gains — and, worse, imply the two are
+ * comparable magnitudes. Both sides are extended to a whole number of the same
+ * step, so zero lands exactly on a gridline and the two halves stay legible
+ * against each other.
+ *
+ * `low` is expected to be at or below zero and `high` at or above it; a series
+ * that never changes sign still gets a zero bound, because the zero line is
+ * what the reading is built on.
+ */
+export function signedBounds(
+  low: number,
+  high: number,
+  targetTicks = 5,
+): { min: number; max: number; step: number } {
+  const below = Math.max(0, -low);
+  const above = Math.max(0, high);
+  const span = Math.max(below, above);
+  if (span <= 0) return { min: -1, max: 1, step: 0.5 };
+
+  const { step } = niceCeiling(span, targetTicks);
+  const round = (value: number) => {
+    const decimals = Math.max(0, -Math.floor(Math.log10(step)) + 2);
+    return Number(value.toFixed(decimals));
+  };
+  return {
+    min: round(-Math.ceil(below / step - 1e-9) * step),
+    max: round(Math.ceil(above / step - 1e-9) * step),
+    step,
+  };
+}
+
+/** Every tick from `min` to `max` inclusive, stepping by `step`. */
+export function ticksAcross(min: number, max: number, step: number): number[] {
+  const out: number[] = [];
+  const decimals = Math.max(0, -Math.floor(Math.log10(step)) + 2);
+  for (let v = min; v <= max + step / 2; v += step) out.push(Number(v.toFixed(decimals)));
+  return out;
+}

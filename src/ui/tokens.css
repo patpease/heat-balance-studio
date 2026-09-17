@@ -52,6 +52,45 @@
   --ground-line: #5B6E66;
   --label-halo: #FBF9F3;
   --grid: #E4E0D6;
+
+  /* ---- Series palette: one hue per component, for the detailed chart ----
+   *
+   * Eleven lines on one chart. These were SOLVED rather than picked: hues laid
+   * out in CIE LCh, chroma reduced per hue until it is in sRGB gamut, and
+   * lightness swung ±8 either side of the base so that neighbours on the wheel
+   * differ on a second axis too. The search maximised the smallest perceptual
+   * distance between any two series subject to both themes clearing contrast.
+   *
+   * The result is a minimum ΔE of 26.6 across all 55 pairs in both themes, with
+   * every line between 3.68:1 and 7.13:1 against --panel. A line is a graphic,
+   * so the bar is WCAG's 3:1 for non-text contrast, not 4.5:1 — and the numbers
+   * above are measured, not judged.
+   *
+   * Losses hold the warm arc — crimson, red, rust, ochre, violet, magenta — and
+   * gains the cool one, green through teal to blue, so the tool's one
+   * persistent rule survives having eleven hues on a chart.
+   *
+   * ONE EXCEPTION, and it is a compromise rather than a reading: the exposed
+   * floor is blue, on the wrong side of that split. Eleven hues do not fit in
+   * two arcs at this separation, and something had to sit outside. It went to
+   * the series that is zero on nearly every building — an exposed floor is a
+   * cantilever or an undercroft soffit, and the row exists mostly to teach that
+   * the category exists. Every alternative tried scored worse: moving it to
+   * violet dropped the minimum ΔE to 16.7, and trading it with infiltration
+   * dropped it to 20.7, because that put the blue on a series every building
+   * has.
+   */
+  --s-walls: #A6235F;
+  --s-windows: #D7575A;
+  --s-roof: #95400A;
+  --s-ground-floor: #A57A15;
+  --s-exposed-floor: #0C84DE;
+  --s-infiltration: #5A4CA7;
+  --s-ventilation: #BB5FB2;
+  --s-people: #006742;
+  --s-lighting: #6B8C23;
+  --s-misc: #079092;
+  --s-it: #03617D;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -75,6 +114,19 @@
     --ground-line: #78848C;
     --label-halo: #2B3137;
     --grid: #1E2226;
+
+    /* ---- Series palette — see the light block for how these were chosen ---- */
+    --s-walls: #FEB9CF;
+    --s-windows: #EE817E;
+    --s-roof: #FEBE9C;
+    --s-ground-floor: #C39A4D;
+    --s-exposed-floor: #65A3F2;
+    --s-infiltration: #D3C3FF;
+    --s-ventilation: #D386CA;
+    --s-people: #75E0AC;
+    --s-lighting: #91AA56;
+    --s-misc: #00B2B5;
+    --s-it: #7ED7FE;
   }
 }
 
@@ -98,4 +150,17 @@
   --ground-line: #78848C;
   --label-halo: #2B3137;
   --grid: #1E2226;
+
+  /* ---- Series palette — see the light block for how these were chosen ---- */
+  --s-walls: #FEB9CF;
+  --s-windows: #EE817E;
+  --s-roof: #FEBE9C;
+  --s-ground-floor: #C39A4D;
+  --s-exposed-floor: #65A3F2;
+  --s-infiltration: #D3C3FF;
+  --s-ventilation: #D386CA;
+  --s-people: #75E0AC;
+  --s-lighting: #91AA56;
+  --s-misc: #00B2B5;
+  --s-it: #7ED7FE;
 }

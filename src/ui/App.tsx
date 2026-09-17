@@ -15,6 +15,7 @@ import {
   SAMPLE_SITE,
 } from '../model/sampleProject';
 import { DEFAULT_ENVELOPE, DEFAULT_GAINS } from '../model/defaults';
+import { GAIN_PRESETS } from '../model/gainPresets';
 import type { Conditions, DesignDay, Envelope, Gains, Site, UnitSystem } from '../model/types';
 import { EnvelopePanel } from './EnvelopePanel';
 import { GainsPanel } from './GainsPanel';
@@ -83,6 +84,21 @@ export function App() {
     };
   });
   const [hoveredHour, setHoveredHour] = useState<number | null>(null);
+  /**
+   * The chart's component breakdown.
+   *
+   * Local state and nothing else: not in the share link, not in storage, not
+   * read from anywhere. "Never on by default" is easiest to keep true when
+   * there is nowhere for it to be remembered — and a shared link should land
+   * the recipient on the chart that answers the question, not on the one that
+   * takes it apart.
+   *
+   * It lives here rather than in the chart because the button that toggles it
+   * sits in the panel's floating bar beside the export, and because the export
+   * reads the live SVG — so a detailed chart exports detailed with no
+   * co-ordination between the two.
+   */
+  const [detailed, setDetailed] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -111,6 +127,23 @@ export function App() {
     }
     window.setTimeout(() => setCopied(null), 2600);
   };
+
+  /**
+   * What an exported figure is a picture OF.
+   *
+   * The two things someone needs off a shared image: which building, where.
+   * "24-hour balance" was neither — the reader can see that it is a chart.
+   *
+   * Follows the badge's rule rather than reading `preset` alone: the numbers
+   * may no longer be the published ones, but the building is still the
+   * building, so an edited project exports its type with "edited" attached
+   * instead of losing the name.
+   */
+  const buildingType = (() => {
+    if (gains.preset) return gains.preset;
+    const source = GAIN_PRESETS.find((preset) => preset.id === gains.sourceId);
+    return source ? `${source.label} — edited` : 'Edited';
+  })();
 
   const shoot = async (container: HTMLDivElement | null, filename: string, caption: string) => {
     const svg = container?.querySelector('svg');
@@ -217,7 +250,7 @@ export function App() {
             scrubHour={hoveredHour}
             onChange={setEnvelope}
             onExport={() =>
-              shoot(sectionRef.current, 'heat-balance-section.png', `${site.label} — envelope section`)
+              shoot(sectionRef.current, 'heat-balance-section.png', `${site.label} · ${buildingType}`)
             }
             exporting={busy === 'heat-balance-section.png'}
           />
@@ -242,16 +275,30 @@ export function App() {
             }}
           >
             <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>24-hour balance</h2>
-            <button
-              type="button"
-              onClick={() =>
-                shoot(chartRef.current, 'heat-balance-chart.png', `${site.label} — 24-hour balance`)
-              }
-              disabled={busy !== null}
-              style={{ ...exportButton, pointerEvents: 'auto' }}
-            >
-              {busy === 'heat-balance-chart.png' ? 'Exporting…' : 'PNG'}
-            </button>
+            <span style={{ display: 'flex', gap: 6, pointerEvents: 'auto' }}>
+              <button
+                type="button"
+                onClick={() => setDetailed((on) => !on)}
+                aria-pressed={detailed}
+                style={{
+                  ...exportButton,
+                  borderColor: detailed ? 'var(--gain)' : 'var(--border)',
+                  background: detailed ? 'var(--panel)' : 'none',
+                }}
+              >
+                Details
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  shoot(chartRef.current, 'heat-balance-chart.png', `${site.label} · ${buildingType}`)
+                }
+                disabled={busy !== null}
+                style={exportButton}
+              >
+                {busy === 'heat-balance-chart.png' ? 'Exporting…' : 'PNG'}
+              </button>
+            </span>
           </div>
           <div ref={chartRef} style={{ padding: '30px 14px 12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <BalanceChart
@@ -260,6 +307,7 @@ export function App() {
               units={units}
               hoveredHour={hoveredHour}
               onHoverHour={setHoveredHour}
+              detailed={detailed}
             />
           </div>
         </section>

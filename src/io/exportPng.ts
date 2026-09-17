@@ -19,7 +19,7 @@
  *    sketch filter is new. Checked at this phase rather than at deploy.
  */
 
-import { BRAND, EXCLUSIONS_STATEMENT, SCOPE_STATEMENT, WEATHER_ATTRIBUTION } from '../config/branding';
+import { BRAND, WEATHER_ATTRIBUTION } from '../config/branding';
 
 /** The light palette, resolved once and written into the exported markup. */
 const LIGHT_TOKENS: Record<string, string> = {
@@ -38,6 +38,18 @@ const LIGHT_TOKENS: Record<string, string> = {
   '--ground-line': '#5B6E66',
   '--label-halo': '#FBF9F3',
   '--grid': '#E4E0D6',
+  // The detailed chart's series. See tokens.css for how these were derived.
+  '--s-walls': '#A6235F',
+  '--s-windows': '#D7575A',
+  '--s-roof': '#95400A',
+  '--s-ground-floor': '#A57A15',
+  '--s-exposed-floor': '#0C84DE',
+  '--s-infiltration': '#5A4CA7',
+  '--s-ventilation': '#BB5FB2',
+  '--s-people': '#006742',
+  '--s-lighting': '#6B8C23',
+  '--s-misc': '#079092',
+  '--s-it': '#03617D',
 };
 
 const VAR_PATTERN = /var\(\s*(--[a-z0-9-]+)\s*\)/gi;
@@ -102,19 +114,31 @@ export function serialiseSvg(source: SVGSVGElement, options: ExportOptions): str
   clone.setAttribute('height', String(height));
   clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
 
-  const captionHeight = 46;
+  /**
+   * Two lines, not four.
+   *
+   * The scope statement and the exclusions statement used to be burned in
+   * here, on the reasoning that an exported figure outlives the page that
+   * explained it. True, and still not worth three lines of small type across
+   * the foot of every image: what someone needs to read off a shared chart is
+   * WHICH BUILDING, WHERE. The caveats are on the page the link goes to, and
+   * the host is on the line below.
+   *
+   * **The weather attribution stays.** It is not explanation — ERA5 via
+   * Open-Meteo is CC BY 4.0, and the credit is a condition of using the data
+   * in something you hand to someone else. It is the one line here that is not
+   * ours to trim.
+   */
+  const captionHeight = 34;
   const body = new XMLSerializer().serializeToString(clone);
   const caption = options.caption ?? '';
 
-  // The scope statement and the host are burned in, not offered. An exported
-  // figure outlives the page that explained it.
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height + captionHeight}" viewBox="0 0 ${width} ${height + captionHeight}">
 <rect width="100%" height="100%" fill="${LIGHT_TOKENS['--panel']}"/>
 ${body}
 <g font-family="IBM Plex Mono, ui-monospace, monospace" fill="${LIGHT_TOKENS['--muted']}">
-<text x="16" y="${height + 16}" font-size="10">${escapeXml(caption)}</text>
-<text x="16" y="${height + 29}" font-size="9">${escapeXml(SCOPE_STATEMENT)}</text>
-<text x="16" y="${height + 40}" font-size="9">${escapeXml(`${EXCLUSIONS_STATEMENT} ${WEATHER_ATTRIBUTION} ${BRAND.host}`)}</text>
+<text x="16" y="${height + 16}" font-size="11" fill="${LIGHT_TOKENS['--ink']}">${escapeXml(caption)}</text>
+<text x="16" y="${height + 28}" font-size="9">${escapeXml(`${WEATHER_ATTRIBUTION} ${BRAND.host}`)}</text>
 </g>
 </svg>`;
 }
