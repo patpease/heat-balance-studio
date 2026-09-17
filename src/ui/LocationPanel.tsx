@@ -5,9 +5,8 @@ import { readWeatherFile } from '../climate/weatherFile';
 import type { GeocodeMatch } from '../climate/openMeteo';
 import { resolveGroundTemperature } from '../engine/ua';
 import { HELP } from '../config/copy';
-import { GROUND_DRIFT_LIMIT_K } from '../model/defaults';
 import type { Conditions, DesignDay, Site, UnitSystem } from '../model/types';
-import { deltaToF, LABELS, toF, toFt } from '../model/units';
+import { LABELS, toF, toFt } from '../model/units';
 import { grouped } from './format';
 import { HowItWorks } from './HowItWorks';
 
@@ -41,9 +40,13 @@ import { HowItWorks } from './HowItWorks';
  *
  * **This panel prints temperatures, so it needs `units`.** It shipped without
  * them and stayed in Fahrenheit under SI — a number that is still plausible,
- * still has a unit beside it, and is simply the other system's answer. Note
- * that the ground-drift limit is a temperature DIFFERENCE and takes
- * `deltaToF`: 3 K of drift is 5.4 °F of drift, not 37.4 °F.
+ * still has a unit beside it, and is simply the other system's answer.
+ *
+ * Every temperature it prints is now an ABSOLUTE one and takes `toF`. It used
+ * to print the ground drift too, which is a DIFFERENCE and took `deltaToF` —
+ * 3 K of drift is 5.4 °F, not 37.4 °F. That clause is gone, and with it the
+ * only place on this panel where the two could be confused; `units.test.ts`
+ * still guards the distinction at the function.
  */
 
 export interface LocationPanelProps {
@@ -104,10 +107,11 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
     }
 
     const day = result.value.designDay;
-    // The resolver runs on the NEW site's annual mean: 55 °F within 3 K of it,
-    // the derived mean beyond. Denver sits at 2.9 K, one good year from
-    // flipping — which is why the basis is always named rather than assumed.
-    const ground = resolveGroundTemperature(day.annualMeanTemperature);
+    // The resolver runs on the NEW site's mean for its design month, floored
+    // at freezing: 55 °F within 3 K of that, the month's own figure beyond.
+    // Houston lands on the rule of thumb and Boston no longer does, which is
+    // the whole point of the change — so the basis is always named.
+    const ground = resolveGroundTemperature(day.designMonthMeanTemperature);
 
     onApply(
       {
@@ -138,7 +142,7 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
       return;
     }
     const { designDay: day, site: fileSite, problems, summary } = outcome.value;
-    const ground = resolveGroundTemperature(day.annualMeanTemperature);
+    const ground = resolveGroundTemperature(day.designMonthMeanTemperature);
     onApply(fileSite, day, {
       ...conditions,
       groundTemperature: ground.value,
@@ -153,8 +157,6 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
   const ip = units === 'IP';
   /** An absolute temperature, in the displayed system. */
   const temp = (celsius: number) => (ip ? toF(celsius) : celsius);
-  /** A temperature DIFFERENCE. Never `temp` — see the note above. */
-  const drift = ip ? deltaToF(GROUND_DRIFT_LIMIT_K).toFixed(1) : String(GROUND_DRIFT_LIMIT_K);
 
   /**
    * The ground line says what the number DOES, not where it came from.
@@ -166,10 +168,20 @@ export function LocationPanel({ site, designDay, conditions, units, onApply }: L
    * see, and it is the same assumption on both branches — only the basis for
    * the number differs, and the derived branch still names its own.
    */
-  const groundNote =
-    conditions.groundTemperatureBasis === 'rule-of-thumb'
-      ? `ground temperature assumed constant at ${temp(conditions.groundTemperature).toFixed(0)} ${labels.temperature}`
-      : `ground temperature assumed constant at ${temp(conditions.groundTemperature).toFixed(1)} ${labels.temperature}, this site’s annual mean — more than ${drift} ${labels.temperatureDelta} from the default`;
+  /**
+   * The value, and nothing else.
+   *
+   * This line has carried, at various times, the provenance of the number, the
+   * drift that chose it, the month it came from and the reason it stopped at
+   * freezing. All of that is in the assumptions panel, where someone looking
+   * for it will find it; here it was four clauses explaining a single figure to
+   * a reader who had not asked. Only the modelling fact stays, because it is
+   * the one thing the number itself does not say: the ground is held at this
+   * temperature for all 24 hours while the air outside swings.
+   */
+  const groundNote = `ground temperature assumed constant at ${temp(
+    conditions.groundTemperature,
+  ).toFixed(conditions.groundTemperatureBasis === 'rule-of-thumb' ? 0 : 1)} ${labels.temperature}`;
 
   return (
     <div style={{ display: 'grid', gap: 10 }}>

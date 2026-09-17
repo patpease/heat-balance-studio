@@ -31,10 +31,17 @@ function bostonSamples(): HourSample[] {
   // the day index is the sample index over 24. No date parsing needed here —
   // and none wanted, since a parse would reintroduce the DST question the
   // fixture was built to settle.
+  //
+  // The MONTH is arithmetic on a fixed epoch rather than a parse: hour i is i
+  // hours after 2015-01-01 local standard, and local standard time has no
+  // discontinuities to trip over. It is computed in UTC precisely so that no
+  // offset is applied to it twice.
+  const epoch = Date.UTC(2015, 0, 1);
   const samples: HourSample[] = new Array(values.length);
   for (let i = 0; i < values.length; i++) {
     samples[i] = {
       dayKey: String(Math.floor(i / 24)),
+      month: new Date(epoch + i * 3_600_000).getUTCMonth() + 1,
       hour: i % 24,
       tdb: values[i]! / 100,
     };
@@ -66,8 +73,17 @@ describe('the Boston design day reproduces the published derivation', () => {
     expect(designDay.dailyRange).toBeCloseTo(11.7, 1);
   });
 
-  it('reports an annual mean of 10.9 °C', () => {
-    expect(designDay.annualMeanTemperature).toBeCloseTo(10.89, 2);
+  /**
+   * February, not January — and that is the point of using the cold days
+   * rather than the coldest hour. The ground temperature follows where the
+   * cold weather lives.
+   */
+  it('puts the design day in February, where most of the cold days are', () => {
+    expect(designDay.designMonth).toBe(2);
+  });
+
+  it('reports a February mean of −0.6 °C, not the 10.9 °C annual mean', () => {
+    expect(designDay.designMonthMeanTemperature).toBeCloseTo(-0.6, 1);
   });
 
   it('rebuilds the committed 24-hour profile', () => {
@@ -118,13 +134,13 @@ describe('the 99% condition is milder, by about the published spread', () => {
 });
 
 describe('derivation edge cases', () => {
-  const flatDay = (dayKey: string, tdb: number): HourSample[] =>
-    Array.from({ length: 24 }, (_, hour) => ({ dayKey, hour, tdb }));
+  const flatDay = (dayKey: string, tdb: number, month = 1): HourSample[] =>
+    Array.from({ length: 24 }, (_, hour) => ({ dayKey, month, hour, tdb }));
 
   it('drops a day that is not 24 hours long rather than distorting it', () => {
     const partial: HourSample[] = [
       ...flatDay('full', -10),
-      { dayKey: 'partial', hour: 0, tdb: -40 },
+      { dayKey: 'partial', month: 1, hour: 0, tdb: -40 },
     ];
     const { diagnostics: d } = deriveDesignDay(partial);
     expect(d.wholeDays).toBe(1);
@@ -143,7 +159,7 @@ describe('derivation edge cases', () => {
     // Dividing by a near-zero range amplifies noise, so a day flatter than
     // 0.5 K contributes to the level and not to the curve.
     const shaped: HourSample[] = [
-      ...Array.from({ length: 24 }, (_, hour) => ({ dayKey: 'shaped', hour, tdb: -20 + hour * 0.5 })),
+      ...Array.from({ length: 24 }, (_, hour) => ({ dayKey: 'shaped', month: 1, hour, tdb: -20 + hour * 0.5 })),
       ...flatDay('flat', -20),
     ];
     const { diagnostics: d } = deriveDesignDay(shaped);
@@ -223,7 +239,7 @@ describe('archive responses', () => {
   it('shifts UTC stamps into local standard time', () => {
     const { samples: s } = samplesFromArchive(response, -18000);
     // 05:00Z is midnight EST.
-    expect(s[0]).toEqual({ dayKey: '2024-01-01', hour: 0, tdb: -5 });
+    expect(s[0]).toEqual({ dayKey: '2024-01-01', month: 1, hour: 0, tdb: -5 });
     expect(s[1]!.hour).toBe(1);
     expect(s[2]!.hour).toBe(2);
   });

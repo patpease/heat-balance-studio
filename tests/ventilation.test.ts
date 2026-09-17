@@ -109,13 +109,30 @@ describe('heat recovery on the air side', () => {
     expect(ventAt(run({ effectiveness: 5 }), 6)).toBe(0);
   });
 
-  it('offers four devices and none, each with a published range', () => {
-    expect(HEAT_RECOVERY).toHaveLength(5);
+  it('offers three devices and none, each with a published range', () => {
+    expect(HEAT_RECOVERY).toHaveLength(4);
     for (const d of HEAT_RECOVERY) {
       expect(d.effectiveness).toBeGreaterThanOrEqual(0);
       expect(d.effectiveness).toBeLessThanOrEqual(1);
       if (d.id !== 'none') expect(d.range).toMatch(/^\d+–\d+%$/);
     }
+  });
+
+  /**
+   * Two devices on the same number are one button too many.
+   *
+   * The heat pipe and the plate exchanger both sat at the middle of 50–70%, so
+   * the picker offered a choice that changed nothing: same conductance, same
+   * chart, same verdict, and `recoveryMatching` could only ever badge the
+   * first of them. The heat pipe is named in the plate exchanger's note now.
+   */
+  it('lists no two devices at the same effectiveness', () => {
+    const values = HEAT_RECOVERY.map((d) => d.effectiveness);
+    expect(new Set(values).size).toBe(values.length);
+  });
+
+  it('badges 60% as the plate exchanger, which now stands for both', () => {
+    expect(recoveryMatching(0.6)).toBe('plate');
   });
 
   it('takes the middle of each published range, never the top', () => {

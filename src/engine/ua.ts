@@ -18,7 +18,7 @@
 
 import { airHeatCapacity, DESIGN_PRESSURE_FACTOR } from '../model/airtightness';
 import type { Ventilation } from '../model/ventilation';
-import { GROUND_DRIFT_LIMIT_K, GROUND_RULE_OF_THUMB_C } from '../model/defaults';
+import { GROUND_DRIFT_LIMIT_K, GROUND_FREEZING_FLOOR_C, GROUND_RULE_OF_THUMB_C } from '../model/defaults';
 import type {
   Conditions,
   Envelope,
@@ -219,32 +219,54 @@ export interface ResolvedGroundTemperature {
   readonly basis: GroundTemperatureBasis;
   /** K from the rule of thumb — what the decision turned on. */
   readonly drift: number;
+  /** True where the month's air mean was below freezing and the soil was not. */
+  readonly floored: boolean;
 }
 
 /**
  * Pick a ground temperature rather than asking the user to.
  *
- * 55 °F held constant is the recognised rule of thumb and it is close enough
- * across the temperate band — against a location-derived value it moves
- * Boston's worst-hour deficit by about 2%. Where a number does not change the
- * result, the one people already recognise is the better number.
+ * ## The month, not the year
  *
- * But it fails at both ends, and in cold climates it fails FLATTERINGLY: 55 °F
- * is warmer than the real ground in Minneapolis (4.7 K) and would understate
- * slab loss in exactly the places where a heating-free claim is hardest to
- * earn. Phoenix and Miami fail the other way, where 55 °F invents a slab loss
- * that is really a gain.
+ * This read the site's ANNUAL mean air temperature until measured soil said it
+ * could not. Soil follows the season: Houston's annual mean is 70 °F while its
+ * January soil sits at 54–56 °F, so the tool was inventing 15 °F of slab gain
+ * on a heating design day in the one climate where it is easiest to believe.
+ * The mean for the month the design day falls in tracks measured shallow soil
+ * closely — Houston 53.4 °F air against 54.7 °F soil at 4", Boston 29.9 against
+ * 33.2 — and it is a monthly normal rather than one year's month, so it is no
+ * noisier than the annual figure it replaces.
  *
- * So beyond 3 K of drift the site's own annual mean air temperature takes over,
- * and the field names whichever basis it resolved to.
+ * ## The floor
+ *
+ * The tracking holds down to freezing and then stops, because snow insulates
+ * and freezing soil moisture holds the ground at 0 °C while it changes phase.
+ * Minneapolis averages 16.5 °F of air in January against 28–34 °F of soil at
+ * every measured depth. So the month's mean is floored at freezing before
+ * anything else looks at it, and the floor is reported: a number held at 32 °F
+ * is not a number the weather produced. See GROUND_FREEZING_FLOOR_C.
+ *
+ * ## The rule of thumb
+ *
+ * 55 °F held constant is the recognised figure, and within 3 K of it the tool
+ * keeps it: where a number does not change the result, the one people already
+ * recognise is the better number. Houston lands there now — 53.4 °F is 0.9 K
+ * out — which it never did on the annual mean. Beyond 3 K the month's own
+ * figure takes over, and the field names whichever basis it resolved to.
  */
 export function resolveGroundTemperature(
-  annualMeanTemperature: number,
+  designMonthMeanTemperature: number,
 ): ResolvedGroundTemperature {
-  const drift = Math.abs(annualMeanTemperature - GROUND_RULE_OF_THUMB_C);
+  // The floor comes first. It is a statement about what the soil does, not a
+  // presentation choice, so the drift that decides the rule of thumb has to be
+  // measured from the floored figure rather than from an air temperature the
+  // ground never reaches.
+  const floored = designMonthMeanTemperature < GROUND_FREEZING_FLOOR_C;
+  const soil = floored ? GROUND_FREEZING_FLOOR_C : designMonthMeanTemperature;
+  const drift = Math.abs(soil - GROUND_RULE_OF_THUMB_C);
   return drift <= GROUND_DRIFT_LIMIT_K
-    ? { value: GROUND_RULE_OF_THUMB_C, basis: 'rule-of-thumb', drift }
-    : { value: annualMeanTemperature, basis: 'derived', drift };
+    ? { value: GROUND_RULE_OF_THUMB_C, basis: 'rule-of-thumb', drift, floored }
+    : { value: soil, basis: 'derived', drift, floored };
 }
 
 /** The constant loss through every ground-coupled surface, W. */

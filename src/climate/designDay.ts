@@ -46,6 +46,16 @@ import type { DesignDay, DesignHour } from '../model/types';
 export interface HourSample {
   /** Any stable per-day key. Samples sharing one are one local day. */
   readonly dayKey: string;
+  /**
+   * 1–12, local standard time.
+   *
+   * Carried explicitly rather than parsed out of `dayKey`, because the two
+   * producers spell that key differently — an EPW has no year and writes
+   * `MM-DD` where the archive writes `YYYY-MM-DD` — and a month read out of
+   * the wrong offset is a silent error: it would still be a month, still
+   * plausible, and it now decides the ground temperature.
+   */
+  readonly month: number;
   /** 0–23, local standard time. */
   readonly hour: number;
   /** °C */
@@ -89,28 +99,54 @@ interface ColdDay {
   readonly hours: readonly number[];
   readonly min: number;
   readonly range: number;
+  readonly month: number;
+}
+
+interface WholeDay {
+  readonly hours: readonly number[];
+  readonly month: number;
 }
 
 /** Group into whole local days, discarding any day that is not 24 hours long. */
-function wholeDays(samples: readonly HourSample[]): number[][] {
-  const byDay = new Map<string, (number | undefined)[]>();
+function wholeDays(samples: readonly HourSample[]): WholeDay[] {
+  const byDay = new Map<string, { hours: (number | undefined)[]; month: number }>();
   for (const s of samples) {
     if (!Number.isFinite(s.tdb)) continue;
     let day = byDay.get(s.dayKey);
     if (!day) {
-      day = new Array<number | undefined>(24).fill(undefined);
+      day = { hours: new Array<number | undefined>(24).fill(undefined), month: s.month };
       byDay.set(s.dayKey, day);
     }
-    day[s.hour] = s.tdb;
+    day.hours[s.hour] = s.tdb;
   }
 
-  const out: number[][] = [];
+  const out: WholeDay[] = [];
   for (const day of byDay.values()) {
     // A partial day would distort both the minimum and the range, and a record
     // almost always has one at each end. Drop rather than interpolate.
-    if (day.every((v) => v !== undefined)) out.push(day as number[]);
+    if (day.hours.every((v) => v !== undefined)) {
+      out.push({ hours: day.hours as number[], month: day.month });
+    }
   }
   return out;
+}
+
+/**
+ * The mean of every hour in the record that falls in one month.
+ *
+ * A monthly normal, not one year's month: ten Januaries averaged together.
+ * This is what the ground temperature is resolved from — see
+ * `resolveGroundTemperature`.
+ */
+function meanOfMonth(samples: readonly HourSample[], month: number): number {
+  let sum = 0;
+  let n = 0;
+  for (const s of samples) {
+    if (s.month !== month || !Number.isFinite(s.tdb)) continue;
+    sum += s.tdb;
+    n++;
+  }
+  return n > 0 ? sum / n : NaN;
 }
 
 export interface Derivation {
@@ -137,23 +173,36 @@ export function deriveDesignDay(
 
   const sorted = [...all].sort((a, b) => a - b);
   const minimum = percentileOf(sorted, percentile);
-  const annualMean = all.reduce((a, b) => a + b, 0) / all.length;
 
   const days = wholeDays(samples);
   const cold: ColdDay[] = [];
-  for (const hours of days) {
+  for (const { hours, month } of days) {
     const min = Math.min(...hours);
     if (min <= minimum + window) {
-      cold.push({ hours, min, range: Math.max(...hours) - min });
+      cold.push({ hours, min, range: Math.max(...hours) - min, month });
     }
   }
+
+  /**
+   * Which month the design day belongs to.
+   *
+   * The month that holds the most of the cold days already selected — the same
+   * days that shape the profile — rather than the month of the single coldest
+   * hour. One freak hour can sit in a month that holds nothing else, and the
+   * ground temperature should follow where the cold weather lives, not where
+   * its worst minute happened to land. Boston's coldest hour is in February and
+   * so is its cold-day cluster; Houston's coldest hour is in February while 37
+   * of its 81 cold days are in January, which is the one the ground follows.
+   */
+  const designMonth = modalMonth(cold, samples);
+  const designMonthMean = meanOfMonth(samples, designMonth);
 
   // Fall back to a flat day rather than throwing. A record with no day inside
   // the window is pathological — a partial upload, say — and a flat design day
   // at the right level is still usable, where an exception is not.
   if (cold.length === 0) {
     return {
-      designDay: buildDesignDay(minimum, 0, new Array(24).fill(0), annualMean, percentile, options),
+      designDay: buildDesignDay(minimum, 0, new Array(24).fill(0), designMonth, designMonthMean, percentile, options),
       diagnostics: { hoursRead: all.length, wholeDays: days.length, coldDaysSelected: 0, coldDaysUsedForShape: 0 },
     };
   }
@@ -180,7 +229,7 @@ export function deriveDesignDay(
   const unit = span > 0 ? shape.map((s) => (s - lo) / span) : shape.map(() => 0);
 
   return {
-    designDay: buildDesignDay(minimum, dailyRange, unit, annualMean, percentile, options),
+    designDay: buildDesignDay(minimum, dailyRange, unit, designMonth, designMonthMean, percentile, options),
     diagnostics: {
       hoursRead: all.length,
       wholeDays: days.length,
@@ -190,11 +239,36 @@ export function deriveDesignDay(
   };
 }
 
+/**
+ * The month holding the most cold days, falling back to the coldest hour's own
+ * month when the record produced no cold days at all.
+ */
+function modalMonth(cold: readonly ColdDay[], samples: readonly HourSample[]): number {
+  if (cold.length > 0) {
+    const tally = new Array(13).fill(0);
+    for (const day of cold) tally[day.month]++;
+    let best = 1;
+    for (let m = 1; m <= 12; m++) if (tally[m]! > tally[best]!) best = m;
+    return best;
+  }
+
+  let coldest = Infinity;
+  let month = 1;
+  for (const s of samples) {
+    if (Number.isFinite(s.tdb) && s.tdb < coldest) {
+      coldest = s.tdb;
+      month = s.month;
+    }
+  }
+  return month;
+}
+
 function buildDesignDay(
   minimum: number,
   dailyRange: number,
   unitShape: readonly number[],
-  annualMean: number,
+  designMonth: number,
+  designMonthMean: number,
   percentile: number,
   options: DeriveOptions,
 ): DesignDay {
@@ -217,7 +291,8 @@ function buildDesignDay(
     minimum,
     dailyRange,
     hours,
-    annualMeanTemperature: annualMean,
+    designMonth,
+    designMonthMeanTemperature: designMonthMean,
     // Never "ASHRAE 99.6%". The number is ours, derived, and says so.
     provenance: `${source}, coldest ${percentile}% of hours${span}`,
   };

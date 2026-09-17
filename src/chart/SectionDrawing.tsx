@@ -34,6 +34,16 @@ export interface SectionDrawingProps {
   readonly showLabels?: boolean;
   readonly selected?: SurfaceSlot | null;
   readonly onSelect?: (slot: SurfaceSlot) => void;
+  /**
+   * Where the artwork sits in a box wider than it needs.
+   *
+   * The drawing is HEIGHT-bound — see the cap below — so a 628 px box renders
+   * 377 px of building and 125 px of nothing at each side. Centred, that
+   * nothing is unusable. Pushed to one edge it becomes a single contiguous
+   * margin, and the dimension fields sit in it — which is what took a row off
+   * the envelope panel without shrinking the building.
+   */
+  readonly align?: 'centre' | 'left' | 'right';
 }
 
 export const LOSS_SLOTS = new Set<SurfaceSlot>([
@@ -154,6 +164,7 @@ export function SectionDrawing({
   showLabels = true,
   selected = null,
   onSelect,
+  align = 'centre',
 }: SectionDrawingProps) {
   // Ids must be unique per instance: the export clone mounts a second copy of
   // this drawing, and a duplicate filter id would have one steal the other's.
@@ -169,7 +180,9 @@ export function SectionDrawing({
       viewBox={type.viewBox}
       role="img"
       aria-label={`${type.label} section: envelope heat loss against internal heat gain`}
-      preserveAspectRatio="xMidYMid meet"
+      preserveAspectRatio={
+        align === 'left' ? 'xMinYMid meet' : align === 'right' ? 'xMaxYMid meet' : 'xMidYMid meet'
+      }
       /* Without a cap the drawing is sized by the panel's width, which on a
          900 px screen pushes the verdict below the fold. The cap is therefore
          set by the fold budget and nothing else, and it is what makes the

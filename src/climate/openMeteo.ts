@@ -186,6 +186,7 @@ export function samplesFromArchive(
     }
     samples.push({
       dayKey: local.toISOString().slice(0, 10),
+      month: local.getUTCMonth() + 1,
       hour: local.getUTCHours(),
       tdb: value,
     });

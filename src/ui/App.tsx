@@ -6,6 +6,7 @@ import { BRAND } from '../config/branding';
 import { SiteFooter } from './SiteFooter.js';
 import { TAGLINE } from '../config/copy';
 import { solve } from '../engine/balance';
+import { resolveGroundTemperature } from '../engine/ua';
 import { downloadBlob, exportPng } from '../io/exportPng';
 import { shareUrl, stateFromLocation } from '../io/share';
 import {
@@ -20,7 +21,6 @@ import { GainsPanel } from './GainsPanel';
 import { LocationPanel } from './LocationPanel';
 import { Mark } from './Mark';
 import { ScopePanel } from './ScopePanel';
-import { VentilationPanel } from './VentilationPanel';
 import { DEFAULT_VENTILATION } from '../model/ventilation';
 import type { Ventilation } from '../model/ventilation';
 import { ThemeIcon } from './ThemeIcon';
@@ -67,7 +67,21 @@ export function App() {
   // place, and the ground temperature is resolved from that place's record.
   const [site, setSite] = useState<Site>(shared?.site ?? SAMPLE_SITE);
   const [designDay, setDesignDay] = useState<DesignDay>(shared?.designDay ?? SAMPLE_DESIGN_DAY);
-  const [conditions, setConditions] = useState<Conditions>(shared?.conditions ?? SAMPLE_CONDITIONS);
+  // The ground temperature is RESOLVED from the design day the tool opens on,
+  // not copied from the worked example. SAMPLE_CONDITIONS holds 55 °F because
+  // that is a stated input of the frozen worked example; the app's own opening
+  // view is Boston in February, which resolves to its own figure. Copying the
+  // 55 would have meant searching "Boston" changed a number the page had
+  // already shown for the same city.
+  const [conditions, setConditions] = useState<Conditions>(() => {
+    if (shared?.conditions) return shared.conditions;
+    const ground = resolveGroundTemperature(SAMPLE_DESIGN_DAY.designMonthMeanTemperature);
+    return {
+      ...SAMPLE_CONDITIONS,
+      groundTemperature: ground.value,
+      groundTemperatureBasis: ground.basis,
+    };
+  });
   const [hoveredHour, setHoveredHour] = useState<number | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -257,21 +271,17 @@ export function App() {
         <BalancePointBand result={result} units={units} />
       </div>
 
+      {/* Ventilation lives inside this panel rather than beside it. Its inputs
+          are shaped like the occupancy input it sits under, and its own panel
+          spent 280 px saying what three lines say there. */}
       <GainsPanel
         gains={gains}
         floorArea={envelope.floorArea}
         units={units}
         marker={hoveredHour ?? result.worstHour}
         onChange={setGains}
-      />
-
-      <VentilationPanel
         ventilation={ventilation}
-        gains={gains}
-        envelope={envelope}
-        conditions={conditions}
-        units={units}
-        onChange={setVentilation}
+        onVentilationChange={setVentilation}
       />
 
       <ScopePanel />

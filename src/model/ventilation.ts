@@ -62,13 +62,18 @@ export type VentilationSchedule = 'constant' | 'occupancy';
  * Training Workshop table, and each preset takes the middle of its range — a
  * screening tool has no business picking the top of a range it cannot verify.
  *
+ * Devices whose middles coincide are not listed twice. The heat pipe and the
+ * plate exchanger both sit at 60% of a 50–70% range, so offering both was two
+ * buttons for one calculation; the heat pipe is named in the plate exchanger's
+ * note instead.
+ *
  * **Sensible only, which costs the enthalpy wheel its best argument.** A wheel
  * moves moisture as well as heat and its quoted effectiveness includes that;
  * this tool has no latent side, so only the sensible half is credited. The
  * wheel is still the most effective device here, and in a real building it is
  * further ahead than this shows.
  */
-export type HeatRecoveryType = 'none' | 'run-around' | 'heat-pipe' | 'plate' | 'wheel';
+export type HeatRecoveryType = 'none' | 'run-around' | 'plate' | 'wheel';
 
 export interface HeatRecoveryDevice {
   readonly id: HeatRecoveryType;
@@ -95,25 +100,18 @@ export const HEAT_RECOVERY: readonly HeatRecoveryDevice[] = Object.freeze([
     note: 'Two coils and a pump loop, so the airstreams never touch. Labs, hospitals, anywhere cross-contamination is the constraint.',
   },
   {
-    id: 'heat-pipe',
-    label: 'Heat pipe',
-    effectiveness: 0.6,
-    range: '50–70%',
-    note: 'No moving parts. Offices and dry climates.',
-  },
-  {
     id: 'plate',
     label: 'Plate exchanger',
     effectiveness: 0.6,
     range: '50–70%',
-    note: 'A fixed plate core. Cleanrooms, and anywhere the two airstreams must stay separate.',
+    note: 'A fixed plate core, no moving parts. Cleanrooms, and anywhere the two airstreams must stay separate. A heat pipe screens the same at this level of detail — the same published range, and the same middle.',
   },
   {
     id: 'wheel',
     label: 'Enthalpy wheel',
     effectiveness: 0.75,
     range: '65–85%',
-    note: 'The most effective of the four, and the quoted range includes latent transfer this tool cannot count — in a real building it does better than this.',
+    note: 'The most effective of the three, and the quoted range includes latent transfer this tool cannot count — in a real building it does better than this.',
   },
 ]);
 

@@ -41,9 +41,13 @@ export const SAMPLE_DESIGN_DAY: DesignDay = {
   minimum: -15.3,
   dailyRange: 11.7,
   hours: SAMPLE_PROFILE_C.map((tdb, hour) => ({ hour, tdb, ghi: null, dni: null, dhi: null })),
-  // Drift from the 55 °F rule of thumb is 1.9 K, inside the 3 K limit — so
-  // Boston keeps the rule of thumb and this is a cross-check, not the driver.
-  annualMeanTemperature: 10.9,
+  // February: 35 of Boston's 76 cold days fall there, more than any other
+  // month. Its ten-year mean is −0.6 °C — 30.9 °F — which is 13.4 K from the
+  // 55 °F rule of thumb, so a Boston searched today resolves to its own figure
+  // rather than the default. The worked example below keeps 55 °F because that
+  // is one of its STATED inputs, not something it derives.
+  designMonth: 2,
+  designMonthMeanTemperature: -0.6,
   provenance: 'ERA5 via Open-Meteo, coldest 0.4% of hours, 2015–2024',
 };
 

@@ -1,21 +1,29 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 
 import { occupantCount } from '../engine/gains';
 import { applyGainPreset, IT_PRESETS, setDensity, setItCooling, setOccupancyMode, setScheduleHour } from '../model/editGains';
 import type { DensityField, ScheduleField } from '../model/editGains';
-import { GAINS_SOURCE_NOTE, HELP, IT_COOLING } from '../config/copy';
-import { OFFICE_DENSITIES } from '../model/defaults';
+import { HELP, IT_COOLING } from '../config/copy';
 import { GAIN_PRESETS } from '../model/gainPresets';
 import type { Gains, ItCooling, UnitSystem } from '../model/types';
+import {
+  CUBIC_METRES_PER_SECOND_PER_CFM,
+  HEAT_RECOVERY,
+  recoveryDevice,
+  recoveryMatching,
+  SQUARE_METRES_PER_SQUARE_FOOT,
+  ventilationFractions,
+} from '../model/ventilation';
+import type { Ventilation, VentilationSchedule } from '../model/ventilation';
 import { fromSqFt, fromWattsPerSqFt, LABELS, toBtuH, toBtuHFt2, toSqFt, toWattsPerSqFt } from '../model/units';
 import { grouped } from './format';
 import { NumberCell } from './NumberCell';
 import { ScheduleBars } from './ScheduleBars';
 
 /**
- * Internal gains.
+ * Internal gains, and the ventilation that answers them.
  *
- * Four rows, because equipment behaves two different ways at the hour the
+ * Four gain rows, because equipment behaves two different ways at the hour the
  * verdict is decided: IT runs flat through the night while misc drops to a
  * standby floor. A watt of 24/7 load is worth roughly three times a watt of
  * scheduled load to this answer, and no single-row model can say that.
@@ -26,10 +34,21 @@ import { ScheduleBars } from './ScheduleBars';
  * near full occupancy at 05:00 where an office sits at zero, and the verdict is
  * decided between 04:00 and 07:00.
  *
- * No advanced field appears here. φ — the share of IT power that reaches the
- * conditioned space — is in the schema and the engine applies it, but v1 holds
- * it at 1 and shows no control; the assumption is disclosed in the scope notes
- * instead, because the user cannot change it.
+ * ## Why ventilation is here
+ *
+ * It is a LOSS sitting in a box of gains, and it is here anyway because its
+ * inputs are shaped like the occupancy input directly above it — a per-person
+ * rate, a per-area rate, and a schedule — and because it is the same people
+ * driving both. It had its own panel for one revision and that panel cost 280
+ * px to say what three lines say here. The heading names it, and its strip is
+ * drawn in the loss colour, so nothing here claims ventilation is a gain.
+ *
+ * ## Why there is so little prose
+ *
+ * Every provenance note, every caveat and every piece of coaching that used to
+ * sit under these rows is now either behind a row's `?` or in the assumptions
+ * panel at the foot of the page. The rows are inputs; a box of inputs that is
+ * half paragraphs is a box that gets skipped.
  */
 
 export interface GainsPanelProps {
@@ -39,6 +58,8 @@ export interface GainsPanelProps {
   /** The worst hour, drawn as a playhead across every strip. */
   readonly marker: number | null;
   readonly onChange: (gains: Gains) => void;
+  readonly ventilation: Ventilation;
+  readonly onVentilationChange: (next: Ventilation) => void;
 }
 
 interface Row {
@@ -75,7 +96,27 @@ const ROWS: readonly Row[] = [
   },
 ];
 
-export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsPanelProps) {
+/**
+ * The input column, fixed rather than minimum.
+ *
+ * `minWidth` let the people row — which carries a derived count as well as its
+ * field — push its own strip 61 px right of the other three, so four schedules
+ * meant to be read as one picture started in two different places. Wide enough
+ * for the widest row, which is ventilation's two rates.
+ */
+const VALUES_WIDTH = 256;
+/** Label column plus the row gap: where every sub-line under a row starts. */
+const SUB_INDENT = 132;
+
+export function GainsPanel({
+  gains,
+  floorArea,
+  units,
+  marker,
+  onChange,
+  ventilation,
+  onVentilationChange,
+}: GainsPanelProps) {
   const [open, setOpen] = useState<string | null>(null);
   const labels = LABELS[units];
   const ip = units === 'IP';
@@ -126,6 +167,42 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
     );
   };
 
+  /** m³/s per person ⇄ cfm/person under IP, L/s·person under SI. */
+  const showPerPerson = (v: number) => (ip ? v / CUBIC_METRES_PER_SECOND_PER_CFM : v * 1000);
+  const takePerPerson = (v: number) => (ip ? v * CUBIC_METRES_PER_SECOND_PER_CFM : v / 1000);
+
+  /** m³/s per m² ⇄ cfm/ft² under IP, L/s·m² under SI. */
+  const showPerArea = (v: number) =>
+    ip ? (v * SQUARE_METRES_PER_SQUARE_FOOT) / CUBIC_METRES_PER_SECOND_PER_CFM : v * 1000;
+  const takePerArea = (v: number) =>
+    ip ? (v * CUBIC_METRES_PER_SECOND_PER_CFM) / SQUARE_METRES_PER_SQUARE_FOOT : v / 1000;
+
+  const designFlow = ventilation.perPerson * people + ventilation.perArea * floorArea;
+  const ventOpen = open === 'ventilation';
+  const device = recoveryDevice(ventilation.recovery ?? 'none');
+
+  const rowLabel = (key: string, text: string) => (
+    <button
+      type="button"
+      onClick={() => setOpen(open === key ? null : key)}
+      aria-expanded={open === key}
+      style={{
+        font: 'inherit',
+        fontSize: 13,
+        width: 118,
+        textAlign: 'left',
+        background: 'none',
+        border: 'none',
+        color: 'var(--ink)',
+        cursor: 'pointer',
+        padding: 0,
+      }}
+    >
+      {text}
+      <span style={{ color: 'var(--muted)', marginLeft: 6 }}>{open === key ? '−' : '?'}</span>
+    </button>
+  );
+
   return (
     <section className="panel" style={{ padding: 0, overflow: 'hidden' }}>
       <header
@@ -139,7 +216,7 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
           flexWrap: 'wrap',
         }}
       >
-        <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>Internal gains</h2>
+        <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>Internal gains and ventilation</h2>
         {/* The source badge, and the whole reason editGains exists: it must
             never outlive the number it described. */}
         <span
@@ -216,36 +293,18 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
             Reset to {selected.label}
           </button>
         )}
-        <span style={{ fontSize: 10.5, color: 'var(--muted)', maxWidth: '64ch' }}>{GAINS_SOURCE_NOTE}</span>
       </div>
 
-      <div style={{ padding: '6px 18px 16px' }}>
+      <div style={{ padding: '6px 18px 14px' }}>
         {ROWS.map((row) => {
           const isOpen = open === row.key;
           return (
-            <div key={row.key} style={{ borderBottom: '1px solid var(--border)', padding: '10px 0' }}>
+            <Fragment key={row.key}>
+            <div style={{ borderBottom: '1px solid var(--border)', padding: '10px 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => setOpen(isOpen ? null : row.key)}
-                  aria-expanded={isOpen}
-                  style={{
-                    font: 'inherit',
-                    fontSize: 13,
-                    width: 118,
-                    textAlign: 'left',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--ink)',
-                    cursor: 'pointer',
-                    padding: 0,
-                  }}
-                >
-                  {row.label}
-                  <span style={{ color: 'var(--muted)', marginLeft: 6 }}>{isOpen ? '−' : '?'}</span>
-                </button>
+                {rowLabel(row.key, row.label)}
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 210 }}>
+                <div style={{ ...values }}>
                   {row.key === 'people' && (
                     <>
                       {gains.occupancy.mode === 'density'
@@ -260,9 +319,6 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
                       >
                         {gains.occupancy.mode === 'density' ? labels.areaPerPerson : 'people'}
                       </button>
-                      <span style={{ fontSize: 11, color: 'var(--muted)' }}>
-                        = {Math.round(people)} people
-                      </span>
                     </>
                   )}
                   {row.key === 'lighting' && (
@@ -294,17 +350,33 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
                   marker={marker}
                   onChange={(hour, fraction) => onChange(setScheduleHour(gains, row.schedule, hour, fraction))}
                 />
+
+                {/* Derived, and therefore right of the strip rather than in the
+                    input column — which is what let the columns line up. */}
+                {row.key === 'people' && (
+                  <span style={unit}>= {grouped(Math.round(people))} people</span>
+                )}
+                {row.key === 'itEquipment' && gains.itEquipment.kilowatts > 0 && floorArea > 0 && gains.itEquipment.cooling === 'air' && (
+                  <span style={unit}>
+                    ={' '}
+                    {(ip
+                      ? toBtuHFt2((gains.itEquipment.kilowatts * 1000) / floorArea)
+                      : (gains.itEquipment.kilowatts * 1000) / floorArea
+                    ).toFixed(2)}{' '}
+                    {labels.heatFlux}
+                  </span>
+                )}
               </div>
 
               {row.key === 'people' && gains.occupancy.mode === 'density' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '8px 0 0 132px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: `8px 0 0 ${SUB_INDENT}px` }}>
                   {density('sensiblePerPerson', gains.occupancy.sensiblePerPerson, 0, 'heat', 'Sensible heat per person')}
                   <span style={unit}>{labels.perPersonHeat} sensible per person</span>
                 </div>
               )}
 
               {row.key === 'itEquipment' && (
-                <div style={{ display: 'flex', gap: 6, margin: '8px 0 0 132px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 6, margin: `8px 0 0 ${SUB_INDENT}px`, flexWrap: 'wrap' }}>
                   {IT_PRESETS.map((preset) => (
                     <button
                       key={preset.id}
@@ -333,36 +405,23 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
                       )}
                     </button>
                   ))}
-                  {/* What the load is worth on THIS building. The figure is
-                      absolute, so its weight depends entirely on the floor it
-                      is spread over — which is the fact the density hid.
-
-                      Only meaningful for heat that reaches the room, so it is
-                      not shown when the heat is on a loop or gone outdoors. */}
-                  {gains.itEquipment.kilowatts > 0 && floorArea > 0 && gains.itEquipment.cooling === 'air' && (
-                    <span style={{ fontSize: 11, color: 'var(--muted)', alignSelf: 'center' }}>
-                      ={' '}
-                      {(ip
-                        ? toBtuHFt2((gains.itEquipment.kilowatts * 1000) / floorArea)
-                        : (gains.itEquipment.kilowatts * 1000) / floorArea
-                      ).toFixed(2)}{' '}
-                      {labels.heatFlux} over {grouped(ip ? toSqFt(floorArea) : floorArea)} {labels.area}
-                    </span>
-                  )}
                 </div>
               )}
 
               {/* What is cooling the racks decides what their heat is worth —
                   a gain to this room, heat a recovery chiller can fetch, or
                   nothing. This replaced a hidden φ that was held at 1.0 and
-                  asserted that every watt of a 400 kW hall warmed the room. */}
+                  asserted that every watt of a 400 kW hall warmed the room.
+
+                  The note that used to sit under these three buttons is now on
+                  each button's own title and in the assumptions panel. */}
               {row.key === 'itEquipment' && gains.itEquipment.kilowatts > 0 && (
                 <div
                   role="group"
                   aria-label="IT cooling"
-                  style={{ display: 'flex', gap: 6, margin: '6px 0 0 132px', flexWrap: 'wrap', alignItems: 'center' }}
+                  style={{ display: 'flex', gap: 6, margin: `6px 0 0 ${SUB_INDENT}px`, flexWrap: 'wrap', alignItems: 'center' }}
                 >
-                  <span style={{ fontSize: 11, color: 'var(--muted)' }}>Cooled by</span>
+                  <span style={unit}>Cooled by</span>
                   {(Object.keys(IT_COOLING) as ItCooling[]).map((medium) => {
                     const active = gains.itEquipment.cooling === medium;
                     return (
@@ -389,38 +448,154 @@ export function GainsPanel({ gains, floorArea, units, marker, onChange }: GainsP
                 </div>
               )}
 
-              {row.key === 'itEquipment' && gains.itEquipment.kilowatts > 0 && (
-                <p style={{ margin: '5px 0 0 132px', fontSize: 11, color: 'var(--muted)', maxWidth: '62ch', lineHeight: 1.45 }}>
-                  {IT_COOLING[gains.itEquipment.cooling].note}
-                </p>
-              )}
-
               {isOpen && (
-                <p style={{ margin: '8px 0 0 132px', fontSize: 11, color: 'var(--muted)', maxWidth: '54ch' }}>
+                <p style={{ ...helpText, margin: `8px 0 0 ${SUB_INDENT}px` }}>
                   {row.help}
-                  {row.key === 'itEquipment' && (
-                    <>
-                      {' '}
-                      No published default exists — 90.1 does not separate receptacle load into IT and misc, and real
-                      values span three orders of magnitude. The presets are provisional, and they are whole-room
-                      loads: picking one does not change when the building around it does.
-                      {' '}
-                      {HELP.itCooling}
-                    </>
-                  )}
+                  {row.key === 'itEquipment' && <> {HELP.itCooling}</>}
                 </p>
               )}
             </div>
+
+            {/* Ventilation sits under occupancy because it is driven by the
+                occupancy: the per-person rate above decides most of it. */}
+            {row.key === 'people' && (
+              <div style={{ borderBottom: '1px solid var(--border)', padding: '10px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                  {rowLabel('ventilation', 'Ventilation')}
+
+                  <div style={{ ...values }}>
+                    <NumberCell
+                      label="Ventilation per person"
+                      value={showPerPerson(ventilation.perPerson)}
+                      decimals={ip ? 1 : 2}
+                      onCommit={(next) =>
+                        onVentilationChange({ ...ventilation, perPerson: Math.max(0, takePerPerson(next)) })
+                      }
+                      style={{ width: 54 }}
+                    />
+                    <span style={unit}>{ip ? 'cfm/person' : 'L/s·person'}</span>
+                    <span style={unit}>+</span>
+                    <NumberCell
+                      label="Ventilation per area"
+                      value={showPerArea(ventilation.perArea)}
+                      decimals={2}
+                      onCommit={(next) =>
+                        onVentilationChange({ ...ventilation, perArea: Math.max(0, takePerArea(next)) })
+                      }
+                      style={{ width: 54 }}
+                    />
+                    <span style={unit}>{ip ? 'cfm/ft²' : 'L/s·m²'}</span>
+                  </div>
+
+                  {/* Read-only: the fan has two settings, not 24 numbers. Loss
+                      toned, because this row is the only one in the box that
+                      takes heat out. */}
+                  <ScheduleBars
+                    label="Ventilation"
+                    fractions={ventilationFractions(ventilation, gains.schedules.occupancy)}
+                    marker={marker}
+                    readOnly
+                    tone="loss"
+                    onChange={() => {}}
+                  />
+
+                  <span style={unit}>
+                    = {grouped(ip ? designFlow / CUBIC_METRES_PER_SECOND_PER_CFM : designFlow * 1000)}{' '}
+                    {ip ? 'cfm' : 'L/s'}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 6,
+                    margin: `8px 0 0 ${SUB_INDENT}px`,
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span style={unit}>Fan runs</span>
+                  {([
+                    { id: 'constant' as VentilationSchedule, label: 'Constantly' },
+                    { id: 'occupancy' as VentilationSchedule, label: 'With occupancy' },
+                  ]).map(({ id, label }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      aria-pressed={ventilation.schedule === id}
+                      onClick={() => onVentilationChange({ ...ventilation, schedule: id })}
+                      style={{
+                        ...chip,
+                        borderColor: ventilation.schedule === id ? 'var(--gain)' : 'var(--border)',
+                        color: ventilation.schedule === id ? 'var(--gain)' : 'var(--muted)',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+
+                  <span style={{ ...unit, marginLeft: 10 }}>Heat recovery</span>
+                  {HEAT_RECOVERY.map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      title={`${d.note}${d.range === '—' ? '' : ` (${d.range}, IBPSA-USA BEMP)`}`}
+                      aria-pressed={ventilation.recovery === d.id}
+                      onClick={() =>
+                        onVentilationChange({ ...ventilation, recovery: d.id, effectiveness: d.effectiveness })
+                      }
+                      style={{
+                        ...chip,
+                        borderColor: ventilation.recovery === d.id ? 'var(--recover)' : 'var(--border)',
+                        color: ventilation.recovery === d.id ? 'var(--recover)' : 'var(--muted)',
+                      }}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                  {/* Field and unit as ONE flex item. Left loose they wrap
+                      apart, and a lone "75" at the end of a line of device
+                      names is a number with nothing to say. */}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <NumberCell
+                      label="Recovery effectiveness"
+                      value={ventilation.effectiveness * 100}
+                      decimals={0}
+                      onCommit={(next) => {
+                        const effectiveness = Math.min(1, Math.max(0, next / 100));
+                        onVentilationChange({
+                          ...ventilation,
+                          effectiveness,
+                          recovery: recoveryMatching(effectiveness),
+                        });
+                      }}
+                      style={{ width: 34 }}
+                    />
+                    <span style={unit}>% sensible</span>
+                  </span>
+                </div>
+
+                {ventOpen && (
+                  <p style={{ ...helpText, margin: `8px 0 0 ${SUB_INDENT}px` }}>
+                    {HELP.ventilationRate} {HELP.ventilationSchedule}
+                    {ventilation.effectiveness > 0 && (
+                      <>
+                        {' '}
+                        {device.label === 'None' ? 'This recovery' : device.label} hands{' '}
+                        {Math.round(ventilation.effectiveness * 100)}% of the heat in the air leaving to
+                        the air coming in. {device.note}
+                      </>
+                    )}
+                  </p>
+                )}
+              </div>
+            )}
+            </Fragment>
           );
         })}
 
-        <p style={{ margin: '12px 0 0', fontSize: 11, color: 'var(--muted)', maxWidth: '62ch' }}>
-          Densities and schedules are {gains.preset ? 'the published prototype\u2019s' : 'yours'}.
-          The overnight floor decides the answer — the verdict lands between 04:00 and 07:00, so an equipment row that
-          drops to zero at night flatters every building. Drag a bar to edit, or use the arrow keys.
-        </p>
-        <p style={{ margin: '6px 0 0', fontSize: 10, color: 'var(--muted)' }}>
-          {OFFICE_DENSITIES.lighting.citation}
+        <p style={{ margin: '10px 0 0', fontSize: 10.5, color: 'var(--muted)' }}>
+          Drag a bar to edit a schedule, or use the arrow keys. The red rule is the worst hour.
         </p>
       </div>
     </section>
@@ -440,3 +615,18 @@ const chip: React.CSSProperties = {
 };
 
 const unit: React.CSSProperties = { fontSize: 11, color: 'var(--muted)' };
+
+const helpText: React.CSSProperties = {
+  fontSize: 11,
+  color: 'var(--muted)',
+  maxWidth: '86ch',
+  lineHeight: 1.5,
+};
+
+const values: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  width: VALUES_WIDTH,
+  flex: `0 0 ${VALUES_WIDTH}px`,
+};

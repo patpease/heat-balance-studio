@@ -58,8 +58,16 @@ export interface ShareState {
  * 'air' | 'chilled-water' | 'rejected'. Both older versions carried φ = 1 in
  * practice, because nothing in the UI could change it — so they migrate to
  * 'air', which is what φ = 1 meant: every watt into the room.
+ *
+ * 4: the ground temperature stopped reading the annual mean. `d.a` was the
+ * record's annual mean air temperature and is now the mean for the design
+ * month, with `d.o` naming that month. A link written before this carries no
+ * `d.o`, so its month reads 0 — "not stated" — and its `d.a` stays what it
+ * was: the annual mean, which for that link genuinely WAS the basis its ground
+ * temperature came from. The ground temperature itself has always travelled
+ * separately in `c[1]`, so no older link's answer moves.
  */
-const VERSION = 3;
+const VERSION = 4;
 
 /** Round for the wire: areas to 0.1 m², U-values to 3 dp, temperatures to 2. */
 const r = (value: number, places: number): number => Number(value.toFixed(places));
@@ -90,7 +98,8 @@ export function encodeState(state: ShareState): string {
       y: state.designDay.yearsOfRecord,
       m: r(state.designDay.minimum, 2),
       r: r(state.designDay.dailyRange, 2),
-      a: r(state.designDay.annualMeanTemperature, 2),
+      a: r(state.designDay.designMonthMeanTemperature, 2),
+      o: state.designDay.designMonth,
       t: state.designDay.hours.map((h) => r(h.tdb, 2)),
       v: state.designDay.provenance,
     },
@@ -197,7 +206,7 @@ export function decodeState(encoded: string): ShareState | null {
     // by returning null rather than half-reading it into a plausible-looking
     // building that is not the one that was sent. An older version we can still
     // read faithfully is migrated instead — see the note on VERSION.
-    if (payload?.v !== VERSION && payload?.v !== 1 && payload?.v !== 2) return null;
+    if (![VERSION, 1, 2, 3].includes(payload?.v)) return null;
 
     const surfaces: Surface[] = payload.e.s.map((entry: unknown[]) => ({
       id: String(entry[0]),
@@ -274,7 +283,8 @@ export function decodeState(encoded: string): ShareState | null {
         yearsOfRecord: payload.d.y ?? null,
         minimum: Number(payload.d.m),
         dailyRange: Number(payload.d.r),
-        annualMeanTemperature: Number(payload.d.a),
+        designMonth: Number(payload.d.o) || 0,
+        designMonthMeanTemperature: Number(payload.d.a),
         hours: payload.d.t.map((tdb: number, hour: number) => ({
           hour,
           tdb: Number(tdb),

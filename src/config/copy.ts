@@ -22,7 +22,7 @@
 /** Where I am least confident, and would most like your eye. */
 export const DRAFT_NOTES = [
   'TAGLINE — the plan opens with this question, so it is the obvious tagline, but it may read as too long for a card.',
-  'ASSUMPTIONS — now twelve. The panel shows three and hides the rest; worth checking the three shown are still the three that bite now that the data provenance ones exist.',
+  'ASSUMPTIONS — this list is now where the gains and ventilation panels send their prose, so it has grown again. The panel shows three and hides the rest; worth checking the three shown are still the three that bite.',
   'CARD_LONG — written for the site\'s tool detail page; I have not seen how ZEEL\'s reads, so the length may be off.',
 ] as const;
 
@@ -51,18 +51,6 @@ export const CARD_LONG =
 // ---------------------------------------------------------------------------
 // The framing block
 // ---------------------------------------------------------------------------
-
-/**
- * Where the gain numbers come from, shown under the building-type picker.
- *
- * The lighting exception is stated because it is the one place the tool
- * deliberately departs from its own source, and a user comparing against the
- * PNNL models would otherwise find the difference and not know why.
- */
-export const GAINS_SOURCE_NOTE =
-  'Densities and all four schedules are the PNNL prototype for this building type, weekday profiles. ' +
-  'Lighting is the exception — those models are the 90.1-2004 vintage, so lighting comes from the 90.1 ' +
-  'Building Area Method instead.';
 
 /**
  * The standing statement. Permanent page furniture and burned into every
@@ -120,7 +108,7 @@ export const HOW_IT_WORKS = {
   lede: 'Three inputs, in this order.',
   steps: [
     { title: 'Location', body: 'the cold design day, hour by hour.' },
-    { title: 'Building envelope', body: 'surfaces, areas and U-values.' },
+    { title: 'Building definition', body: 'surfaces, areas and U-values.' },
     { title: 'Internal gains', body: 'people, lighting and equipment.' },
   ],
   answer: 'The chart sets loss against gain, hour by hour. Where loss runs higher, the building is short.',
@@ -136,16 +124,18 @@ export const HOW_IT_WORKS = {
  */
 export const ASSUMPTIONS = [
   'Sensible heat only. No latent load, no humidity.',
-  'Infiltration and mechanical ventilation are both counted — infiltration from an air-tightness grade, ventilation from ASHRAE 62.1 per-person and per-area rates with whatever heat recovery you specify. Neither is a measured figure; no building has been blower-door tested at concept stage.',
+  'Infiltration and mechanical ventilation are both counted — infiltration from an air-tightness grade, ventilation from ASHRAE 62.1 per-person and per-area rates with whatever heat recovery you specify. 62.1 adds both halves rather than taking the larger: the per-person rate is for the occupants, the per-area rate for the space itself. Neither figure is measured; no building has been blower-door tested at concept stage.',
   'No solar gain. Leaving it out is conservative — a real building on a clear cold day does better than this says. It was the smaller of the two omissions this list used to carry, and now it is the only one.',
+  'Ground temperature is the site’s mean air temperature for the month its cold days fall in, held constant for all 24 hours and never below freezing. That is shallow soil, not the ground under a heated slab.',
   'Steady state, hour by hour. No thermal mass, so no coasting overnight on stored heat — a heavyweight building is penalised here relative to reality.',
   'One zone, one setpoint. No stratification, no distribution loss.',
   'U-values are assembly averages including thermal bridges. The tool has no bridge model, so that is your job.',
   'Every surface faces outdoor air or the ground. A wall to an unheated garage has to be entered as an outdoor wall, which overstates its loss.',
   'IT heat goes where you say it goes. Air-cooled IT warms the room and counts as a gain. Chilled-water IT does not — it is offered instead as heat a recovery chiller could deliver. Rejected IT counts for nothing.',
+  'Air-side heat recovery is credited on sensible heat only. An enthalpy wheel’s quoted effectiveness includes moisture transfer this tool cannot count, so the wheel does better in a real building than it does here. The device effectivenesses are the middle of each published range, not the top, and two devices that share a range are listed once.',
   'Recoverable heat is credited at 1.29 kW of heating per kW of IT, the condenser heat a chiller would reject running at a cooling COP of 3.5, and such a machine would be sized to the heating demand rather than to the whole cooling load. What is NOT modelled: the hot-water temperature it could make, whether your emitters could use it, distribution losses, and whether the heat could physically reach the rooms that need it.',
   'Floor area is gross conditioned area — every per-area figure the tool reports is divided by it, and it is the more generous of the conventions in use.',
-  'Gains come from the PNNL prototype models, which are the 90.1-2004 vintage. Their lighting runs well above current code, so this tool takes lighting from the 90.1 Building Area Method and everything else from the prototypes.',
+  'Densities and all four schedules are the PNNL prototype for the building type you pick, weekday profiles. Those models are the 90.1-2004 vintage and their lighting runs well above current code, so lighting is the one place the tool departs from its own source: it comes from the 90.1 Building Area Method instead. Everything the picker fills in stays editable, and the badge drops as soon as you change a number.',
   'Kitchens, laundries and machine rooms are left out of the equipment density. Their load is cooking and washing, most of which leaves through an exhaust hood, and this tool has no exhaust to send it up.',
   'Schedules are weekday profiles. A heating design day is a cold weekday, so the weekend profiles the source publishes are not used.',
   'The design day carries its real diurnal swing unless you switch it to flat. Results are therefore not directly comparable to a load calculation sized on the ASHRAE heating design day, which is isothermal by convention — switch the design day to flat to compare like with like.',
@@ -251,10 +241,6 @@ export const IT_COOLING = {
   },
 } as const;
 
-/** Under the ventilation heading. */
-export const VENTILATION_NOTE =
-  'ASHRAE 62.1 sizes outdoor air per person and per unit of floor — the first for the occupants, the second for the space itself. Sensible heat only, so an enthalpy wheel’s moisture transfer is not counted here.';
-
 export const BALANCE_POINT_NOTE =
   'The outdoor temperature below which this building needs heat. Lower is better. A scheduled building ' +
   'has a band rather than a point, and the spread is the finding: self-heating at lunchtime, nowhere ' +
@@ -272,7 +258,7 @@ export const HELP = {
   uValue:
     'Assembly average including thermal bridges — the tool has no bridge model, so the allowance is yours to make.',
   groundFloor:
-    'Driven by a constant ground temperature, not by outdoor air. 55 °F is the rule of thumb; beyond 3 K from the site’s annual mean the tool uses the site’s own figure instead and says so.',
+    'Driven by a constant ground temperature, not by outdoor air. The figure is the site’s mean air temperature for the month its cold days fall in, never below freezing. Within 3 K of 55 °F the tool keeps the rule of thumb.',
   exposedFloor: 'A floor over outside air — a cantilever, or the soffit over an undercroft. Usually none.',
   people: 'Sensible heat only. The latent half of a person’s output is not part of this balance.',
   lighting: 'Installed lighting power density. All of it becomes heat in the space.',
@@ -284,6 +270,8 @@ export const HELP = {
     'What is cooling the racks decides what their heat is worth. Air-cooled equipment warms the room it sits in, so it is a gain like any other. Chilled water takes the heat out of the room — but a heat recovery chiller could make that same chilled water while producing heating hot water for the rest of the building, so the heat need not be lost. Rejected outdoors, through a dry cooler or a packaged unit with no recovery, none of it is available here.',
   schedule:
     'Drag a bar to edit, or use the arrow keys. The overnight floor decides the answer: a row that drops to zero at night flatters every building.',
+  ventilationRate:
+    'ASHRAE 62.1 sizes outdoor air per person and per unit of floor, and adds the two — the first for the occupants, the second for the space itself, since a room with nobody in it still ventilates for its carpets and finishes. The defaults are 62.1’s office values. Recovery is sensible only here, so an enthalpy wheel’s moisture transfer is not counted.',
   ventilationSchedule:
     'A design day is a cold weekday, and the verdict lands between 04:00 and 07:00. A fan running constantly is pulling full outdoor air at the coldest hour; one following occupancy is pulling almost none. The choice is worth more here than it looks.',
   airtightness:

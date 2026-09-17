@@ -231,7 +231,7 @@ export function EnvelopePanel({
             and the bar now has 167 px of slack — so this is taste, not fit, and
             re-adding "the" would break nothing. */}
         <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>
-          Building envelope — {String(shownHour).padStart(2, '0')}:00
+          Building definition — {String(shownHour).padStart(2, '0')}:00
           {scrubHour === null ? ', worst hour' : ''}
         </h2>
         <span style={{ display: 'flex', gap: 6, pointerEvents: 'auto' }}>
@@ -241,14 +241,83 @@ export function EnvelopePanel({
         </span>
       </div>
 
-      <div style={{ padding: '22px 8px 0' }}>
-        <SectionDrawing
-          type={massing}
-          terms={terms}
-          reference={reference}
-          selected={selected}
-          onSelect={(slot) => setSelected((current) => (current === slot ? null : slot))}
-        />
+      {/* The drawing and the dimensions, side by side.
+ 
+          The five fields used to sit in a row of their own below the table,
+          which cost the panel 54 px it did not have to spend: the drawing is
+          height-bound, so it was already rendering 125 px of empty margin at
+          each side. Pushing the artwork to the right gathers both margins into
+          one column on the left and the fields move into it — the drawing does
+          not shrink, and the row is gone. */}
+      <div style={{ padding: '22px 12px 0', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+        {/* paddingTop clears the floating title bar, which sits at top: 8 and
+            ends around 28 — the panel title is directly above this column. */}
+        <div
+          style={{
+            flex: '0 0 auto',
+            width: 142,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+            paddingTop: 26,
+          }}
+        >
+          {boxFields.map(({ key, caption, aria, decimals }) => (
+            <div
+              key={key}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}
+            >
+              {/* nowrap: "Length, ft" breaks after the comma at any width that
+                  fits the field beside it, and a two-line caption on three of
+                  the five rows makes the column taller than the drawing. */}
+              <span className="eyebrow" style={{ fontSize: 9.5, whiteSpace: 'nowrap' }}>
+                {caption}
+              </span>
+              <NumberCell
+                label={aria}
+                value={showBox(key)}
+                decimals={decimals}
+                onCommit={(next) => takeBox(key, next)}
+                style={{
+                  width: 52,
+                  textAlign: 'right',
+                  padding: '2px 5px',
+                  background: 'var(--page)',
+                  border: '1px solid var(--border)',
+                }}
+              />
+            </div>
+          ))}
+          {/* Under the five fields it acts on, and the full width of them, so
+              it reads as the bottom of one control rather than a sixth field. */}
+          <button
+            type="button"
+            onClick={applyBox}
+            style={{
+              font: 'inherit',
+              fontSize: 10.5,
+              marginTop: 2,
+              padding: '4px 6px',
+              background: 'var(--gain)',
+              color: 'var(--panel)',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Create surfaces
+          </button>
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <SectionDrawing
+            type={massing}
+            terms={terms}
+            reference={reference}
+            selected={selected}
+            align="right"
+            onSelect={(slot) => setSelected((current) => (current === slot ? null : slot))}
+          />
+        </div>
       </div>
 
       <div style={{ padding: '2px 16px 12px', display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -468,46 +537,6 @@ export function EnvelopePanel({
           </p>
         )}
 
-        {/* 10, not 14: five fields and their button clear 612 px at this gap
-            and wrapped to three lines at the old one. */}
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8, alignItems: 'flex-end' }}>
-          {boxFields.map(({ key, caption, aria, decimals }) => (
-            <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 2, fontSize: 11 }}>
-              <span className="eyebrow">{caption}</span>
-              <NumberCell
-                label={aria}
-                value={showBox(key)}
-                decimals={decimals}
-                onCommit={(next) => takeBox(key, next)}
-                style={{
-                  width: 66,
-                  textAlign: 'left',
-                  padding: '3px 6px',
-                  background: 'var(--page)',
-                  border: '1px solid var(--border)',
-                }}
-              />
-            </div>
-          ))}
-          {/* In the row, not after it: it acts on the five fields beside it, and
-              a button on its own line read as a separate step. */}
-          <button
-            type="button"
-            onClick={applyBox}
-            style={{
-              font: 'inherit',
-              fontSize: 11,
-              padding: '4px 12px',
-              background: 'var(--gain)',
-              color: 'var(--panel)',
-              border: 'none',
-              cursor: 'pointer',
-              alignSelf: 'flex-end',
-            }}
-          >
-            Create surfaces
-          </button>
-        </div>
       </div>
     </section>
   );

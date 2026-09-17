@@ -3,7 +3,9 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { GainsPanel } from '../src/ui/GainsPanel';
+import { ScopePanel } from '../src/ui/ScopePanel';
 import { DEFAULT_GAINS } from '../src/model/defaults';
+import { DEFAULT_VENTILATION } from '../src/model/ventilation';
 import { applyGainPreset, setDensity } from '../src/model/editGains';
 import { GAIN_PRESETS, presetById } from '../src/model/gainPresets';
 import type { Gains } from '../src/model/types';
@@ -19,8 +21,10 @@ import { SAMPLE_GAINS } from '../src/model/sampleProject';
  */
 afterEach(cleanup);
 
+const vent = { ventilation: DEFAULT_VENTILATION, onVentilationChange: vi.fn() };
+
 const panel = (gains: Gains, onChange = vi.fn()) => {
-  render(<GainsPanel gains={gains} floorArea={500} units="IP" marker={6} onChange={onChange} />);
+  render(<GainsPanel gains={gains} floorArea={500} units="IP" marker={6} onChange={onChange} {...vent} />);
   return { select: screen.getByLabelText('Building type') as HTMLSelectElement, onChange };
 };
 
@@ -59,7 +63,7 @@ describe('the building-type picker', () => {
   it('says the numbers are edited without losing the name', () => {
     const edited = setDensity(applyGainPreset(DEFAULT_GAINS, presetById('warehouse')!), 'lighting', 9);
     const { container } = render(
-      <GainsPanel gains={edited} floorArea={500} units="IP" marker={6} onChange={vi.fn()} />,
+      <GainsPanel gains={edited} floorArea={500} units="IP" marker={6} onChange={vi.fn()} {...vent} />,
     );
     expect(container.textContent).toContain('Warehouse — edited');
   });
@@ -68,7 +72,7 @@ describe('the building-type picker', () => {
     const warehouse = presetById('warehouse')!;
     const edited = setDensity(applyGainPreset(DEFAULT_GAINS, warehouse), 'lighting', 9);
     const onChange = vi.fn();
-    render(<GainsPanel gains={edited} floorArea={500} units="IP" marker={6} onChange={onChange} />);
+    render(<GainsPanel gains={edited} floorArea={500} units="IP" marker={6} onChange={onChange} {...vent} />);
 
     fireEvent.click(screen.getByText(/Reset to Warehouse/));
     const back = onChange.mock.calls.at(-1)![0] as Gains;
@@ -93,10 +97,16 @@ describe('the building-type picker', () => {
     expect(next.occupancy.areaPerPerson).toBeCloseTo(restaurant.areaPerPerson.value!, 9);
   });
 
-  it('names where the numbers came from, including the lighting exception', () => {
+  it('does not spend panel space on where the numbers came from', () => {
     const { container } = render(
-      <GainsPanel gains={DEFAULT_GAINS} floorArea={500} units="IP" marker={6} onChange={vi.fn()} />,
+      <GainsPanel gains={DEFAULT_GAINS} floorArea={500} units="IP" marker={6} onChange={vi.fn()} {...vent} />,
     );
+    expect(container.textContent).not.toContain('Building Area Method');
+  });
+
+  it('still names the provenance, in the assumptions panel', () => {
+    const { container } = render(<ScopePanel />);
+    fireEvent.click(screen.getByText(/All \d+ assumptions/));
     expect(container.textContent).toContain('PNNL prototype');
     expect(container.textContent).toContain('Building Area Method');
   });

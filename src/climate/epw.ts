@@ -148,6 +148,7 @@ export function parseEpw(text: string): EpwFile {
 
     samples.push({
       dayKey: `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+      month,
       hour: Math.min(23, Math.max(0, hour - 1)),
       tdb,
     });

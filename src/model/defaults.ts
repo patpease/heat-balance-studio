@@ -44,6 +44,25 @@ export const GROUND_RULE_OF_THUMB_C = fromF(55);
  */
 export const GROUND_DRIFT_LIMIT_K = 3;
 
+/**
+ * 0 °C — 32 °F exactly. The ground does not get colder than this.
+ *
+ * Monthly mean air temperature predicts shallow soil temperature well, but only
+ * down to freezing. Below it the two decouple: snow insulates, and the latent
+ * heat of the water in the soil pins it near 0 °C for as long as it is
+ * changing phase. Measured January 2026 soil against January mean air:
+ *
+ *   Houston      air 53.4 °F   soil 54.7 °F at 4", 56.2 at 8", 58.2 at 20"
+ *   Boston       air 29.9 °F   soil 33.2 °F at 4"
+ *   Minneapolis  air 16.5 °F   soil 28.1 °F at 4", 30.5 at 8", 34.4 at 20"
+ *
+ * Minneapolis is the case: the air mean is 12–18 K below anything measurable in
+ * the ground. Floored at freezing it lands within 4 °F of every depth, and the
+ * other two are unaffected. Soil temperatures from soiltemps.com (USCRN/SCAN
+ * station records); air means derived from the same ERA5 record this tool uses.
+ */
+export const GROUND_FREEZING_FLOOR_C = 0;
+
 export interface DensityDefault {
   readonly value: number;
   readonly citation: string;

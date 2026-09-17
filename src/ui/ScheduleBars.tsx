@@ -23,9 +23,27 @@ export interface ScheduleBarsProps {
   /** Drawn as a vertical rule — the worst hour. */
   readonly marker?: number | null;
   readonly label: string;
+  /**
+   * A strip that reports rather than accepts.
+   *
+   * The ventilation fan has no 24 free numbers — it either runs constantly or
+   * follows the people, and both are already said by the buttons beside it.
+   * Drawing it anyway keeps that row the same shape as the four above it, and a
+   * read-only strip is the only honest way to do that.
+   */
+  readonly readOnly?: boolean;
+  /** Ventilation is a loss, and must not be drawn in the gain colour. */
+  readonly tone?: 'gain' | 'loss';
 }
 
-export function ScheduleBars({ fractions, onChange, marker = null, label }: ScheduleBarsProps) {
+export function ScheduleBars({
+  fractions,
+  onChange,
+  marker = null,
+  label,
+  readOnly = false,
+  tone = 'gain',
+}: ScheduleBarsProps) {
   const ref = useRef<SVGSVGElement>(null);
   const [painting, setPainting] = useState(false);
   const [focusHour, setFocusHour] = useState(0);
@@ -45,9 +63,12 @@ export function ScheduleBars({ fractions, onChange, marker = null, label }: Sche
   };
 
   const paint = (event: { clientX: number; clientY: number }) => {
+    if (readOnly) return;
     const hit = readPointer(event);
     if (hit) onChange(hit.hour, hit.fraction);
   };
+
+  const fill = tone === 'loss' ? 'var(--loss)' : 'var(--gain)';
 
   return (
     <svg
@@ -57,8 +78,13 @@ export function ScheduleBars({ fractions, onChange, marker = null, label }: Sche
       height={height}
       role="group"
       aria-label={`${label} schedule, 24 hours`}
-      tabIndex={0}
-      style={{ display: 'block', touchAction: 'none', cursor: 'crosshair', borderRadius: 2 }}
+      tabIndex={readOnly ? -1 : 0}
+      style={{
+        display: 'block',
+        touchAction: 'none',
+        cursor: readOnly ? 'default' : 'crosshair',
+        borderRadius: 2,
+      }}
       onPointerDown={(event) => {
         event.currentTarget.setPointerCapture(event.pointerId);
         setPainting(true);
@@ -71,6 +97,7 @@ export function ScheduleBars({ fractions, onChange, marker = null, label }: Sche
       }}
       onPointerCancel={() => setPainting(false)}
       onKeyDown={(event) => {
+        if (readOnly) return;
         const current = fractions[focusHour] ?? 0;
         if (event.key === 'ArrowLeft') setFocusHour((h) => Math.max(0, h - 1));
         else if (event.key === 'ArrowRight') setFocusHour((h) => Math.min(HOURS - 1, h + 1));
@@ -92,8 +119,8 @@ export function ScheduleBars({ fractions, onChange, marker = null, label }: Sche
               y={height - barHeight}
               width={barWidth - 0.7}
               height={barHeight}
-              fill="var(--gain)"
-              opacity={hour === focusHour ? 1 : 0.85}
+              fill={fill}
+              opacity={readOnly ? 0.6 : hour === focusHour ? 1 : 0.85}
             />
             {/* A hairline at zero, so an empty hour is visibly an hour rather
                 than a gap in the strip. */}

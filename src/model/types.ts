@@ -231,8 +231,19 @@ export interface DesignDay {
   readonly dailyRange: number;
   /** Exactly 24. */
   readonly hours: readonly DesignHour[];
-  /** °C — feeds the ground-temperature resolver. */
-  readonly annualMeanTemperature: number;
+  /**
+   * 1–12: the month the cold days cluster in, and the month the ground
+   * temperature is read from. 0 only on a link written before this existed.
+   */
+  readonly designMonth: number;
+  /**
+   * °C — the record's mean for that month, across every year of it.
+   *
+   * This replaced the ANNUAL mean, which was 15 °F too warm for Houston:
+   * measured soil there sits at 54–56 °F in January while the annual mean air
+   * temperature is 70 °F. Soil follows the season, not the year.
+   */
+  readonly designMonthMeanTemperature: number;
   /** Human-readable, stamped on every export. A number whose source cannot be
    *  traced is a number someone will eventually misquote. */
   readonly provenance: string;

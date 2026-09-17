@@ -6,7 +6,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EnvelopePanel } from '../src/ui/EnvelopePanel';
 import { LocationPanel } from '../src/ui/LocationPanel';
 import { DEFAULT_BOX } from '../src/engine/sketchBox';
-import { GROUND_DRIFT_LIMIT_K } from '../src/model/defaults';
 import type { UnitSystem } from '../src/model/types';
 import {
   SAMPLE_CONDITIONS,
@@ -16,7 +15,7 @@ import {
   SAMPLE_SITE,
 } from '../src/model/sampleProject';
 import type { Envelope } from '../src/model/types';
-import { BTU_H_PER_WATT, deltaToF, LABELS, toF, toFt, toSqFt } from '../src/model/units';
+import { BTU_H_PER_WATT, LABELS, toF, toFt, toSqFt } from '../src/model/units';
 
 /**
  * The IP/SI switch has to reach EVERY number on the page.
@@ -56,12 +55,18 @@ describe('the location strip follows the unit switch', () => {
     expect(location('SI')).toContain('assumed constant at 13 °C');
   });
 
-  it('converts the ground-drift limit as a DIFFERENCE, not a temperature', () => {
-    // 3 K of drift is 5.4 °F of drift, not 37.4 °F. The sibling tool shipped
-    // exactly this slip and it stayed silent on the cases it existed to catch.
-    const drifted = {
+  /**
+   * The ground line reports its value and stops.
+   *
+   * It used to carry the provenance, the drift, the month and the reason the
+   * figure stopped at freezing — four clauses explaining one number. The
+   * temperature-DIFFERENCE trap it contained (3 K of drift is 5.4 °F, not
+   * 37.4 °F) went with them, and `units.test.ts` guards that at the function.
+   */
+  it('says the value and nothing else', () => {
+    const derived = {
       ...SAMPLE_CONDITIONS,
-      groundTemperature: 21,
+      groundTemperature: 0,
       groundTemperatureBasis: 'derived' as const,
     };
     const text = (units: UnitSystem) =>
@@ -69,14 +74,17 @@ describe('the location strip follows the unit switch', () => {
         <LocationPanel
           site={SAMPLE_SITE}
           designDay={SAMPLE_DESIGN_DAY}
-          conditions={drifted}
+          conditions={derived}
           units={units}
           onApply={vi.fn()}
         />,
       ).container.textContent ?? '';
 
-    expect(text('IP')).toContain(`${deltaToF(GROUND_DRIFT_LIMIT_K).toFixed(1)} °F`);
-    expect(text('SI')).toContain(`${GROUND_DRIFT_LIMIT_K} K`);
+    expect(text('IP')).toContain('ground temperature assumed constant at 32.0 °F');
+    expect(text('SI')).toContain('ground temperature assumed constant at 0.0 °C');
+    for (const clause of ['mean', 'freezing', 'from the default', 'February']) {
+      expect(text('IP')).not.toContain(clause);
+    }
   });
 
   it('leaves no Fahrenheit anywhere on the panel under SI', () => {
