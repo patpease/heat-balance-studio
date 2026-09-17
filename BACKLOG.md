@@ -79,6 +79,38 @@ Revisit when a fourth tool needs EPW.
 
 ## v2
 
+- [x] **Ventilation and infiltration** — 16 Sep 2026. Infiltration from an
+      air-tightness grade on the envelope; ventilation from 62.1 per-person and
+      per-area rates with a fan schedule and air-side heat recovery. The
+      reserved `ventilation` field was superseded — it had the rate as a one-of
+      where 62.1 adds both halves, put infiltration in the wrong object, and
+      gave the fan a 24-value strip where it needed a two-way choice.
+- [x] **Entry by building type** — 18 types, 6 massings, drawing follows the
+      picker.
+- [ ] **A warehouse massing.** It currently borrows the single-family shed,
+      which Patrick accepted for v1. It is the one mapping that is a placeholder
+      rather than a reading.
+- [ ] **Saturday and Sunday schedules.** The source publishes them; only the
+      weekday is imported, because a heating design day is the cold weekday.
+- [ ] **Copy review** — `src/config/copy.ts`, four `DRAFT_NOTES` open.
+- [x] **peasestudio.com tool card** — the MDX is in the content collection at
+      `order: 3`, rewritten 13 Sep 2026 for the PNNL data.
+- [ ] **Widen the ERA5-vs-DDY comparison** — measured for Boston only (2.2 K).
+      Was "drop four more archives on the tool"; the weather-file UI is hidden
+      now, so this is a script against `climate/weatherFile.ts` instead. The
+      parsers are untouched and still tested.
+- [x] **IT as an absolute kW** — 16 Sep 2026. It was a W/m² density, which meant
+      a server room got bigger when the building did.
+- [x] **Heat recovered from cooling** — 16 Sep 2026. φ is gone, replaced by a
+      cooling medium per IT row; four verdict states; recovery credited at the
+      condenser heat and sized to the heating demand.
+- [x] **Flat design day** — 16 Sep 2026. Exposed in the location strip, off by
+      default.
+- [x] **Thousands separators, outdoor-air line, one-screen layout, theme
+      toggle** — 13–16 Sep 2026.
+
+## v2
+
 - [ ] **Ventilation and infiltration** — the reserved `ventilation` field.
       **The next thing worth building.** It is the largest omission the tool
       states about itself, the reason a passing result is called optimistic,
