@@ -4,7 +4,14 @@ import { solve } from '../src/engine/balance';
 import { conductance, resolveGroundTemperature, wallToFloorRatio } from '../src/engine/ua';
 import { occupantCount } from '../src/engine/gains';
 import { fromF, toBtuHFt2, toF } from '../src/model/units';
-import { BOSTON_CASE, BOSTON_ENVELOPE, BOSTON_GAINS, EXPECTED_HOURLY } from './fixtures/boston-office';
+import {
+  BOSTON_CASE,
+  BOSTON_CONDITIONS,
+  BOSTON_ENVELOPE,
+  BOSTON_GAINS,
+  EXPECTED_HOURLY,
+  EXPECTED_INFILTRATION_W_K,
+} from './fixtures/boston-office';
 import { DEFAULT_CONDITIONS, DEFAULT_ENVELOPE, DEFAULT_GAINS } from '../src/model/defaults';
 import { SAMPLE_DESIGN_DAY } from '../src/model/sampleProject';
 
@@ -17,16 +24,17 @@ const result = solve(BOSTON_CASE);
 
 describe('conductance', () => {
   it('splits air-coupled from ground-coupled', () => {
-    const ua = conductance(BOSTON_ENVELOPE);
+    const ua = conductance(BOSTON_ENVELOPE, BOSTON_CONDITIONS);
     // walls 220.5 × 0.20 = 44.1 · windows 94.5 × 1.20 = 113.4 · roof 500 × 0.15 = 75
-    expect(ua.air).toBeCloseTo(232.5, 6);
+    // ...plus infiltration, which is air-coupled and is not a surface.
+    expect(ua.air - EXPECTED_INFILTRATION_W_K).toBeCloseTo(232.5, 3);
     expect(ua.ground).toBeCloseTo(90, 6);
-    expect(ua.total).toBeCloseTo(322.5, 6);
+    expect(ua.total - EXPECTED_INFILTRATION_W_K).toBeCloseTo(322.5, 3);
   });
 
-  it('names a term per surface, including the zero-area one', () => {
-    const ua = conductance(BOSTON_ENVELOPE);
-    expect(ua.terms).toHaveLength(5);
+  it('names a term per surface, plus one for infiltration', () => {
+    const ua = conductance(BOSTON_ENVELOPE, BOSTON_CONDITIONS);
+    expect(ua.terms).toHaveLength(6);
     const exposed = ua.terms.find((t) => t.slot === 'loss-exposed-floor');
     // A zero-area surface still produces a term. The drawing needs to know the
     // category exists in order to show it as an empty slot rather than omit it.
@@ -73,7 +81,13 @@ describe('the hourly balance reproduces the fixture to the watt', () => {
   it.each(EXPECTED_HOURLY)('hour $hour', ({ hour, loss, gain }) => {
     const actual = result.hours[hour]!;
     expect(actual.hour).toBe(hour);
-    expect(Math.abs(actual.loss - loss)).toBeLessThan(1);
+    // The table is the CONDUCTION balance, computed by hand before infiltration
+    // existed and not recomputed since. Infiltration is added here by the one
+    // hand-computed conductance in the fixture, so the 24 original numbers stay
+    // independent evidence rather than becoming engine output.
+    const infiltration =
+      EXPECTED_INFILTRATION_W_K * (BOSTON_CONDITIONS.indoorSetpoint - actual.outdoorTemperature);
+    expect(Math.abs(actual.loss - (loss + infiltration))).toBeLessThan(1);
     expect(Math.abs(actual.gain - gain)).toBeLessThan(1);
   });
 
@@ -93,8 +107,21 @@ describe('the hourly balance reproduces the fixture to the watt', () => {
 });
 
 describe('the verdict', () => {
-  it('needs heating on 15 of 24 hours', () => {
-    expect(result.deficitHours).toBe(15);
+  /**
+   * **These figures moved when infiltration arrived, and moving was correct.**
+   *
+   * The assumption list called infiltration "the largest single omission, and
+   * the reason a passing result is optimistic". It was not an overstatement.
+   * On this 500 m² single-storey box, leakage at the code grade is 224 W/K
+   * against 232 W/K for every wall, window and roof combined — it very nearly
+   * doubled the air-side loss, and the worked example went from short on 15
+   * hours to short on all 24.
+   *
+   * The lever moved with it, from glazing to infiltration. That is the tool
+   * doing its job: the biggest thing to fix is no longer the windows.
+   */
+  it('needs heating on all 24 hours once infiltration is counted', () => {
+    expect(result.deficitHours).toBe(24);
     expect(result.selfHeating).toBe(false);
   });
 
@@ -122,19 +149,24 @@ describe('the verdict', () => {
     expect(seven.gain - six.gain).toBeGreaterThan(seven.loss - six.loss);
   });
 
-  it('is short 14.7 W/m² at the worst hour', () => {
-    expect(Math.round(result.peakHeatingLoad)).toBe(7328);
-    expect(result.peakHeatingLoadPerArea).toBeCloseTo(14.7, 1);
-    expect(result.marginPerArea).toBeCloseTo(-14.7, 1);
+  it('is short 31.0 W/m² at the worst hour', () => {
+    expect(Math.round(result.peakHeatingLoad)).toBe(15475);
+    expect(result.peakHeatingLoadPerArea).toBeCloseTo(31.0, 1);
+    expect(result.marginPerArea).toBeCloseTo(-31.0, 1);
   });
 
 });
 
 describe('the lever', () => {
-  it('names glazing, the largest loss term at the worst hour', () => {
-    expect(result.lever?.slot).toBe('loss-windows');
+  /**
+   * It named glazing at 45% until infiltration was modelled. Now it names
+   * infiltration at 47%, which is the whole point of having a computed lever
+   * rather than a written one: the advice changed because the physics did.
+   */
+  it('names infiltration, the largest loss term at the worst hour', () => {
+    expect(result.lever?.slot).toBe('loss-infiltration');
     // 4,129 W of a 9,216 W loss.
-    expect(result.lever?.share).toBeCloseTo(0.448, 3);
+    expect(result.lever?.share).toBeCloseTo(0.469, 3);
   });
 
   it('is null when there is nothing to point at', () => {
@@ -148,9 +180,9 @@ describe('the lever', () => {
 
 describe('balance point', () => {
   it('is reported three ways, because a scheduled building has no single one', () => {
-    expect(result.balancePoint.onMeanGain).toBeCloseTo(3.8, 1);
-    expect(result.balancePoint.atPeakGain).toBeCloseTo(-12.2, 1);
-    expect(result.balancePoint.atMinGain).toBeCloseTo(16.2, 1);
+    expect(result.balancePoint.onMeanGain).toBeCloseTo(12.3, 1);
+    expect(result.balancePoint.atPeakGain).toBeCloseTo(4.1, 1);
+    expect(result.balancePoint.atMinGain).toBeCloseTo(18.6, 1);
   });
 
   it('subtracts the constant ground loss rather than charging it to the air side', () => {
@@ -166,8 +198,8 @@ describe('balance point', () => {
       },
     });
     expect(noSlab.balancePoint.onMeanGain).toBeLessThan(result.balancePoint.onMeanGain);
-    // 21.111 − 4766/232.5, with no ground term to subtract.
-    expect(noSlab.balancePoint.onMeanGain).toBeCloseTo(0.6, 1);
+    // No ground term to subtract, over the air side including infiltration.
+    expect(noSlab.balancePoint.onMeanGain).toBeCloseTo(10.7, 1);
   });
 
   it('charges a ground-coupled surface to the ground, not to the air side', () => {
@@ -183,7 +215,19 @@ describe('balance point', () => {
         ),
       },
     });
-    expect(slabAsOutdoor.conductance.air).toBeCloseTo(322.5, 6);
+    // Asserted as WHERE the slab is charged, not as a total. A total has to
+    // account for infiltration moving too — the slab joins the above-grade
+    // envelope when it stops being ground-coupled — and that arithmetic is not
+    // what this test is about.
+    expect(slabAsOutdoor.conductance.ground).toBe(0);
+
+    // And it now VARIES by hour, where a ground-coupled slab is constant. That
+    // is the difference the driver makes, stated as behaviour rather than as a
+    // total.
+    const slabAt = (r: typeof slabAsOutdoor, hour: number) =>
+      r.hours[hour]!.lossTerms.find((t) => t.slot === 'loss-ground-floor')!.watts;
+    expect(slabAt(slabAsOutdoor, 6)).not.toBeCloseTo(slabAt(slabAsOutdoor, 15), 3);
+    expect(slabAt(result, 6)).toBeCloseTo(slabAt(result, 15), 9);
     expect(slabAsOutdoor.conductance.ground).toBe(0);
     expect(slabAsOutdoor.peakHeatingLoad).toBeGreaterThan(result.peakHeatingLoad);
   });
@@ -208,12 +252,12 @@ describe('gain summary', () => {
 });
 
 describe('the design condition converts for display without changing', () => {
-  it('reports the worst-hour shortfall in IP as 4.6 Btu/h·ft²', () => {
-    expect(toBtuHFt2(result.peakHeatingLoadPerArea)).toBeCloseTo(4.65, 2);
+  it('reports the worst-hour shortfall in IP as 9.8 Btu/h·ft²', () => {
+    expect(toBtuHFt2(result.peakHeatingLoadPerArea)).toBeCloseTo(9.81, 2);
   });
 
-  it('reports the balance point as 38.9 °F', () => {
-    expect(toF(result.balancePoint.onMeanGain)).toBeCloseTo(38.9, 1);
+  it('reports the balance point as 54.2 °F', () => {
+    expect(toF(result.balancePoint.onMeanGain)).toBeCloseTo(54.2, 1);
   });
 });
 

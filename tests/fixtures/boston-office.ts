@@ -28,11 +28,36 @@ export {
 } from '../../src/model/sampleProject';
 
 /**
- * Hourly loss and gain in W, at a 21.111 °C setpoint with a constant 750 W
- * ground loss, against the committed two-decimal profile.
+ * Infiltration, hand-computed, W/K.
  *
- * If the engine and this table disagree, one of them is wrong and the test does
- * not care which.
+ *   above-grade envelope  220.5 walls + 94.5 windows + 500 roof  =  815 m²
+ *   grade                 'typical', 0.40 cfm/ft² at 75 Pa
+ *   in service            0.40 × 0.112                = 0.0448 cfm/ft²
+ *   flow                  0.0448 × 0.005080 × 815     = 0.18548 m³/s
+ *   at 6 m elevation      ρ·c_p = 1.2 × 1006 × 0.99929 = 1206.3 J/m³K
+ *   conductance           0.185481 × 1206.341         = 223.753 W/K
+ *
+ * Which is very nearly the whole air-side envelope on its own — 232.5 W/K of
+ * walls, windows and roof — and that is not a mistake in the arithmetic. A
+ * single-storey 500 m² box has 815 m² of envelope over 1,750 m³ of volume, so
+ * a per-area leakage rate buys a lot of air changes: 0.38 ACH here against
+ * 0.15 for the four-storey default. Squat buildings leak.
+ */
+export const EXPECTED_INFILTRATION_W_K = 223.753;
+
+/**
+ * Hourly CONDUCTION loss and gain in W, at a 21.111 °C setpoint with a constant
+ * 750 W ground loss, against the committed two-decimal profile.
+ *
+ * These 24 pairs were computed independently of the engine and they have not
+ * been recomputed since. **Infiltration is deliberately not in them.** It
+ * arrived after they were written, and folding it in would have meant either
+ * 24 new numbers hand-computed again or — far worse — 24 numbers taken from the
+ * engine, which is the one thing a golden case must never contain.
+ *
+ * So the table still holds what it always held, and the test adds infiltration
+ * to it by the one hand-computed conductance above. If the engine and this
+ * disagree, one of them is wrong and the test does not care which.
  */
 export const EXPECTED_HOURLY: readonly { hour: number; loss: number; gain: number }[] = [
   { hour: 0, loss: 8302, gain: 1888 },

@@ -7,6 +7,7 @@ import { solve } from '../engine/balance';
 import { areasFromBox, DEFAULT_BOX } from '../engine/sketchBox';
 import type { BoxDimensions } from '../engine/sketchBox';
 import { wallToFloorRatio } from '../engine/ua';
+import { AIRTIGHTNESS, grade } from '../model/airtightness';
 import { buildingType } from '../model/buildingTypes';
 import { GAIN_PRESETS } from '../model/gainPresets';
 import type { Conditions, DesignDay, Envelope, Gains, Surface, SurfaceSlot, UnitSystem } from '../model/types';
@@ -81,6 +82,8 @@ export function EnvelopePanel({
   );
 
   const shownHour = scrubHour ?? result.worstHour;
+  const infiltrationWatts =
+    result.hours[shownHour]!.lossTerms.find((t) => t.slot === 'loss-infiltration')?.watts ?? 0;
   const worst = result.hours[shownHour]!;
   const terms: SectionTerm[] = [...worst.lossTerms, ...worst.gainTerms];
   const labels = LABELS[units];
@@ -314,6 +317,50 @@ export function EnvelopePanel({
                 </tr>
               );
             })}
+            {/* Not a surface either: no area, no U, no R. It earns a row
+                because it is a loss like the five above it and frequently the
+                largest of them, and a loss table that left out its biggest
+                entry would be the wrong table. */}
+            <tr>
+              <td style={{ padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
+                Infiltration
+              </td>
+              <td colSpan={3} style={{ ...cell, padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
+                <span
+                  role="group"
+                  aria-label="Air tightness"
+                  style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', alignItems: 'center' }}
+                >
+                  {AIRTIGHTNESS.map((g) => (
+                    <button
+                      key={g.id}
+                      type="button"
+                      title={`${g.note} (${g.cfm75} cfm/ft² at 75 Pa — ${g.citation})`}
+                      aria-pressed={envelope.airtightness === g.id}
+                      onClick={() => onChange({ ...envelope, airtightness: g.id })}
+                      style={{
+                        font: 'inherit',
+                        fontSize: 10,
+                        padding: '2px 7px',
+                        background: 'var(--page)',
+                        border: '1px solid',
+                        borderColor: envelope.airtightness === g.id ? 'var(--gain)' : 'var(--border)',
+                        color: envelope.airtightness === g.id ? 'var(--gain)' : 'var(--muted)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {g.label}
+                    </button>
+                  ))}
+                  <span style={{ fontSize: 10.5, color: 'var(--muted)', minWidth: 96, textAlign: 'right' }}>
+                    {grade(envelope.airtightness).cfm75} cfm/ft² @ 75 Pa
+                  </span>
+                </span>
+              </td>
+              <td style={{ textAlign: 'right', padding: '2px 0', borderBottom: '1px solid var(--border)', fontVariantNumeric: 'tabular-nums', color: 'var(--loss)' }}>
+                {grouped(heatFlow(infiltrationWatts))} {labels.heatFlow}
+              </td>
+            </tr>
             {/* Not a surface: no U, no R, no loss. It earns its place in this
                 table because it is the denominator under every per-area figure
                 the tool reports, and it was previously settable only through

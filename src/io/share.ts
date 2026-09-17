@@ -15,6 +15,7 @@
 
 import { DEFAULT_GAINS, DEFAULT_SETPOINT_C } from '../model/defaults';
 import { customSchedule } from '../model/schedules';
+import type { Airtightness } from '../model/airtightness';
 import type {
   Conditions,
   DesignDay,
@@ -94,9 +95,11 @@ export function encodeState(state: ShareState): string {
       r(state.conditions.groundTemperature, 3),
       state.conditions.groundTemperatureBasis,
       state.conditions.flatDesignDay ? 1 : 0,
+      r(state.conditions.siteElevation, 0),
     ],
     e: {
       a: r(state.envelope.floorArea, 1),
+      t: state.envelope.airtightness,
       h: r(state.envelope.storeyHeight, 2),
       n: state.envelope.storeys,
       s: state.envelope.surfaces.map((surface) => [
@@ -132,6 +135,11 @@ export function encodeState(state: ShareState): string {
   let binary = '';
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** Absent in links written before v4. */
+function readAirtightness(raw: unknown): Airtightness {
+  return raw === 'leaky' || raw === 'typical' || raw === 'tight' ? raw : 'typical';
 }
 
 /** `i[1]` across three versions: a φ number before, a medium after. */
@@ -234,11 +242,18 @@ export function decodeState(encoded: string): ShareState | null {
         // Absent in every link written before the toggle existed, and absent
         // reads as off — which is the default and what those links meant.
         flatDesignDay: payload.c[3] === 1,
+        // Absent before v4, and absent reads as sea level — which is what a
+        // link written before this carried by not carrying anything.
+        siteElevation: Number(payload.c[4]) || 0,
       },
       envelope: {
         floorArea: Number(payload.e.a),
         storeyHeight: Number(payload.e.h),
         storeys: Number(payload.e.n),
+        // Absent before v4. 'typical' is the default and the code requirement,
+        // so an older link describes a building built to code — which is what
+        // it was describing before infiltration existed, minus the leakage.
+        airtightness: readAirtightness(payload.e.t),
         surfaces,
       },
       gains: gains.schedules.occupancy.fractions.length === 24 ? gains : DEFAULT_GAINS,

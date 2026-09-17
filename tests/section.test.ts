@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LOSS_SLOTS } from '../src/chart/SectionDrawing';
 import { lossPlacement } from '../src/chart/SectionDrawing';
 
 import { MAX_HEAD_SCALE, MAX_SCALE, MAX_WIDTH, MIN_WIDTH, SHAFT_LENGTH, arrowGeometry, referenceWatts } from '../src/chart/arrowScale';
@@ -23,10 +24,22 @@ describe('the building type record', () => {
     }
   });
 
-  it('has nine anchors — the canvas draws eight, IT is the ninth', () => {
-    expect(OFFICE.anchors).toHaveLength(9);
+  /**
+   * Ten now. The canvas drew eight; two were derived here afterwards.
+   *
+   * IT equipment came first — the canvas predates the misc/IT split. Then
+   * infiltration, which is not a surface and has no place on a drawing of
+   * surfaces, but is frequently the largest loss of the lot and would be a
+   * strange thing for a loss diagram to leave out. It leaves from the top-left
+   * shoulder of the shell, which is the one quadrant every massing left empty.
+   */
+  it('has ten anchors — the canvas draws eight, IT and infiltration are derived', () => {
+    expect(OFFICE.anchors).toHaveLength(10);
     expect(OFFICE.anchors.map((a) => a.slot)).toContain('gain-it-equipment');
-    expect(OFFICE.anchors.map((a) => a.slot)).toContain('gain-misc-equipment');
+    expect(OFFICE.anchors.map((a) => a.slot)).toContain('loss-infiltration');
+    for (const type of BUILDING_TYPES) {
+      expect(type.anchors, type.id).toHaveLength(10);
+    }
   });
 
   it('names no slot twice', () => {
@@ -354,6 +367,32 @@ describe('a loss label goes to the side its arrow actually leaves from', () => {
         if (!anchor.slot.startsWith('loss-')) continue;
         const { dx, dy } = lossPlacement(anchor.rotate, anchor.slot);
         expect(Math.hypot(dx, dy), `${type.id}/${anchor.slot}`).toBeLessThan(40);
+      }
+    }
+  });
+});
+
+/**
+ * Infiltration is a loss, and the drawing has to say so.
+ *
+ * It was left out of `LOSS_SLOTS` when the slot was added, so it drew in the
+ * gain colour: a terracotta quantity rendered teal, the drawing contradicting
+ * the number in the table beside it. Nothing in the type system was going to
+ * catch that — the set is a set of strings and every string in it was valid.
+ */
+describe('every loss slot is drawn as a loss', () => {
+  it('colours infiltration with the losses, not the gains', () => {
+    for (const anchor of OFFICE.anchors) {
+      const drawnAsLoss = LOSS_SLOTS.has(anchor.slot);
+      expect(drawnAsLoss, anchor.slot).toBe(anchor.slot.startsWith('loss-'));
+    }
+  });
+
+  it('holds for every massing, not just the office', () => {
+    for (const type of BUILDING_TYPES) {
+      for (const anchor of type.anchors) {
+        expect(LOSS_SLOTS.has(anchor.slot), `${type.id} ${anchor.slot}`)
+          .toBe(anchor.slot.startsWith('loss-'));
       }
     }
   });

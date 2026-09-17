@@ -107,11 +107,14 @@ describe('the verdict says which of the three it is', () => {
    * wrong sentence; comparing the two quantities is the right one.
    */
   it('compares the quantities rather than counting a zero', () => {
-    const box = verdict(4, 'chilled-water');
-    expect(result(4, 'chilled-water').recovery!.hoursCovered).toBe(0);
+    // 1 kW rather than 4: the default building leaks now, so a comms closet
+    // closes a couple of its easier hours and this branch needs a load that
+    // closes none.
+    const box = verdict(1, 'chilled-water');
+    expect(result(1, 'chilled-water').recovery!.hoursCovered).toBe(0);
     expect(box.textContent).toMatch(/Partly recovered from cooling/);
     expect(box.textContent).not.toMatch(/closing 0 of/);
-    const r = result(4, 'chilled-water');
+    const r = result(1, 'chilled-water');
     expect(box.textContent).toContain(heatFlow(r.recovery!.availableAtWorstHour, 'IP'));
     expect(box.textContent).toContain(heatFlow(r.peakHeatingLoad, 'IP'));
   });

@@ -85,6 +85,7 @@ export const DEFAULT_CONDITIONS: Conditions = {
   groundTemperature: GROUND_RULE_OF_THUMB_C,
   groundTemperatureBasis: 'rule-of-thumb',
   flatDesignDay: false,
+  siteElevation: 0,
 };
 
 export const DEFAULT_GAINS: Gains = {
@@ -168,6 +169,8 @@ export const DEFAULT_ENVELOPE: Envelope = (() => {
     floorArea: areas.floorArea,
     storeyHeight: areas.storeyHeight,
     storeys: DEFAULT_BOX.storeys,
+  // A new building built to code has a continuous air barrier.
+  airtightness: 'typical',
     surfaces: defaultSurfaces().map((surface) => ({ ...surface, area: byCategory[surface.category] })),
   };
 })();

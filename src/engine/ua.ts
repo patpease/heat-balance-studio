@@ -16,6 +16,12 @@
  *    loss, about a third of the whole heating deficit.
  */
 
+import {
+  airHeatCapacity,
+  DESIGN_PRESSURE_FACTOR,
+  grade,
+  M3S_M2_PER_CFM_FT2,
+} from '../model/airtightness';
 import { GROUND_DRIFT_LIMIT_K, GROUND_RULE_OF_THUMB_C } from '../model/defaults';
 import type {
   Conditions,
@@ -33,6 +39,31 @@ const SLOT_BY_CATEGORY: Record<Surface['category'], SurfaceSlot> = {
   groundFloor: 'loss-ground-floor',
   exposedFloor: 'loss-exposed-floor',
 };
+
+/**
+ * Infiltration, as a conductance.
+ *
+ * Q = ρ · V̇ · c_p · ΔT, and ρ·V̇·c_p is a constant with units of W/K — which is
+ * a conductance, and so this joins the surface terms as one more labelled entry
+ * rather than becoming a special case in the solver. That is the commitment the
+ * plan made on v2's behalf being collected: the chart, the verdict's lever and
+ * the loss table all pick it up with no change to any of them.
+ *
+ * The flow itself: a grade's 75 Pa test rate, brought down to what the building
+ * actually leaks at, over the ABOVE-GRADE envelope. Walls, windows, roof and
+ * any exposed floor — a slab on grade has no outdoor air on the other side of
+ * it to leak to. That area basis is the one the DOE prototype models use.
+ */
+export function infiltrationConductance(envelope: Envelope, conditions: Conditions): number {
+  const g = grade(envelope.airtightness);
+  const aboveGrade = envelope.surfaces
+    .filter((surface) => surface.boundary !== 'ground')
+    .reduce((total, surface) => total + surface.area, 0);
+
+  // cfm/ft² at 75 Pa -> cfm/ft² in service -> m³/s per m² -> m³/s.
+  const flow = g.cfm75 * DESIGN_PRESSURE_FACTOR * M3S_M2_PER_CFM_FT2 * aboveGrade;
+  return flow * airHeatCapacity(conditions.siteElevation);
+}
 
 export interface LossTerm {
   readonly slot: SurfaceSlot;
@@ -59,14 +90,29 @@ export function surfaceConductance(surface: Surface): number {
   return surface.area * surface.uValue * b;
 }
 
-/** One labelled term per surface, in the envelope's own order. */
-export function lossTerms(envelope: Envelope): LossTerm[] {
-  return envelope.surfaces.map((surface) => ({
-    slot: SLOT_BY_CATEGORY[surface.category],
-    label: surface.label,
-    conductance: surfaceConductance(surface),
-    driver: surface.boundary === 'ground' ? ('ground' as const) : ('air' as const),
-  }));
+/**
+ * One labelled term per surface, in the envelope's own order, plus infiltration.
+ *
+ * Infiltration goes last because it is not a surface — it has no area and no
+ * U-value — but it is air-coupled and it is a loss, so everything downstream
+ * treats it like the rest. It is frequently the largest term of the lot, which
+ * is the whole reason the tool stopped being able to leave it out.
+ */
+export function lossTerms(envelope: Envelope, conditions: Conditions): LossTerm[] {
+  return [
+    ...envelope.surfaces.map((surface) => ({
+      slot: SLOT_BY_CATEGORY[surface.category],
+      label: surface.label,
+      conductance: surfaceConductance(surface),
+      driver: surface.boundary === 'ground' ? ('ground' as const) : ('air' as const),
+    })),
+    {
+      slot: 'loss-infiltration' as const,
+      label: 'Infiltration',
+      conductance: infiltrationConductance(envelope, conditions),
+      driver: 'air' as const,
+    },
+  ];
 }
 
 export interface Conductance {
@@ -79,8 +125,8 @@ export interface Conductance {
   readonly terms: readonly LossTerm[];
 }
 
-export function conductance(envelope: Envelope): Conductance {
-  const terms = lossTerms(envelope);
+export function conductance(envelope: Envelope, conditions: Conditions): Conductance {
+  const terms = lossTerms(envelope, conditions);
   let air = 0;
   let ground = 0;
   for (const term of terms) {
@@ -148,6 +194,6 @@ export function resolveGroundTemperature(
 
 /** The constant loss through every ground-coupled surface, W. */
 export function groundLoss(envelope: Envelope, conditions: Conditions): number {
-  const { ground } = conductance(envelope);
+  const { ground } = conductance(envelope, conditions);
   return ground * (conditions.indoorSetpoint - conditions.groundTemperature);
 }

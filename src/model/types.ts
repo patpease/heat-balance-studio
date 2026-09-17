@@ -12,6 +12,8 @@
  *     loss.** A positive net means the space is self-heating in that hour.
  */
 
+import type { Airtightness } from './airtightness';
+
 export type UnitSystem = 'IP' | 'SI';
 
 /** IP is what a US user first sees; storage stays SI regardless. */
@@ -75,6 +77,14 @@ export interface Envelope {
    * commitment, not a storage one.
    */
   readonly surfaces: readonly Surface[];
+  /**
+   * How leaky the construction is, as a grade rather than a number.
+   *
+   * A property of the envelope, not of the weather and not of the occupants:
+   * it is decided by what gets specified and detailed. See
+   * `model/airtightness.ts` for the three grades and what each is anchored to.
+   */
+  readonly airtightness: Airtightness;
 }
 
 // ---------------------------------------------------------------------------
@@ -236,6 +246,15 @@ export interface Conditions {
   readonly groundTemperature: number;
   readonly groundTemperatureBasis: GroundTemperatureBasis;
   /**
+   * Site elevation, m. Carried here so the solver can thin the air.
+   *
+   * Infiltration heat loss is ρ·V̇·c_p, and ρ falls with altitude — Denver at
+   * 1,600 m loses 17% less heat per unit of leakage than the same building at
+   * sea level. The geocoder already returns elevation, so the alternative was
+   * to have it and not use it.
+   */
+  readonly siteElevation: number;
+  /**
    * Hold the design day flat at its minimum for all 24 hours.
    *
    * Off by default, and off is the honest screen: a real cold day has a diurnal
@@ -316,6 +335,7 @@ export type BuildingTypeId =
  */
 export type SurfaceSlot =
   | 'loss-walls'
+  | 'loss-infiltration'
   | 'loss-windows'
   | 'loss-roof'
   | 'loss-ground-floor'

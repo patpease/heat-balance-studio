@@ -91,13 +91,21 @@ describe('curve crossing', () => {
 describe('the chart has something to draw for the worked example', () => {
   const result = solve(SAMPLE_CASE);
 
-  it('has two deficit runs — overnight and evening', () => {
-    // Hours 0–8 and 18–23. A single run would mean the building never recovers,
-    // and three would mean the curves cross more than the schedule allows.
+  /**
+   * One run, not two — and that changed when infiltration was modelled.
+   *
+   * It used to be two: hours 0–8 and 18–23, with the building self-heating
+   * through the middle of the day. Leakage at the code grade very nearly
+   * doubled this example's air-side loss, and the midday surplus went with it.
+   * A single unbroken run is what a building that never recovers looks like,
+   * which is now what this one is.
+   */
+  it('is short for one unbroken run, having lost its midday surplus', () => {
     const shortfall = result.hours.map((h) => h.net < 0);
     let runs = 0;
     for (let i = 0; i < 24; i++) if (shortfall[i] && !shortfall[i - 1]) runs++;
-    expect(runs).toBe(2);
+    expect(runs).toBe(1);
+    expect(shortfall.every(Boolean)).toBe(true);
   });
 
   it('leaves the tallest curve inside the axis', () => {

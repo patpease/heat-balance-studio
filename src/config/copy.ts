@@ -122,7 +122,7 @@ export const HOW_IT_WORKS = {
  */
 export const ASSUMPTIONS = [
   'Sensible heat only. No latent load, no humidity.',
-  'No ventilation or infiltration. The largest single omission, and the reason a passing result is optimistic.',
+  'Infiltration is counted, from an air-tightness grade rather than a measured rate — no building has been blower-door tested at concept stage. Mechanical ventilation is NOT counted, and it is now the largest single omission.',
   'No solar gain. Leaving it out is conservative; leaving ventilation out is not. They do not cancel, and the optimistic one is larger in almost every case.',
   'Steady state, hour by hour. No thermal mass, so no coasting overnight on stored heat — a heavyweight building is penalised here relative to reality.',
   'One zone, one setpoint. No stratification, no distribution loss.',
@@ -266,6 +266,8 @@ export const HELP = {
     'What is cooling the racks decides what their heat is worth. Air-cooled equipment warms the room it sits in, so it is a gain like any other. Chilled water takes the heat out of the room — but a heat recovery chiller could make that same chilled water while producing heating hot water for the rest of the building, so the heat need not be lost. Rejected outdoors, through a dry cooler or a packaged unit with no recovery, none of it is available here.',
   schedule:
     'Drag a bar to edit, or use the arrow keys. The overnight floor decides the answer: a row that drops to zero at night flatters every building.',
+  airtightness:
+    'How leaky the construction is. Nobody knows their building’s measured leakage at concept stage, so the input is a grade rather than a number: leaky is construction with no continuous air barrier, typical is an air barrier detailed to current code, tight is the Passive House target. The three span more than twenty to one, which is worth seeing on its own.',
   flatDesignDay:
     'The ASHRAE heating design day is isothermal by convention — one temperature for all 24 hours. This tool derives a real diurnal profile instead, which is the honest screen, but it means the answer will not match a load calculation sized on a flat day. Turn this on to compare like with like; leave it off to see the building as it actually behaves.',
   sketchBox:

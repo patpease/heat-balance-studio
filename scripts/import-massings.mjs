@@ -152,7 +152,7 @@ function extract(label) {
 
   const anchors = [...svg.matchAll(/<g id="[^"]*" data-surface="([^"]+)" transform="translate\(([-\d.]+),([-\d.]+)\)(?: rotate\(([-\d.]+)\))?"/g)]
     .map((m) => ({ slot: m[1] === 'gain-equipment' ? 'gain-misc-equipment' : m[1], x: +m[2], y: +m[3], rotate: +(m[4] ?? 0) }));
-  if (anchors.length !== 8) throw new Error(`${label}: expected 8 anchors, found ${anchors.length}`);
+  if (anchors.length !== 8) throw new Error(`${label}: expected 8 anchors on the canvas, found ${anchors.length}`);
 
   // The ninth. The canvas predates the misc/IT split, so the IT arrow is placed
   // beside the equipment one and points the same way — at the hour the verdict
@@ -198,6 +198,19 @@ function extract(label) {
     [personHead.cx - personHead.r, personHead.cy - personHead.r],
     [personHead.cx + personHead.r, personHead.cy + personHead.r],
   ];
+
+  // The tenth anchor, and the second one the canvas does not draw: infiltration
+  // arrived after the massings did. It leaves from the top-left shoulder of the
+  // shell, up and away — stack effect pushes warm air out at the top, which is
+  // the mechanism, and the top-left is the one quadrant the canvas left empty on
+  // every massing. The roof arrow leans right on all six, so the two do not
+  // meet.
+  {
+    const shellPoints = shell.flatMap((p) => points(p.d));
+    const minX = Math.min(...shellPoints.map((p) => p[0]));
+    const minY = Math.min(...shellPoints.map((p) => p[1]));
+    anchors.push({ slot: 'loss-infiltration', x: minX + 40, y: minY + 22, rotate: -135 });
+  }
 
   // Re-aim the vertical arrows before cropping, so the crop sees where they
   // actually go.

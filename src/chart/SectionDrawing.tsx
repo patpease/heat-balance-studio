@@ -36,8 +36,12 @@ export interface SectionDrawingProps {
   readonly onSelect?: (slot: SurfaceSlot) => void;
 }
 
-const LOSS_SLOTS = new Set<SurfaceSlot>([
+export const LOSS_SLOTS = new Set<SurfaceSlot>([
   'loss-walls',
+  // Not a surface, and still a loss. Left out of this set it drew in the gain
+  // colour — a terracotta quantity rendered teal, which is the drawing saying
+  // the opposite of what the number says.
+  'loss-infiltration',
   'loss-windows',
   'loss-roof',
   'loss-ground-floor',
@@ -174,10 +178,11 @@ export function SectionDrawing({
 
          That is why the vertical arrows were re-aimed to 45° — the crop went
          from 770 units tall to 632 — and why this number is 250 rather than the
-         232 it sat at before. Together with the fold the box-fields row gave
-         back when it stopped wrapping to three lines, they draw the building
-         47% larger and still leave the verdict above 900 px. */
-      style={{ display: 'block', width: '100%', height: 'auto', maxHeight: 280 }}
+         232 it sat at before. 254 rather than 280 because the loss table grew
+         an infiltration row, which is worth more than 26 px of drawing: it is
+         frequently the largest loss in the table. The building is still drawn
+         33% larger than it was before the crop was tightened. */
+      style={{ display: 'block', width: '100%', height: 'auto', maxHeight: 254 }}
     >
       <defs>
         <filter id={sketchId} x="-12%" y="-12%" width="124%" height="124%">

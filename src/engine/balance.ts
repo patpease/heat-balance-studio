@@ -187,7 +187,7 @@ function profileFor(designDay: DesignDay, conditions: Conditions): DesignDay {
 export function solve(input: SolveInput): BalanceResult {
   const { envelope, gains, conditions } = input;
   const designDay = profileFor(input.designDay, conditions);
-  const ua = conductance(envelope);
+  const ua = conductance(envelope, conditions);
   const ground = groundLoss(envelope, conditions);
   const terms = gainTerms(gains, envelope.floorArea);
   const recovery = recoveryTerm(gains);

@@ -65,6 +65,10 @@ export const SAMPLE_ENVELOPE: Envelope = {
   floorArea: 500,
   storeyHeight: 3.5,
   storeys: 1,
+  // The worked example is a code-compliant new build, so it gets the grade a
+  // new build is required to reach. This is the one change that moves §3.8's
+  // numbers, and it moves them because the tool was leaving heat out.
+  airtightness: 'typical',
   surfaces: SAMPLE_SURFACES,
 };
 
@@ -103,6 +107,8 @@ export const SAMPLE_CONDITIONS: Conditions = {
   // change every figure in §3.8, which is the one thing the golden case exists
   // to stop.
   flatDesignDay: false,
+  // Boston Logan, effectively at sea level, so the air is not thinned.
+  siteElevation: 6,
 };
 
 export const SAMPLE_CASE = {
