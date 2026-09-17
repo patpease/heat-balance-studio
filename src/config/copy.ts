@@ -72,9 +72,23 @@ export const SCOPE_STATEMENT =
   'A theoretical screen built on historic weather data. It does not replace a formal heat loss ' +
   'calculation performed to ASHRAE standards.';
 
+/**
+ * What is in and what is out, and which way each omission pushes.
+ *
+ * This said "ventilation and infiltration are not counted, so a passing result
+ * is optimistic" until both were built. It is burned into the PNG export, so a
+ * stale version of it travels — which is the strongest argument there is for
+ * keeping it accurate.
+ *
+ * It no longer claims a direction overall, because the omissions no longer
+ * point the same way: solar and thermal mass understate the building,
+ * distribution and stratification losses flatter it. Naming both is honest
+ * where naming a net would be a guess.
+ */
 export const EXCLUSIONS_STATEMENT =
-  'Envelope-only, sensible-heat screen. Ventilation and infiltration are not counted, so a passing ' +
-  'result is optimistic.';
+  'A sensible-heat screen with ventilation and infiltration counted. Solar gain and thermal mass ' +
+  'are left out, which understates the building; distribution and stratification losses are left ' +
+  'out, which flatters it.';
 
 export const WEATHER_ATTRIBUTION = 'Weather data © Open-Meteo (ERA5), CC BY 4.0.';
 
@@ -123,7 +137,7 @@ export const HOW_IT_WORKS = {
 export const ASSUMPTIONS = [
   'Sensible heat only. No latent load, no humidity.',
   'Infiltration and mechanical ventilation are both counted — infiltration from an air-tightness grade, ventilation from ASHRAE 62.1 per-person and per-area rates with whatever heat recovery you specify. Neither is a measured figure; no building has been blower-door tested at concept stage.',
-  'No solar gain. Leaving it out is conservative; leaving ventilation out is not. They do not cancel, and the optimistic one is larger in almost every case.',
+  'No solar gain. Leaving it out is conservative — a real building on a clear cold day does better than this says. It was the smaller of the two omissions this list used to carry, and now it is the only one.',
   'Steady state, hour by hour. No thermal mass, so no coasting overnight on stored heat — a heavyweight building is penalised here relative to reality.',
   'One zone, one setpoint. No stratification, no distribution loss.',
   'U-values are assembly averages including thermal bridges. The tool has no bridge model, so that is your job.',
