@@ -16,12 +16,7 @@
  *    loss, about a third of the whole heating deficit.
  */
 
-import {
-  airHeatCapacity,
-  DESIGN_PRESSURE_FACTOR,
-  grade,
-  M3S_M2_PER_CFM_FT2,
-} from '../model/airtightness';
+import { airHeatCapacity, DESIGN_PRESSURE_FACTOR } from '../model/airtightness';
 import { GROUND_DRIFT_LIMIT_K, GROUND_RULE_OF_THUMB_C } from '../model/defaults';
 import type {
   Conditions,
@@ -55,13 +50,14 @@ const SLOT_BY_CATEGORY: Record<Surface['category'], SurfaceSlot> = {
  * it to leak to. That area basis is the one the DOE prototype models use.
  */
 export function infiltrationConductance(envelope: Envelope, conditions: Conditions): number {
-  const g = grade(envelope.airtightness);
+  // Walls, windows, roof and any exposed floor. NOT the ground floor: a slab
+  // has no outdoor air on the other side of it to leak to.
   const aboveGrade = envelope.surfaces
     .filter((surface) => surface.boundary !== 'ground')
     .reduce((total, surface) => total + surface.area, 0);
 
-  // cfm/ft² at 75 Pa -> cfm/ft² in service -> m³/s per m² -> m³/s.
-  const flow = g.cfm75 * DESIGN_PRESSURE_FACTOR * M3S_M2_PER_CFM_FT2 * aboveGrade;
+  // 75 Pa rate -> the rate in service -> m³/s over the envelope.
+  const flow = envelope.airtightness.leakage * DESIGN_PRESSURE_FACTOR * aboveGrade;
   return flow * airHeatCapacity(conditions.siteElevation);
 }
 

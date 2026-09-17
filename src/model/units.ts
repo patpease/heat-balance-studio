@@ -162,6 +162,8 @@ export interface UnitLabels {
   uValue: string;
   rValue: string;
   areaPerPerson: string;
+  /** Envelope air leakage at 75 Pa. */
+  leakage: string;
   perPersonHeat: string;
 }
 
@@ -177,6 +179,7 @@ export const LABELS: Record<UnitSystem, UnitLabels> = {
     uValue: 'Btu/h·ft²·°F',
     rValue: 'h·ft²·°F/Btu',
     areaPerPerson: 'ft²/person',
+    leakage: 'cfm/ft² @ 75 Pa',
     perPersonHeat: 'Btu/h',
   },
   SI: {
@@ -190,6 +193,7 @@ export const LABELS: Record<UnitSystem, UnitLabels> = {
     uValue: 'W/m²K',
     rValue: 'm²K/W',
     areaPerPerson: 'm²/person',
+    leakage: 'm³/h·m² @ 75 Pa',
     perPersonHeat: 'W',
   },
 };

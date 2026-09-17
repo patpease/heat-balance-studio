@@ -15,7 +15,8 @@
 
 import { DEFAULT_GAINS, DEFAULT_SETPOINT_C } from '../model/defaults';
 import { customSchedule } from '../model/schedules';
-import type { Airtightness } from '../model/airtightness';
+import { gradeMatching, leakageOf } from '../model/airtightness';
+import type { AirLeakage } from '../model/airtightness';
 import type {
   Conditions,
   DesignDay,
@@ -99,7 +100,10 @@ export function encodeState(state: ShareState): string {
     ],
     e: {
       a: r(state.envelope.floorArea, 1),
-      t: state.envelope.airtightness,
+      // The RATE travels and the grade does not: the grade is derivable from
+      // the rate, and sending both put the link two characters over the budget
+      // the test below holds it to. One source of truth on the wire.
+      q: r(state.envelope.airtightness.leakage, 6),
       h: r(state.envelope.storeyHeight, 2),
       n: state.envelope.storeys,
       s: state.envelope.surfaces.map((surface) => [
@@ -137,9 +141,20 @@ export function encodeState(state: ShareState): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-/** Absent in links written before v4. */
-function readAirtightness(raw: unknown): Airtightness {
-  return raw === 'leaky' || raw === 'typical' || raw === 'tight' ? raw : 'typical';
+/**
+ * Absent in links written before v4.
+ *
+ * The rate travels alongside the grade rather than being derived from it,
+ * because a hand-entered rate has no grade — and a link that quietly rounded
+ * someone's blower-door number to the nearest published one would be the worst
+ * kind of helpful.
+ */
+function readAirtightness(rawRate: unknown): AirLeakage {
+  const rate = Number(rawRate);
+  if (!Number.isFinite(rate) || rate <= 0) return leakageOf('typical');
+  // A rate that matches a published grade comes back badged as that grade,
+  // which is correct however it was entered — it IS that grade's value.
+  return { leakage: rate, grade: gradeMatching(rate) };
 }
 
 /** `i[1]` across three versions: a φ number before, a medium after. */
@@ -253,7 +268,7 @@ export function decodeState(encoded: string): ShareState | null {
         // Absent before v4. 'typical' is the default and the code requirement,
         // so an older link describes a building built to code — which is what
         // it was describing before infiltration existed, minus the leakage.
-        airtightness: readAirtightness(payload.e.t),
+        airtightness: readAirtightness(payload.e.q),
         surfaces,
       },
       gains: gains.schedules.occupancy.fractions.length === 24 ? gains : DEFAULT_GAINS,

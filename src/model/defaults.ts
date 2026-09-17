@@ -19,6 +19,7 @@
  * because racks do not multiply when the building around them grows.
  */
 
+import { leakageOf } from './airtightness';
 import { DEFAULT_PRESET_ID, presetById } from './gainPresets';
 import type { GainPreset } from './gainPresets';
 import { areasFromBox, DEFAULT_BOX } from '../engine/sketchBox';
@@ -170,7 +171,7 @@ export const DEFAULT_ENVELOPE: Envelope = (() => {
     storeyHeight: areas.storeyHeight,
     storeys: DEFAULT_BOX.storeys,
   // A new building built to code has a continuous air barrier.
-  airtightness: 'typical',
+  airtightness: leakageOf('typical'),
     surfaces: defaultSurfaces().map((surface) => ({ ...surface, area: byCategory[surface.category] })),
   };
 })();

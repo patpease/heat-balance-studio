@@ -61,6 +61,39 @@ export function grade(id: Airtightness): AirtightnessGrade {
 }
 
 /**
+ * What the envelope actually leaks, and where the number came from.
+ *
+ * The same contract the gain presets follow: `grade` answers "is this still a
+ * published figure?" and goes null the moment someone types over it, while
+ * `leakage` is the number the engine uses either way. A grade badge that
+ * outlived the number it described would be attributing a user's figure to
+ * ASHRAE.
+ *
+ * Someone who has a blower-door result, or a specification, should be able to
+ * enter it — a picker alone would make this tool useless to the one user who
+ * actually knows the answer.
+ */
+export interface AirLeakage {
+  /** m³/(s·m²) of above-grade envelope at 75 Pa. Canonical SI. */
+  readonly leakage: number;
+  /** The grade it came from, or null once entered by hand. */
+  readonly grade: Airtightness | null;
+}
+
+/** A grade as a stored setting. */
+export function leakageOf(id: Airtightness): AirLeakage {
+  return { leakage: grade(id).cfm75 * M3S_M2_PER_CFM_FT2, grade: id };
+}
+
+/** Which grade a rate corresponds to, or null if it matches none of them. */
+export function gradeMatching(leakage: number): Airtightness | null {
+  const match = AIRTIGHTNESS.find(
+    (g) => Math.abs(g.cfm75 * M3S_M2_PER_CFM_FT2 - leakage) < 5e-7,
+  );
+  return match ? match.id : null;
+}
+
+/**
  * 75 Pa test rate → the rate the building actually leaks at.
  *
  * A blower door holds the building at 75 Pa. Weather does not: real pressure
@@ -99,8 +132,9 @@ export const AIR_HEAT_CAPACITY_SEA_LEVEL = 1.2 * 1006;
  * How much thinner the air is up there.
  *
  * The standard-atmosphere pressure ratio, and the reason it is here: Denver
- * sits at 1,600 m where air is 17% less dense, so a Denver building loses 17%
- * less heat per unit of leakage than the same building in Boston. The geocoder
+ * sits at 1,600 m where the standard atmosphere is 0.824 of sea-level pressure,
+ * so a Denver building loses 18% less heat per unit of leakage than the same
+ * building in Boston. The geocoder
  * already returns elevation, so declining to use it would be a choice.
  *
  * Density rather than temperature: ρ·c_p is held constant so the term stays a

@@ -14,6 +14,7 @@
  * `tests/designDay.test.ts` regenerates it and asserts they match.
  */
 
+import { leakageOf } from './airtightness';
 import { ALWAYS_ON, OFFICE_LIGHTING, OFFICE_MISC_EQUIPMENT, OFFICE_OCCUPANCY } from './schedules';
 import { DEFAULT_SETPOINT_C, GROUND_RULE_OF_THUMB_C } from './defaults';
 import type { Conditions, DesignDay, Envelope, Gains, Site, Surface } from './types';
@@ -68,7 +69,7 @@ export const SAMPLE_ENVELOPE: Envelope = {
   // The worked example is a code-compliant new build, so it gets the grade a
   // new build is required to reach. This is the one change that moves §3.8's
   // numbers, and it moves them because the tool was leaving heat out.
-  airtightness: 'typical',
+  airtightness: leakageOf('typical'),
   surfaces: SAMPLE_SURFACES,
 };
 

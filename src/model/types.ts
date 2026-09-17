@@ -12,7 +12,7 @@
  *     loss.** A positive net means the space is self-heating in that hour.
  */
 
-import type { Airtightness } from './airtightness';
+import type { AirLeakage } from './airtightness';
 
 export type UnitSystem = 'IP' | 'SI';
 
@@ -84,7 +84,7 @@ export interface Envelope {
    * it is decided by what gets specified and detailed. See
    * `model/airtightness.ts` for the three grades and what each is anchored to.
    */
-  readonly airtightness: Airtightness;
+  readonly airtightness: AirLeakage;
 }
 
 // ---------------------------------------------------------------------------
@@ -249,7 +249,7 @@ export interface Conditions {
    * Site elevation, m. Carried here so the solver can thin the air.
    *
    * Infiltration heat loss is ρ·V̇·c_p, and ρ falls with altitude — Denver at
-   * 1,600 m loses 17% less heat per unit of leakage than the same building at
+   * 1,600 m loses 18% less heat per unit of leakage than the same building at
    * sea level. The geocoder already returns elevation, so the alternative was
    * to have it and not use it.
    */

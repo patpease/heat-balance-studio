@@ -7,7 +7,7 @@ import { solve } from '../engine/balance';
 import { areasFromBox, DEFAULT_BOX } from '../engine/sketchBox';
 import type { BoxDimensions } from '../engine/sketchBox';
 import { wallToFloorRatio } from '../engine/ua';
-import { AIRTIGHTNESS, grade } from '../model/airtightness';
+import { AIRTIGHTNESS, gradeMatching, leakageOf, M3S_M2_PER_CFM_FT2 } from '../model/airtightness';
 import { buildingType } from '../model/buildingTypes';
 import { GAIN_PRESETS } from '../model/gainPresets';
 import type { Conditions, DesignDay, Envelope, Gains, Surface, SurfaceSlot, UnitSystem } from '../model/types';
@@ -116,6 +116,19 @@ export function EnvelopePanel({
     { key: 'storeys', caption: 'Storeys', aria: 'Box storeys', decimals: 0 },
     { key: 'windowToWallRatio', caption: 'WWR', aria: 'Box WWR, window-to-wall ratio', decimals: 2 },
   ] as const;
+
+  /**
+   * Air leakage at 75 Pa, at the display edge.
+   *
+   * Stored canonical as m³/(s·m²) like everything else. IP shows the cfm/ft²
+   * the US standards are written in; SI shows m³/h·m², which is what the
+   * European tests report. Two different numbers for one rate, which is the
+   * usual arrangement in this tool and the usual place to get it wrong.
+   */
+  const showLeakage = (leakage: number) =>
+    ip ? leakage / M3S_M2_PER_CFM_FT2 : leakage * 3600;
+  const takeLeakage = (shown: number) =>
+    ip ? shown * M3S_M2_PER_CFM_FT2 : shown / 3600;
 
   const isLength = (key: keyof BoxDimensions) =>
     key === 'length' || key === 'width' || key === 'height';
@@ -331,30 +344,50 @@ export function EnvelopePanel({
                   aria-label="Air tightness"
                   style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', alignItems: 'center' }}
                 >
+                  {/* Pick a grade if you do not know, type the number if you
+                      do. Someone with a blower-door result or a specification
+                      is the one user who actually knows the answer, and a
+                      picker on its own would have nothing to offer them.
+
+                      The badge follows the same contract as the gain presets:
+                      typing over the number drops the grade, because a grade
+                      that outlived the figure it described would be
+                      attributing a user's number to ASHRAE. */}
                   {AIRTIGHTNESS.map((g) => (
                     <button
                       key={g.id}
                       type="button"
                       title={`${g.note} (${g.cfm75} cfm/ft² at 75 Pa — ${g.citation})`}
-                      aria-pressed={envelope.airtightness === g.id}
-                      onClick={() => onChange({ ...envelope, airtightness: g.id })}
+                      aria-pressed={envelope.airtightness.grade === g.id}
+                      onClick={() => onChange({ ...envelope, airtightness: leakageOf(g.id) })}
                       style={{
                         font: 'inherit',
                         fontSize: 10,
                         padding: '2px 7px',
                         background: 'var(--page)',
                         border: '1px solid',
-                        borderColor: envelope.airtightness === g.id ? 'var(--gain)' : 'var(--border)',
-                        color: envelope.airtightness === g.id ? 'var(--gain)' : 'var(--muted)',
+                        borderColor: envelope.airtightness.grade === g.id ? 'var(--gain)' : 'var(--border)',
+                        color: envelope.airtightness.grade === g.id ? 'var(--gain)' : 'var(--muted)',
                         cursor: 'pointer',
                       }}
                     >
                       {g.label}
                     </button>
                   ))}
-                  <span style={{ fontSize: 10.5, color: 'var(--muted)', minWidth: 96, textAlign: 'right' }}>
-                    {grade(envelope.airtightness).cfm75} cfm/ft² @ 75 Pa
-                  </span>
+                  <NumberCell
+                    label="Air leakage at 75 Pa"
+                    value={showLeakage(envelope.airtightness.leakage)}
+                    decimals={2}
+                    onCommit={(next) => {
+                      const leakage = Math.max(0, takeLeakage(next));
+                      onChange({
+                        ...envelope,
+                        airtightness: { leakage, grade: gradeMatching(leakage) },
+                      });
+                    }}
+                    style={{ width: 58, textAlign: 'right' }}
+                  />
+                  <span style={{ fontSize: 10, color: 'var(--muted)' }}>{labels.leakage}</span>
                 </span>
               </td>
               <td style={{ textAlign: 'right', padding: '2px 0', borderBottom: '1px solid var(--border)', fontVariantNumeric: 'tabular-nums', color: 'var(--loss)' }}>
