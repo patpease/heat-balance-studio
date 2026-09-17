@@ -22,7 +22,8 @@ Revisit when a fourth tool needs EPW.
 - [x] **02 Design-day derivation** — against a committed fixture series, no
       live calls in tests. 117 tests. Found and fixed the archive timezone bug
       (see CLAUDE.md); the ground resolver is tested either side of its 3 K
-      threshold; six climates derived and tabulated in the plan.
+      threshold — and, since 16 Sep, either side of its freezing floor too;
+      six climates derived and tabulated in the plan.
 - [x] **03 Envelope panel and the section drawing** — rendered from a
       `BuildingType` record, not inline JSX. 136 tests. Editable area/U/R cells,
       click-to-select both ways, sketch-a-box, per-project arrow reference.
@@ -53,8 +54,6 @@ Revisit when a fourth tool needs EPW.
       on every run.
 - [x] **Per-type schedules** — from the PNNL scorecards, 13 Sep 2026. Weekday,
       area-weighted across each prototype's space types.
-- [x] **Entry by building type** — 18 types, 6 massings, drawing follows the
-      picker.
 - [ ] **A warehouse massing.** It currently borrows the single-family shed,
       which Patrick accepted for v1. It is the one mapping that is a placeholder
       rather than a reading.
@@ -76,6 +75,52 @@ Revisit when a fourth tool needs EPW.
       default.
 - [x] **Thousands separators, outdoor-air line, one-screen layout, theme
       toggle** — 13–16 Sep 2026.
+- [x] **Ground temperature from the design month** — 16 Sep 2026. It read the
+      record's ANNUAL mean, which put Houston's slab at 70 °F against measured
+      January soil of 54–56 — inventing 15 °F of gain on a heating design day.
+      It now reads the mean for the month the cold days cluster in, floored at
+      freezing, because monthly air tracks shallow soil only down to 0 °C
+      (Minneapolis: 16.5 °F of air against 28–34 °F of soil at every depth).
+      `annualMeanTemperature` had one consumer and is gone; share links are v4.
+- [x] **Ventilation into the gains panel** — 16 Sep 2026. Its own panel spent
+      280 px saying what three lines say beside the occupancy input that drives
+      it. Also fixed the schedule strips, which had never been aligned: the
+      input column was a `minWidth` and the people row carried a derived count
+      the others did not, so its strip began 61 px right of the other three.
+- [x] **Heat pipe removed from the recovery picker** — 16 Sep 2026. It and the
+      plate exchanger both sat at the middle of 50–70%, so it was a second
+      button for one calculation and `recoveryMatching` could only ever badge
+      the first. Pinned by an invariant — no two devices at one effectiveness —
+      rather than by a count, which passes again the moment someone re-adds a
+      duplicate.
+- [x] **Envelope dimensions beside the drawing** — 16 Sep 2026. The drawing is
+      height-bound and was rendering 125 px of empty margin at each side; the
+      five box fields moved into it and a 54 px row went away. Panel renamed
+      **Building definition**, and the flow step that signposts it.
+- [x] **Detailed chart** — 17 Sep 2026. A Details button swaps the two totals
+      for one line per component, signed: gains above zero, losses below. Never
+      on by default, not stored, not in the share link. Eleven hues solved in
+      CIE LCh for maximum separation subject to both themes clearing contrast —
+      minimum ΔE 26.6 across all 55 pairs. The legend became a readout table
+      following the hovered hour.
+- [x] **The IT cooling chips were invisible** — 17 Sep 2026. They wrote
+      `color: undefined`, which deletes the property rather than falling back to
+      the shared chip colour, so they took the UA's `buttontext` — and
+      `color-scheme` followed the OPERATING SYSTEM rather than the theme. OS
+      dark plus app pinned light gave white on cream at 1.04:1. Both halves
+      fixed, and the scheme now follows `data-theme`.
+- [x] **PNG footer trimmed** — 17 Sep 2026. Four lines of small type down to
+      two: the building and where it is, then the attribution. The weather
+      credit stays because CC BY 4.0 requires it when you hand the data on.
+- [ ] **The "Typical" air-tightness chip is 4.27:1**, just under AA — `--gain`
+      on `--page`. Found while measuring the chip fix above. Not changed,
+      because fixing it means moving a brand token.
+- [ ] **A key inside the exported PNG.** The detailed chart exports eleven
+      unlabelled lines: the readout is HTML and does not travel. Built inside
+      the SVG once and withdrawn — it cost 130 px of plot on every live viewing
+      to serve an export that happens rarely. The answer is to add it to the
+      export CLONE, which `exportPng` already walks and which costs the page
+      nothing.
 
 ## v2
 
@@ -85,39 +130,6 @@ Revisit when a fourth tool needs EPW.
       reserved `ventilation` field was superseded — it had the rate as a one-of
       where 62.1 adds both halves, put infiltration in the wrong object, and
       gave the fan a 24-value strip where it needed a two-way choice.
-- [x] **Entry by building type** — 18 types, 6 massings, drawing follows the
-      picker.
-- [ ] **A warehouse massing.** It currently borrows the single-family shed,
-      which Patrick accepted for v1. It is the one mapping that is a placeholder
-      rather than a reading.
-- [ ] **Saturday and Sunday schedules.** The source publishes them; only the
-      weekday is imported, because a heating design day is the cold weekday.
-- [ ] **Copy review** — `src/config/copy.ts`, four `DRAFT_NOTES` open.
-- [x] **peasestudio.com tool card** — the MDX is in the content collection at
-      `order: 3`, rewritten 13 Sep 2026 for the PNNL data.
-- [ ] **Widen the ERA5-vs-DDY comparison** — measured for Boston only (2.2 K).
-      Was "drop four more archives on the tool"; the weather-file UI is hidden
-      now, so this is a script against `climate/weatherFile.ts` instead. The
-      parsers are untouched and still tested.
-- [x] **IT as an absolute kW** — 16 Sep 2026. It was a W/m² density, which meant
-      a server room got bigger when the building did.
-- [x] **Heat recovered from cooling** — 16 Sep 2026. φ is gone, replaced by a
-      cooling medium per IT row; four verdict states; recovery credited at the
-      condenser heat and sized to the heating demand.
-- [x] **Flat design day** — 16 Sep 2026. Exposed in the location strip, off by
-      default.
-- [x] **Thousands separators, outdoor-air line, one-screen layout, theme
-      toggle** — 13–16 Sep 2026.
-
-## v2
-
-- [ ] **Ventilation and infiltration** — the reserved `ventilation` field.
-      **The next thing worth building.** It is the largest omission the tool
-      states about itself, the reason a passing result is called optimistic,
-      and the architecture was shaped for it: `balance.ts` reduces a list of
-      labelled term functions, volume is already captured, and a v1 file has no
-      `ventilation` key so there is no migration. Everything else on this list
-      refines a tool whose headline caveat is still in place.
 - [x] **Entry by building type** — 13 Sep 2026. 18 types, 6 massings, and the
       drawing follows the picker.
 - [ ] **Reverse entry** from wall-to-floor ratio, height and shape.
