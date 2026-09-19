@@ -112,6 +112,14 @@ Revisit when a fourth tool needs EPW.
 - [x] **PNG footer trimmed** — 17 Sep 2026. Four lines of small type down to
       two: the building and where it is, then the attribution. The weather
       credit stays because CC BY 4.0 requires it when you hand the data on.
+- [x] **The dimensions went into a drawer** — 19 Sep 2026. The five box fields
+      are a ONE-TIME entry: they fill the surface table in and are then never
+      read again, but they held a column of the panel for the rest of the
+      session. They open from a handle in the floating bar into the same column
+      they occupied, so nothing moves when the drawer is shut — the artwork
+      re-centres into the margin it came from. `Create surfaces` closes it. Shut
+      on load and not remembered: local state, not in the share link. Gave
+      `HELP.sketchBox` its first home as the handle's title.
 - [ ] **The "Typical" air-tightness chip is 4.27:1**, just under AA — `--gain`
       on `--page`. Found while measuring the chip fix above. Not changed,
       because fixing it means moving a brand token.
