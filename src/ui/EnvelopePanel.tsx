@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 
 import { referenceWatts } from '../chart/arrowScale';
 import { SectionDrawing } from '../chart/SectionDrawing';
 import type { SectionTerm } from '../chart/SectionDrawing';
+import { HELP } from '../config/copy';
 import { solve } from '../engine/balance';
 import { areasFromBox, DEFAULT_BOX } from '../engine/sketchBox';
 import type { BoxDimensions } from '../engine/sketchBox';
@@ -27,6 +28,15 @@ import { cellStyle as cell, NumberCell } from './NumberCell';
  * The section is schematic and deliberately does not redraw itself to the
  * entered dimensions: plausible numbers would produce absurd geometry, and the
  * quantity a user is reasoning about is share of loss, not proportions.
+ *
+ * The five sketch-box dimensions are behind a drawer rather than on the face of
+ * the panel. They are a ONE-TIME entry — five numbers typed once to fill the
+ * table in, and then never looked at again — but they were on screen for the
+ * whole of the rest of the session, competing with the drawing and the loss
+ * table, which are what the tool is for. The drawer opens in the same column
+ * they occupied, so the drawing does not move when it is closed again, and
+ * "Create surfaces" closes it: the one action it exists for is also the way
+ * out of it.
  */
 
 export interface EnvelopePanelProps {
@@ -71,6 +81,16 @@ export function EnvelopePanel({
 }: EnvelopePanelProps) {
   const [selected, setSelected] = useState<SurfaceSlot | null>(null);
   const [box, setBox] = useState<BoxDimensions>(DEFAULT_BOX);
+  /**
+   * Closed on load, and deliberately not remembered.
+   *
+   * Local state only — not in the share link, not in storage. A link should
+   * land its recipient on the answer, not on the form that produced it.
+   */
+  const [boxOpen, setBoxOpen] = useState(false);
+  // Per instance: the PNG export mounts a second copy of this panel's drawing,
+  // and aria-controls pointing at a duplicate id addresses the wrong one.
+  const boxDrawerId = useId();
 
   const result = useMemo(
     () => solve({ envelope, gains, conditions, designDay, ventilation }),
@@ -182,6 +202,9 @@ export function EnvelopePanel({
       storeys: box.storeys,
       surfaces: envelope.surfaces.map((s) => ({ ...s, area: byCategory[s.category] ?? s.area })),
     });
+    // The drawer's one action is also the way out of it: the areas are in the
+    // table now, and the table is where they are edited from here on.
+    setBoxOpen(false);
   };
 
   const setSurface = (id: string, patch: Partial<Surface>) => {
@@ -235,24 +258,47 @@ export function EnvelopePanel({
           {scrubHour === null ? ', worst hour' : ''}
         </h2>
         <span style={{ display: 'flex', gap: 6, pointerEvents: 'auto' }}>
+          {/* The handle for the dimensions drawer. It sits in the bar rather
+              than in the column, because the column is the thing it opens —
+              a handle inside the drawer has nowhere to be when it is shut. */}
+          <button
+            type="button"
+            onClick={() => setBoxOpen((on) => !on)}
+            aria-expanded={boxOpen}
+            aria-controls={boxDrawerId}
+            title={HELP.sketchBox}
+            style={{
+              ...overlayButton,
+              borderColor: boxOpen ? 'var(--gain)' : 'var(--border)',
+            }}
+          >
+            Dimensions
+          </button>
           <button type="button" onClick={onExport} disabled={exporting} style={overlayButton}>
             {exporting ? 'Exporting…' : 'PNG'}
           </button>
         </span>
       </div>
 
-      {/* The drawing and the dimensions, side by side.
+      {/* The drawing, and the dimensions drawer that opens to the left of it.
  
           The five fields used to sit in a row of their own below the table,
           which cost the panel 54 px it did not have to spend: the drawing is
           height-bound, so it was already rendering 125 px of empty margin at
           each side. Pushing the artwork to the right gathers both margins into
           one column on the left and the fields move into it — the drawing does
-          not shrink, and the row is gone. */}
-      <div style={{ padding: '22px 12px 0', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          not shrink, and the row is gone.
+
+          They are now in that column only while the drawer is open. Shut, the
+          column is not rendered at all and the artwork re-centres into the
+          margin it came from, so the panel at rest is the drawing and the loss
+          table and nothing else. */}
+      <div style={{ padding: '22px 12px 0', display: 'flex', gap: boxOpen ? 10 : 0, alignItems: 'flex-start' }}>
         {/* paddingTop clears the floating title bar, which sits at top: 8 and
             ends around 28 — the panel title is directly above this column. */}
+        {boxOpen && (
         <div
+          id={boxDrawerId}
           style={{
             flex: '0 0 auto',
             width: 142,
@@ -307,6 +353,7 @@ export function EnvelopePanel({
             Create surfaces
           </button>
         </div>
+        )}
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <SectionDrawing
@@ -314,7 +361,7 @@ export function EnvelopePanel({
             terms={terms}
             reference={reference}
             selected={selected}
-            align="right"
+            align={boxOpen ? 'right' : 'centre'}
             onSelect={(slot) => setSelected((current) => (current === slot ? null : slot))}
           />
         </div>

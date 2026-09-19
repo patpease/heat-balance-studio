@@ -129,6 +129,8 @@ describe('Create surfaces', () => {
 
   it('is named for what it does', () => {
     panel(DEFAULT_ENVELOPE);
+    // Behind the dimensions drawer now, which is shut on load.
+    fireEvent.click(screen.getByText('Dimensions'));
     expect(screen.getByText('Create surfaces')).toBeTruthy();
   });
 });

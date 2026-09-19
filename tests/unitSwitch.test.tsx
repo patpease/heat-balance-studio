@@ -92,8 +92,16 @@ describe('the location strip follows the unit switch', () => {
   });
 });
 
-const envelope = (units: UnitSystem) =>
-  render(
+/**
+ * The sketch-box fields live behind the dimensions drawer, which is shut on
+ * load. Every test below is about what those fields say once they are on
+ * screen, so the helper opens it — the drawer's own behaviour is pinned in
+ * `tests/dimensionsDrawer.test.tsx` instead.
+ */
+const openDimensions = () => fireEvent.click(screen.getByText('Dimensions'));
+
+const envelope = (units: UnitSystem) => {
+  const result = render(
     <EnvelopePanel
       envelope={SAMPLE_ENVELOPE}
       gains={SAMPLE_GAINS}
@@ -107,6 +115,9 @@ const envelope = (units: UnitSystem) =>
       exporting={false}
     />,
   );
+  openDimensions();
+  return result;
+};
 
 describe('the sketch-box fields carry a unit and convert', () => {
   it('shows length and width in feet under IP', () => {
@@ -198,6 +209,7 @@ describe('a box entered in feet is a box in feet', () => {
         exporting={false}
       />,
     );
+    openDimensions();
     const u = LABELS[units].length;
     for (const [name, value] of [[`Box length, ${u}`, length], [`Box width, ${u}`, width]] as const) {
       const input = screen.getByLabelText(name);
@@ -249,6 +261,7 @@ describe('a box entered in feet is a box in feet', () => {
         exporting={false}
       />,
     );
+    openDimensions();
     fireEvent.change(input(), { target: { value: '12' } });
     fireEvent.blur(input());
     fireEvent.click(screen.getByText('Create surfaces'));
