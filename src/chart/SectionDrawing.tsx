@@ -1,8 +1,9 @@
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 
 import { GROUND_LINES, PERSON_HEADS } from '../model/buildingTypes';
 import type { BuildingType, SurfaceSlot } from '../model/types';
 import { arrowGeometry, SHAFT_LENGTH } from './arrowScale';
+import { useWidth } from './useWidth';
 
 /**
  * The section drawing.
@@ -44,6 +45,193 @@ export interface SectionDrawingProps {
    * the envelope panel without shrinking the building.
    */
   readonly align?: 'centre' | 'left' | 'right';
+  /**
+   * Words beside the arrows, or numbered markers keyed elsewhere.
+   *
+   * The labels are 13 units in a 1,028-unit drawing, which on a phone is about
+   * 4 px — and at a size that could be read they would collide with the
+   * building. `markers` puts a numbered dot where each label sits instead,
+   * drawn at a fixed size ON SCREEN rather than in drawing units, and the
+   * envelope panel prints the key. See `markerNumbers` for the numbering.
+   */
+  readonly labelMode?: 'text' | 'markers';
+}
+
+/**
+ * The order markers are numbered in.
+ *
+ * The envelope table's own order — five surfaces, then ventilation, then
+ * infiltration — and the gains after it, so the numbers down the cards run
+ * 1, 2, 3 without a jump. Fixed rather than read off the massing, whose anchor
+ * order is whatever the canvas happened to draw first.
+ */
+export const MARKER_ORDER: readonly SurfaceSlot[] = [
+  'loss-walls',
+  'loss-windows',
+  'loss-roof',
+  'loss-ground-floor',
+  'loss-exposed-floor',
+  'loss-ventilation',
+  'loss-infiltration',
+  'gain-people',
+  'gain-lighting',
+  'gain-misc-equipment',
+  'gain-it-equipment',
+];
+
+/**
+ * Which number each drawn arrow carries.
+ *
+ * Only arrows that are DRAWN are numbered, counting in MARKER_ORDER. A zero
+ * term draws nothing (see the anchors below), and a number with no arrow would
+ * send the reader looking for one — so an office with no exposed floor runs
+ * 1–4 and then 5 is ventilation, rather than skipping a number that means
+ * nothing on this building. The panel reads the same map for its cards and
+ * its key, so the two cannot disagree.
+ */
+export function markerNumbers(
+  type: BuildingType,
+  terms: readonly SectionTerm[],
+  reference: number | null,
+): Map<SurfaceSlot, number> {
+  const anchored = new Set(type.anchors.map((anchor) => anchor.slot));
+  const drawn = new Map(terms.map((term) => [term.slot, term]));
+  const numbers = new Map<SurfaceSlot, number>();
+  for (const slot of MARKER_ORDER) {
+    const term = drawn.get(slot);
+    if (!term || !anchored.has(slot) || !arrowGeometry(term.watts, reference).visible) continue;
+    numbers.set(slot, numbers.size + 1);
+  }
+  return numbers;
+}
+
+function closestOnSegment(
+  point: { x: number; y: number },
+  segment: { x1: number; y1: number; x2: number; y2: number },
+): { x: number; y: number } {
+  const dx = segment.x2 - segment.x1;
+  const dy = segment.y2 - segment.y1;
+  const lengthSquared = dx * dx + dy * dy;
+  const t =
+    lengthSquared === 0
+      ? 0
+      : Math.min(1, Math.max(0, ((point.x - segment.x1) * dx + (point.y - segment.y1) * dy) / lengthSquared));
+  return { x: segment.x1 + t * dx, y: segment.y1 + t * dy };
+}
+
+function normalOf(segment: { x1: number; y1: number; x2: number; y2: number }): [number, number] {
+  const length = Math.hypot(segment.x2 - segment.x1, segment.y2 - segment.y1) || 1;
+  return [-(segment.y2 - segment.y1) / length, (segment.x2 - segment.x1) / length];
+}
+
+/** Marker diameter and numeral size, in CSS pixels. */
+const MARKER_PX = 20;
+const MARKER_FONT_PX = 11;
+
+export interface MarkerSpot {
+  readonly slot: SurfaceSlot;
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * Where each marker sits: just past its own arrowhead.
+ *
+ * Not where the label sat. The labels are placed against the building so the
+ * name stays attached to its surface at any arrow length — but a 20 px dot is
+ * far taller than 13 units of text, and on the office's left wall the
+ * ventilation and infiltration labels sit one line apart, so their dots landed
+ * on each other and on the ventilation shaft. Past the head, a dot reads as a
+ * callout on the arrow it numbers, and two arrows leaving the same wall at
+ * different lengths end in different places.
+ *
+ * Two corrections follow, both measured in drawing units:
+ *
+ *   - clamped inside the viewBox, because the crop is cut to the longest arrow
+ *     and a dot beyond that arrow's head would be cut in half;
+ *   - stepped sideways off any OTHER arrow it lands on. Ventilation and
+ *     infiltration leave the same wall at the same angle, so the short one's
+ *     dot ends up on the long one's shaft; moving it further out along its own
+ *     line would only slide it along the other arrow, so it moves across it;
+ *   - pushed apart where two dots still touch, the LATER one moving further
+ *     out along its own arrow, so the one it moves is never pushed into the
+ *     building.
+ *
+ * Pure, so the tests can walk every massing without a DOM.
+ */
+export function markerSpots(
+  type: BuildingType,
+  terms: readonly SectionTerm[],
+  reference: number | null,
+  radius: number,
+): MarkerSpot[] {
+  const [minX = 0, minY = 0, width = 0, height = 0] = type.viewBox.split(/\s+/).map(Number);
+  const bySlot = new Map(terms.map((term) => [term.slot, term]));
+  const numbered = markerNumbers(type, terms, reference);
+  const gap = radius * 0.25;
+  const spots: MarkerSpot[] = [];
+
+  // Every drawn arrow as a segment from its anchor to its tip, with the
+  // half-width it is drawn at, so a dot can be kept off shafts as well as off
+  // other dots.
+  const shafts = [...numbered.keys()].flatMap((slot) => {
+    const anchor = type.anchors.find((candidate) => candidate.slot === slot);
+    const term = bySlot.get(slot);
+    if (!anchor || !term) return [];
+    const geometry = arrowGeometry(term.watts, reference);
+    const radians = (anchor.rotate * Math.PI) / 180;
+    const length = SHAFT_LENGTH * geometry.scale + 6 * geometry.headScale;
+    return [{
+      slot,
+      x1: anchor.x,
+      y1: anchor.y,
+      x2: anchor.x + Math.cos(radians) * length,
+      y2: anchor.y + Math.sin(radians) * length,
+      // The head is 11 units either side at scale 1, and wider than the shaft.
+      half: 11 * geometry.headScale,
+    }];
+  });
+
+  for (const slot of numbered.keys()) {
+    const anchor = type.anchors.find((candidate) => candidate.slot === slot);
+    const term = bySlot.get(slot);
+    if (!anchor || !term) continue;
+    const geometry = arrowGeometry(term.watts, reference);
+    const radians = (anchor.rotate * Math.PI) / 180;
+    const along = (distance: number) => ({
+      x: anchor.x + Math.cos(radians) * distance,
+      y: anchor.y + Math.sin(radians) * distance,
+    });
+    const clamp = (point: { x: number; y: number }) => ({
+      x: Math.min(minX + width - radius, Math.max(minX + radius, point.x)),
+      y: Math.min(minY + height - radius, Math.max(minY + radius, point.y)),
+    });
+
+    // The head's point is 6 units past its origin, scaled with it.
+    let distance = SHAFT_LENGTH * geometry.scale + 6 * geometry.headScale + radius + gap;
+    let point = clamp(along(distance));
+    for (const shaft of shafts) {
+      if (shaft.slot === slot) continue;
+      const near = closestOnSegment(point, shaft);
+      const clearance = radius + shaft.half + gap;
+      const apart = Math.hypot(point.x - near.x, point.y - near.y);
+      if (apart >= clearance) continue;
+      // Directly on the line gives no direction to move in; take the normal.
+      const [ux, uy] =
+        apart > 1e-6
+          ? [(point.x - near.x) / apart, (point.y - near.y) / apart]
+          : normalOf(shaft);
+      point = clamp({ x: near.x + ux * clearance, y: near.y + uy * clearance });
+    }
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const clash = spots.find((spot) => Math.hypot(spot.x - point.x, spot.y - point.y) < radius * 2 + gap);
+      if (!clash) break;
+      distance += radius * 2 + gap - Math.hypot(clash.x - point.x, clash.y - point.y);
+      point = clamp(along(distance));
+    }
+    spots.push({ slot, ...point });
+  }
+  return spots;
 }
 
 export const LOSS_SLOTS = new Set<SurfaceSlot>([
@@ -165,7 +353,17 @@ export function SectionDrawing({
   selected = null,
   onSelect,
   align = 'centre',
+  labelMode = 'text',
 }: SectionDrawingProps) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const { width: shownWidth } = useWidth(svgRef);
+  // Drawing units per CSS pixel. The markers are sized in pixels and drawn in
+  // units, so they come out the same size on screen at any width. On a phone
+  // the drawing is width-bound, which is what makes this ratio the right one.
+  const viewBoxWidth = Number(type.viewBox.split(/\s+/)[2]) || 1028;
+  const perPixel = shownWidth > 0 ? viewBoxWidth / shownWidth : 1;
+  const numbers = labelMode === 'markers' ? markerNumbers(type, terms, reference) : null;
+
   // Ids must be unique per instance: the export clone mounts a second copy of
   // this drawing, and a duplicate filter id would have one steal the other's.
   const uid = useId().replace(/:/g, '');
@@ -177,7 +375,9 @@ export function SectionDrawing({
 
   return (
     <svg
+      ref={svgRef}
       viewBox={type.viewBox}
+      data-labels={numbers ? 'markers' : 'text'}
       role="img"
       aria-label={`${type.label} section: envelope heat loss against internal heat gain`}
       preserveAspectRatio={
@@ -300,7 +500,34 @@ export function SectionDrawing({
         );
       })}
 
-      {showLabels && (
+      {showLabels && numbers && (
+        <g fontFamily="IBM Plex Mono, monospace" fontWeight="600" aria-hidden="true">
+          {markerSpots(type, terms, reference, (MARKER_PX / 2) * perPixel).map((spot) => (
+            <g key={spot.slot} data-marker={spot.slot}>
+              <circle
+                cx={spot.x}
+                cy={spot.y}
+                r={(MARKER_PX / 2) * perPixel}
+                fill={LOSS_SLOTS.has(spot.slot) ? 'var(--loss)' : 'var(--gain)'}
+                stroke="var(--label-halo)"
+                strokeWidth={2 * perPixel}
+              />
+              <text
+                x={spot.x}
+                y={spot.y}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={MARKER_FONT_PX * perPixel}
+                fill="var(--panel)"
+              >
+                {numbers.get(spot.slot)}
+              </text>
+            </g>
+          ))}
+        </g>
+      )}
+
+      {showLabels && !numbers && (
         <g
           fontFamily="IBM Plex Mono, monospace"
           fontSize="13"

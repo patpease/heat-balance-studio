@@ -145,6 +145,22 @@ number that no user ever had.
   reference per project, and hold it constant across the 24 hours so scrubbing
   shows the gains genuinely collapsing overnight.
 
+## The phone layout
+
+Under 600 px **of panel width** (a container query, and `COMPACT_BELOW` in
+`chart/useWidth.ts` for the JS half), the envelope table becomes cards, the
+section drawing swaps its labels for numbered markers, and the 24-hour chart
+is drawn at the width it is shown. `docs/design-system.md` has the rules.
+
+Two traps:
+
+- **A box that measures 0 is desktop, not phone.** jsdom reports every width as
+  0, and the export's off-screen copy relies on measuring wide. Treating 0 as
+  narrow would put every test and every export on the phone path.
+- **An export must never be the phone layout.** When the live figure is
+  compact, `App.shoot` mounts a desktop copy off screen and shoots that.
+  Phone and desktop exports are byte-identical; keep it that way.
+
 ## Three generators, and nothing between them typed by hand
 
 ```
@@ -224,6 +240,7 @@ same offset, so the two cannot disagree.
 | Every type the engine works in, and why each field exists | `src/model/types.ts` |
 | The three Worker settings that fail quietly | `wrangler.jsonc` |
 | The palette, both themes, and the contrast correction | `src/ui/tokens.css` |
+| Phone layout, breakpoints, touch targets, and why exports ignore them | `docs/design-system.md` |
 | The standing scope statements | `src/config/branding.ts` |
 
 ## The timezone bug, and why it is worth knowing about

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactElement } from 'react';
 
 import { BalanceChart } from '../chart/BalanceChart';
 import { BRAND } from '../config/branding';
@@ -25,6 +25,7 @@ import { ScopePanel } from './ScopePanel';
 import { DEFAULT_VENTILATION } from '../model/ventilation';
 import type { Ventilation } from '../model/ventilation';
 import { ThemeIcon } from './ThemeIcon';
+import { withOffscreen } from './offscreen';
 import { useTheme } from './theme';
 import type { ThemeChoice } from './theme';
 import { BalancePointBand, Verdict } from './Verdict';
@@ -145,19 +146,44 @@ export function App() {
     return source ? `${source.label} — edited` : 'Edited';
   })();
 
-  const shoot = async (container: HTMLDivElement | null, filename: string, caption: string) => {
-    const svg = container?.querySelector('svg');
-    if (!svg) return;
+  /**
+   * Export whichever figure `container` holds — or, when the live one is its
+   * phone layout, the desk layout of the same figure.
+   *
+   * `standard` is that desk-layout figure as an element, and it is used only
+   * when the live SVG says it is not already standard. A desk therefore
+   * exports exactly what it did before; a phone mounts `standard` off screen
+   * and exports that. See offscreen.tsx for why.
+   */
+  const shoot = async (
+    container: HTMLElement | null,
+    filename: string,
+    caption: string,
+    standard: ReactElement,
+  ) => {
+    const live = container?.querySelector('svg');
+    if (!live) return;
     setBusy(filename);
     try {
-      downloadBlob(await exportPng(svg as SVGSVGElement, { filename, caption }), filename);
+      const phoneLayout =
+        live.getAttribute('data-layout') === 'compact' || live.getAttribute('data-labels') === 'markers';
+      const blob = phoneLayout
+        ? await withOffscreen(standard, 880, async (host) => {
+            const svg = host.querySelector('svg');
+            if (!svg) throw new Error('The export copy rendered no drawing.');
+            return exportPng(svg, { filename, caption });
+          })
+        : await exportPng(live as SVGSVGElement, { filename, caption });
+      downloadBlob(blob, filename);
     } finally {
       setBusy(null);
     }
   };
 
+  const chartProps = { result, floorArea: envelope.floorArea, units, hoveredHour, onHoverHour: setHoveredHour, detailed };
+
   return (
-    <main style={{ maxWidth: 1340, margin: '0 auto', padding: '10px 20px 40px', display: 'grid', gap: 7 }}>
+    <main className="app-main">
       {/* One bar. The studio eyebrow, name and the tool's question sit on a
           single line so the fold budget goes to the drawing and the chart. */}
       <header className="panel" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '7px 14px', flexWrap: 'wrap' }}>
@@ -249,8 +275,8 @@ export function App() {
             units={units}
             scrubHour={hoveredHour}
             onChange={setEnvelope}
-            onExport={() =>
-              shoot(sectionRef.current, 'heat-balance-section.png', `${site.label} · ${buildingType}`)
+            onExport={(standard) =>
+              shoot(sectionRef.current, 'heat-balance-section.png', `${site.label} · ${buildingType}`, standard)
             }
             exporting={busy === 'heat-balance-section.png'}
           />
@@ -259,21 +285,11 @@ export function App() {
         {/* The title and the export button float over the chart rather than
             sitting in a bar above it. That bar cost 56 px on both panels, and
             the pixels are worth more to the drawing. */}
-        <section className="panel" style={{ padding: 0, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-          <div
-            style={{
-              position: 'absolute',
-              top: 8,
-              left: 14,
-              right: 10,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 10,
-              pointerEvents: 'none',
-              zIndex: 1,
-            }}
-          >
+        <section className="panel cq" style={{ padding: 0, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+          {/* `.chart-bar` and `.chart-body` rather than inline: on a phone the
+              bar stops floating, because there the chart has no empty top
+              margin for it to float in and the buttons sat on the axis. */}
+          <div className="chart-bar">
             <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>24-hour balance</h2>
             <span style={{ display: 'flex', gap: 6, pointerEvents: 'auto' }}>
               <button
@@ -291,7 +307,12 @@ export function App() {
               <button
                 type="button"
                 onClick={() =>
-                  shoot(chartRef.current, 'heat-balance-chart.png', `${site.label} · ${buildingType}`)
+                  shoot(
+                    chartRef.current,
+                    'heat-balance-chart.png',
+                    `${site.label} · ${buildingType}`,
+                    <BalanceChart {...chartProps} />,
+                  )
                 }
                 disabled={busy !== null}
                 style={exportButton}
@@ -300,15 +321,8 @@ export function App() {
               </button>
             </span>
           </div>
-          <div ref={chartRef} style={{ padding: '30px 14px 12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <BalanceChart
-              result={result}
-              floorArea={envelope.floorArea}
-              units={units}
-              hoveredHour={hoveredHour}
-              onHoverHour={setHoveredHour}
-              detailed={detailed}
-            />
+          <div ref={chartRef} className="chart-body">
+            <BalanceChart {...chartProps} />
           </div>
         </section>
       </div>

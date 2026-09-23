@@ -204,7 +204,7 @@ export function GainsPanel({
   );
 
   return (
-    <section className="panel" style={{ padding: 0, overflow: 'hidden' }}>
+    <section className="panel cq" style={{ padding: 0, overflow: 'hidden' }}>
       <header
         style={{
           display: 'flex',
@@ -301,10 +301,10 @@ export function GainsPanel({
           return (
             <Fragment key={row.key}>
             <div style={{ borderBottom: '1px solid var(--border)', padding: '10px 0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+              <div className="gains-line" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
                 {rowLabel(row.key, row.label)}
 
-                <div style={{ ...values }}>
+                <div className="gains-values" style={{ ...values }}>
                   {row.key === 'people' && (
                     <>
                       {gains.occupancy.mode === 'density'
@@ -369,14 +369,14 @@ export function GainsPanel({
               </div>
 
               {row.key === 'people' && gains.occupancy.mode === 'density' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: `8px 0 0 ${SUB_INDENT}px` }}>
+                <div className="gains-sub" style={{ display: 'flex', alignItems: 'center', gap: 6, margin: `8px 0 0 ${SUB_INDENT}px` }}>
                   {density('sensiblePerPerson', gains.occupancy.sensiblePerPerson, 0, 'heat', 'Sensible heat per person')}
                   <span style={unit}>{labels.perPersonHeat} sensible per person</span>
                 </div>
               )}
 
               {row.key === 'itEquipment' && (
-                <div style={{ display: 'flex', gap: 6, margin: `8px 0 0 ${SUB_INDENT}px`, flexWrap: 'wrap' }}>
+                <div className="gains-sub" style={{ display: 'flex', gap: 6, margin: `8px 0 0 ${SUB_INDENT}px`, flexWrap: 'wrap' }}>
                   {IT_PRESETS.map((preset) => (
                     <button
                       key={preset.id}
@@ -419,6 +419,7 @@ export function GainsPanel({
                 <div
                   role="group"
                   aria-label="IT cooling"
+                  className="gains-sub"
                   style={{ display: 'flex', gap: 6, margin: `6px 0 0 ${SUB_INDENT}px`, flexWrap: 'wrap', alignItems: 'center' }}
                 >
                   <span style={unit}>Cooled by</span>
@@ -464,7 +465,7 @@ export function GainsPanel({
               )}
 
               {isOpen && (
-                <p style={{ ...helpText, margin: `8px 0 0 ${SUB_INDENT}px` }}>
+                <p className="gains-sub" style={{ ...helpText, margin: `8px 0 0 ${SUB_INDENT}px` }}>
                   {row.help}
                   {row.key === 'itEquipment' && <> {HELP.itCooling}</>}
                 </p>
@@ -475,10 +476,10 @@ export function GainsPanel({
                 occupancy: the per-person rate above decides most of it. */}
             {row.key === 'people' && (
               <div style={{ borderBottom: '1px solid var(--border)', padding: '10px 0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                <div className="gains-line" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
                   {rowLabel('ventilation', 'Ventilation')}
 
-                  <div style={{ ...values }}>
+                  <div className="gains-values" style={{ ...values }}>
                     <NumberCell
                       label="Ventilation per person"
                       value={showPerPerson(ventilation.perPerson)}
@@ -521,6 +522,7 @@ export function GainsPanel({
                 </div>
 
                 <div
+                  className="gains-sub"
                   style={{
                     display: 'flex',
                     gap: 6,
@@ -591,7 +593,7 @@ export function GainsPanel({
                 </div>
 
                 {ventOpen && (
-                  <p style={{ ...helpText, margin: `8px 0 0 ${SUB_INDENT}px` }}>
+                  <p className="gains-sub" style={{ ...helpText, margin: `8px 0 0 ${SUB_INDENT}px` }}>
                     {HELP.ventilationRate} {HELP.ventilationSchedule}
                     {ventilation.effectiveness > 0 && (
                       <>

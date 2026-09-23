@@ -164,3 +164,43 @@
   --s-misc: #00B2B5;
   --s-it: #7ED7FE;
 }
+
+/*
+ * Layout tokens.
+ *
+ * Not colours, so they are declared ONCE: nothing here changes with the theme,
+ * and a second and third copy would be three places to forget. The palette's
+ * three-block rule does not apply, and tests/theme.test.ts only reads the
+ * palette blocks.
+ *
+ * The breakpoints themselves cannot be tokens — a custom property is not
+ * allowed in a media or container query — so they are listed here and in
+ * docs/design-system.md, and the numbers in styles.css must match:
+ *
+ *   1100px  viewport   the paired rows stack into one column
+ *    640px  viewport   phone chrome: tighter gutter, footer stacks
+ *    600px  container a panel switches to its phone layout: cards for the
+ *                      envelope table, markers on the section, the compact
+ *                      chart. `COMPACT_BELOW` in chart/useWidth.ts is the JS
+ *                      half of the same number.
+ *
+ * The phone layout keys on the PANEL's width, not the viewport's, so the
+ * drawing, the cards and the chart all flip at the same moment — they measure
+ * the same kind of box.
+ */
+:root {
+  /* Page gutter. Tighter on a phone, where 20px a side is 10% of the screen. */
+  --gutter: 20px;
+  /* The smallest thing a finger is asked to hit. Apple's 44pt, which is also
+     WCAG 2.5.5's AAA target. Applied only to a coarse pointer. */
+  --tap: 44px;
+  /* Below 16px, iOS Safari zooms the whole page when a field takes focus and
+     does not zoom back out. */
+  --field-font-touch: 16px;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --gutter: 10px;
+  }
+}

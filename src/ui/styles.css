@@ -193,3 +193,321 @@ h1, .display {
     gap: 16px;
   }
 }
+
+/* ---------------------------------------------------------------- page --- */
+
+/* The page's own padding, with room for a notch or a home indicator. The
+   insets are zero everywhere but a phone in landscape or a full-screen web
+   app, and `viewport-fit=cover` in index.html is what lets them be read. */
+.app-main {
+  max-width: 1340px;
+  margin: 0 auto;
+  display: grid;
+  gap: 7px;
+  padding:
+    10px
+    max(var(--gutter), env(safe-area-inset-right))
+    max(40px, env(safe-area-inset-bottom))
+    max(var(--gutter), env(safe-area-inset-left));
+}
+
+/* ---------------------------------------------------------------- touch ---
+ * A finger is not a pointer. Everything here is keyed on `pointer: coarse`
+ * rather than on width, because a narrow window on a desk has a mouse and a
+ * tablet in landscape does not. */
+@media (pointer: coarse) {
+  /* Below 16px iOS zooms the page on focus and leaves it zoomed. !important
+     because every field here sets its size inline, at 10–13px, for the desk. */
+  input,
+  select,
+  textarea {
+    font-size: var(--field-font-touch) !important;
+  }
+
+  button,
+  select,
+  .numbercell {
+    min-height: var(--tap);
+  }
+
+  /* The flush cells are invisible until touched, which on a desk is hover.
+     A phone has no hover, so a field has to look like one before it is hit. */
+  .numbercell {
+    border-color: var(--border) !important;
+  }
+}
+
+/* -------------------------------------------------------------- panels ---
+ * Panels that change layout on a phone opt into being a container, so the
+ * layout follows the width of the box rather than of the window. 600 is the
+ * number in chart/useWidth.ts; the two must move together. */
+.cq {
+  container-type: inline-size;
+}
+
+/* ------------------------------------------------ building definition --- */
+
+/* The title and its buttons float over the drawing's empty top margin on a
+   desk. On a phone the title wraps and a floating bar two lines deep lands on
+   the roof, so there it sits in the flow instead. */
+.env-bar {
+  position: absolute;
+  top: 8px;
+  left: 14px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.env-stage {
+  padding: 22px 12px 0;
+  display: flex;
+  align-items: flex-start;
+}
+
+.env-drawer {
+  flex: 0 0 auto;
+  width: 142px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 26px;
+}
+
+.env-drawer-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.env-airtightness {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* A marker's number, on the drawing's key and on a card. Loss and gain carry
+   marks anywhere; the numeral is panel-coloured on the mark, so neither ever
+   sits as coloured text on the page ground. */
+.env-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--panel);
+  background: var(--loss);
+  vertical-align: 1px;
+  flex: none;
+}
+
+.env-badge[data-tone='gain'] {
+  background: var(--gain);
+}
+
+.env-key {
+  list-style: none;
+  margin: 6px 16px 0;
+  padding: 0 0 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 4px 12px;
+  font-size: 11px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.env-key li {
+  display: flex;
+  align-items: center;
+}
+
+@container (max-width: 599px) {
+  .env-bar {
+    position: static;
+    padding: 10px 12px 0 14px;
+    pointer-events: auto;
+  }
+
+  .env-stage {
+    padding-top: 6px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* The drawer opens ABOVE the drawing on a phone, two fields to a row. Beside
+     it, 142 px of fields left the building 180 px to be drawn in. */
+  .env-drawer {
+    width: auto;
+    padding-top: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+  }
+
+  .env-drawer-apply {
+    grid-column: 1 / -1;
+  }
+
+  /* --- the table, as cards ---
+   * One card per row: the name and its loss on the first line, the three
+   * fields under them with their column heading printed above each. The cell
+   * styles are inline for the table, so the overrides need !important; they
+   * are all inside this query and none of them reaches the desk. */
+  .env-table,
+  .env-table tbody {
+    display: block;
+  }
+
+  .env-table thead {
+    display: none;
+  }
+
+  .env-table tr.env-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .env-table td {
+    display: block;
+    padding: 0 !important;
+    border-bottom: 0 !important;
+    text-align: left !important;
+    min-width: 0;
+  }
+
+  .env-table td.env-name {
+    grid-row: 1;
+    grid-column: 1 / 3;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+  }
+
+  .env-table td.env-loss {
+    grid-row: 1;
+    grid-column: 3;
+    text-align: right !important;
+    align-self: center;
+  }
+
+  .env-table td.env-wide {
+    grid-column: 1 / -1;
+  }
+
+  .env-table td.env-ratio {
+    grid-column: 2 / -1;
+    align-self: end;
+    padding-bottom: 6px !important;
+  }
+
+  /* Bottom-aligned, so the three fields share a baseline when one heading
+     wraps — the U-value's IP unit is two lines at this width and the others
+     are one. */
+  .env-table td.env-field {
+    align-self: end;
+  }
+
+  .env-table td.env-field::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 2px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* A card's fields fill their third of the row and read as fields: the
+     flush, borderless cell is a desk idiom that relies on hover to announce
+     itself. */
+  .env-table td.env-field .numbercell {
+    width: 100% !important;
+    text-align: left !important;
+    border-color: var(--border) !important;
+    background: var(--page) !important;
+  }
+
+  .env-airtightness {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+/* ---------------------------------------------------- 24-hour balance --- */
+
+.chart-bar {
+  position: absolute;
+  top: 8px;
+  left: 14px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.chart-body {
+  padding: 30px 14px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@container (max-width: 599px) {
+  .chart-bar {
+    position: static;
+    padding: 10px 12px 0 14px;
+  }
+
+  .chart-body {
+    padding-top: 8px;
+  }
+}
+
+/* ------------------------------------------------------ internal gains --- */
+
+@container (max-width: 599px) {
+  /* The label and its value on one line, the strip under them at full width.
+     The fixed 256 px value column exists so that five strips start in one
+     place side by side; stacked, they all start at the left edge anyway. */
+  .gains-values {
+    width: auto !important;
+    flex: 1 1 auto !important;
+  }
+
+  .gains-line > .schedule-bars {
+    flex-basis: 100%;
+    width: 100%;
+    height: auto;
+  }
+
+  .gains-sub {
+    margin-left: 0 !important;
+  }
+}
+
+/* -------------------------------------------------------- how it works --- */
+
+@container (max-width: 599px) {
+  .how-steps {
+    flex-direction: column;
+  }
+}

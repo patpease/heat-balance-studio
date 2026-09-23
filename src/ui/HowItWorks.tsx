@@ -22,7 +22,7 @@ import { HOW_IT_WORKS } from '../config/copy';
  */
 export function HowItWorks() {
   return (
-    <section className="panel" style={{ padding: '9px 14px', display: 'grid', gap: 6, alignContent: 'start' }}>
+    <section className="panel cq" style={{ padding: '9px 14px', display: 'grid', gap: 6, alignContent: 'start' }}>
       <div style={{ display: 'flex', gap: 9, alignItems: 'baseline', flexWrap: 'wrap' }}>
         <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>
           How it works
@@ -31,6 +31,7 @@ export function HowItWorks() {
       </div>
 
       <ol
+        className="how-steps"
         style={{
           margin: 0,
           padding: 0,

@@ -14,6 +14,7 @@ import {
   ticksUpTo,
 } from './scales';
 import { seriesFrom } from './series';
+import { useWidth } from './useWidth';
 
 /**
  * The 24-hour balance.
@@ -85,7 +86,7 @@ import { seriesFrom } from './series';
  * one that answers the question — is one button away.
  */
 
-const WIDTH = 880;
+const STANDARD_WIDTH = 880;
 /**
  * 560, not 380.
  *
@@ -95,9 +96,55 @@ const WIDTH = 880;
  * two curves, and vertical resolution is what makes that gap legible. Text is
  * unaffected — the horizontal scale sets the type size, and that has not moved.
  */
-const HEIGHT = 560;
+const STANDARD_HEIGHT = 560;
 /** `right` is 52, not 20: the outdoor-temperature axis and its labels live there. */
-const PAD = { top: 22, right: 52, bottom: 46, left: 54 };
+const STANDARD_PAD = { top: 22, right: 52, bottom: 46, left: 54 };
+
+/**
+ * The two layouts: one drawing, sized two ways.
+ *
+ * The standard one is 880 wide and scales with its box, which on a desk is
+ * about 1:1 and on a phone is 0.4 — so its 11-unit ticks rendered at 4.5 px.
+ * Scaling a desktop picture down is not a phone layout.
+ *
+ * The compact one is drawn at the width it is SHOWN at, so a unit is a pixel
+ * and the type is the size it says. It is taller for its width, because the
+ * reading is the vertical gap between two curves and a phone has height to
+ * spare; its margins are tighter, and it ticks every six hours instead of
+ * three, because eight labels do not fit across 330 px of plot.
+ *
+ * Nothing about the data changes between them, and the export always takes the
+ * standard one — see useWidth.
+ */
+interface Layout {
+  readonly width: number;
+  readonly height: number;
+  readonly pad: { readonly top: number; readonly right: number; readonly bottom: number; readonly left: number };
+  readonly hourTicks: readonly number[];
+  readonly compact: boolean;
+}
+
+const STANDARD: Layout = {
+  width: STANDARD_WIDTH,
+  height: STANDARD_HEIGHT,
+  pad: STANDARD_PAD,
+  hourTicks: [0, 3, 6, 9, 12, 15, 18, 21],
+  compact: false,
+};
+
+function compactLayout(width: number): Layout {
+  return {
+    width,
+    // 0.85 of the width, held between a height that still shows the gap and
+    // one that leaves the readout on the same screen as the curves.
+    height: Math.min(380, Math.max(260, Math.round(width * 0.85))),
+    // Bottom carries two caption lines rather than one: the axis sentence is
+    // 390 px of mono at this size and the plot is not.
+    pad: { top: 16, right: 40, bottom: 58, left: 40 },
+    hourTicks: [0, 6, 12, 18],
+    compact: true,
+  };
+}
 
 /*
  * A key was drawn inside the SVG here for one revision, so that an exported
@@ -131,6 +178,10 @@ export function BalanceChart({
   detailed = false,
 }: BalanceChartProps) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const figureRef = useRef<HTMLElement>(null);
+  const measured = useWidth(figureRef);
+  const layout = measured.compact ? compactLayout(measured.width) : STANDARD;
+  const { width: WIDTH, height: HEIGHT, pad: PAD } = layout;
   const [focusHour, setFocusHour] = useState<number | null>(null);
   const uid = useId().replace(/:/g, '');
   const hatchId = `hb-hatch-${uid}`;
@@ -233,10 +284,11 @@ export function BalanceChart({
   };
 
   return (
-    <figure style={{ margin: 0 }}>
+    <figure ref={figureRef} style={{ margin: 0 }}>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        data-layout={layout.compact ? 'compact' : 'standard'}
         role="img"
         aria-label={
           detailed
@@ -257,7 +309,16 @@ export function BalanceChart({
            eleven components, which needs both an exposed floor and air-cooled
            IT. The budget is a promise about the SIMPLE view, which is the one
            that answers the question. */
-        style={{ display: 'block', width: '100%', height: 'auto', maxHeight: 420, touchAction: 'none' }}
+        /* pan-y, not none. `none` made the chart a 300 px patch of a phone
+           screen that the page could not be scrolled through; pan-y leaves the
+           vertical swipe to the page and gives a sideways one to the scrub. */
+        style={{
+          display: 'block',
+          width: '100%',
+          height: 'auto',
+          maxHeight: layout.compact ? undefined : 420,
+          touchAction: 'pan-y',
+        }}
         onPointerMove={(event) => onHoverHour(hourFromEvent(event.clientX))}
         onPointerLeave={() => onHoverHour(null)}
         onFocus={() => setFocusHour(result.worstHour)}
@@ -390,15 +451,27 @@ export function BalanceChart({
         <circle cx={x(readOut.hour)} cy={y(convert(readOut.gain / area))} r="4" fill="var(--gain)" />
 
         <line x1={PAD.left} y1={HEIGHT - PAD.bottom} x2={WIDTH - padRight} y2={HEIGHT - PAD.bottom} stroke="var(--muted)" strokeWidth="1.4" />
-        {[0, 3, 6, 9, 12, 15, 18, 21].map((hour) => (
+        {layout.hourTicks.map((hour) => (
           <text key={hour} x={x(hour)} y={HEIGHT - PAD.bottom + 18} textAnchor="middle" fontSize="11" fill="var(--muted)" fontFamily="IBM Plex Mono, monospace">
             {String(hour).padStart(2, '0')}
           </text>
         ))}
-        <text x={(WIDTH + PAD.left - padRight) / 2} y={HEIGHT - 10} textAnchor="middle" fontSize="10.5" fill="var(--muted)" fontFamily="IBM Plex Mono, monospace">
-          hour of the design day, local standard time · {labels.heatFlux}
-          {!detailed && ` · right ${labels.temperature}`}
-        </text>
+        {layout.compact ? (
+          <text textAnchor="middle" fontSize="10.5" fill="var(--muted)" fontFamily="IBM Plex Mono, monospace">
+            <tspan x={(WIDTH + PAD.left - padRight) / 2} y={HEIGHT - 24}>
+              hour of the design day, local standard time
+            </tspan>
+            <tspan x={(WIDTH + PAD.left - padRight) / 2} y={HEIGHT - 9}>
+              {labels.heatFlux}
+              {!detailed && ` · right ${labels.temperature}`}
+            </tspan>
+          </text>
+        ) : (
+          <text x={(WIDTH + PAD.left - padRight) / 2} y={HEIGHT - 10} textAnchor="middle" fontSize="10.5" fill="var(--muted)" fontFamily="IBM Plex Mono, monospace">
+            hour of the design day, local standard time · {labels.heatFlux}
+            {!detailed && ` · right ${labels.temperature}`}
+          </text>
+        )}
       </svg>
 
       {/* The legend is a READOUT here, not a key.

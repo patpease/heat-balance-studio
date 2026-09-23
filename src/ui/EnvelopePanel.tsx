@@ -1,8 +1,10 @@
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
+import type { ReactElement } from 'react';
 
 import { referenceWatts } from '../chart/arrowScale';
-import { SectionDrawing } from '../chart/SectionDrawing';
+import { LOSS_SLOTS, markerNumbers, SectionDrawing } from '../chart/SectionDrawing';
 import type { SectionTerm } from '../chart/SectionDrawing';
+import { useWidth } from '../chart/useWidth';
 import { HELP } from '../config/copy';
 import { solve } from '../engine/balance';
 import { areasFromBox, DEFAULT_BOX } from '../engine/sketchBox';
@@ -51,7 +53,11 @@ export interface EnvelopePanelProps {
   /** The hour the chart is being hovered over, or null to sit on the worst. */
   readonly scrubHour: number | null;
   readonly onChange: (envelope: Envelope) => void;
-  readonly onExport: () => void;
+  /**
+   * Handed the drawing as it looks on a desk — labelled, not numbered — so the
+   * export can shoot that when this panel is showing its phone layout.
+   */
+  readonly onExport: (standard: ReactElement) => void;
   readonly exporting: boolean;
 }
 
@@ -91,6 +97,16 @@ export function EnvelopePanel({
   // Per instance: the PNG export mounts a second copy of this panel's drawing,
   // and aria-controls pointing at a duplicate id addresses the wrong one.
   const boxDrawerId = useId();
+  /**
+   * The panel's own width decides its layout, not the viewport's.
+   *
+   * Under 600 px the table becomes cards (a container query in styles.css) and
+   * the drawing swaps its labels for numbered markers (here). Both read the
+   * width of this one box, so there is no width at which the cards are
+   * showing and the drawing is still labelled, or the other way round.
+   */
+  const panelRef = useRef<HTMLElement>(null);
+  const { compact } = useWidth(panelRef);
 
   const result = useMemo(
     () => solve({ envelope, gains, conditions, designDay, ventilation }),
@@ -130,6 +146,17 @@ export function EnvelopePanel({
   const massing = buildingType(
     GAIN_PRESETS.find((preset) => preset.id === gains.sourceId)?.massing ?? 'office',
   );
+  // The same map the drawing numbers its markers from, so a card's badge and
+  // the dot on the drawing are one number rather than two that agree.
+  const numbers = compact ? markerNumbers(massing, terms, reference) : null;
+  const badge = (slot: SurfaceSlot) => {
+    const number = numbers?.get(slot);
+    return number === undefined ? null : (
+      <span className="env-badge" data-tone={LOSS_SLOTS.has(slot) ? 'loss' : 'gain'} aria-hidden="true">
+        {number}
+      </span>
+    );
+  };
 
   // The box is held in canonical SI like everything else; IP is a display
   // transform on the way into the field and back out of it. Length, width and
@@ -224,25 +251,14 @@ export function EnvelopePanel({
     } as const)[s.category];
 
   return (
-    <section className="panel" style={{ padding: 0, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+    <section ref={panelRef} className="panel env-panel cq" style={{ padding: 0, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
       {/* Title and actions float over the drawing instead of sitting in a bar
           above it. The bar cost 56 px and the drawing needs them more; the
           drawing's own margins are empty at the top, so nothing is covered. */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 8,
-          left: 14,
-          right: 10,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: 8,
-          flexWrap: 'wrap',
-          pointerEvents: 'none',
-          zIndex: 1,
-        }}
-      >
+      {/* Positioned by `.env-bar` rather than inline, because on a phone it
+          stops floating: the title wraps to two lines there and a floating
+          bar two lines deep sits on top of the roof. */}
+      <div className="env-bar">
         {/* Two items, not three. Wall-to-floor lived here for one revision and
             the bar could not hold it: title, ratio and export button came to
             624 px in a 620 px bar, so the button wrapped to a second line. It
@@ -274,7 +290,16 @@ export function EnvelopePanel({
           >
             Dimensions
           </button>
-          <button type="button" onClick={onExport} disabled={exporting} style={overlayButton}>
+          <button
+            type="button"
+            onClick={() =>
+              onExport(
+                <SectionDrawing type={massing} terms={terms} reference={reference} selected={selected} />,
+              )
+            }
+            disabled={exporting}
+            style={overlayButton}
+          >
             {exporting ? 'Exporting…' : 'PNG'}
           </button>
         </span>
@@ -293,26 +318,13 @@ export function EnvelopePanel({
           column is not rendered at all and the artwork re-centres into the
           margin it came from, so the panel at rest is the drawing and the loss
           table and nothing else. */}
-      <div style={{ padding: '22px 12px 0', display: 'flex', gap: boxOpen ? 10 : 0, alignItems: 'flex-start' }}>
+      <div className="env-stage" style={{ gap: boxOpen ? 10 : 0 }}>
         {/* paddingTop clears the floating title bar, which sits at top: 8 and
             ends around 28 — the panel title is directly above this column. */}
         {boxOpen && (
-        <div
-          id={boxDrawerId}
-          style={{
-            flex: '0 0 auto',
-            width: 142,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 4,
-            paddingTop: 26,
-          }}
-        >
+        <div id={boxDrawerId} className="env-drawer">
           {boxFields.map(({ key, caption, aria, decimals }) => (
-            <div
-              key={key}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}
-            >
+            <div key={key} className="env-drawer-field">
               {/* nowrap: "Length, ft" breaks after the comma at any width that
                   fits the field beside it, and a two-line caption on three of
                   the five rows makes the column taller than the drawing. */}
@@ -339,6 +351,7 @@ export function EnvelopePanel({
           <button
             type="button"
             onClick={applyBox}
+            className="env-drawer-apply"
             style={{
               font: 'inherit',
               fontSize: 10.5,
@@ -361,14 +374,36 @@ export function EnvelopePanel({
             terms={terms}
             reference={reference}
             selected={selected}
-            align={boxOpen ? 'right' : 'centre'}
+            align={boxOpen && !compact ? 'right' : 'centre'}
+            labelMode={compact ? 'markers' : 'text'}
             onSelect={(slot) => setSelected((current) => (current === slot ? null : slot))}
           />
         </div>
       </div>
 
+      {/* The key the markers need. Every numbered arrow is in it, gains too:
+          the cards below only cover the envelope's own rows, and a dot that is
+          explained nowhere on screen is worse than the 4 px word it replaced. */}
+      {numbers && numbers.size > 0 && (
+        <ol className="env-key" aria-label="Key to the numbered arrows">
+          {[...numbers].map(([slot, number]) => (
+            <li key={slot}>
+              <span className="env-badge" data-tone={LOSS_SLOTS.has(slot) ? 'loss' : 'gain'} aria-hidden="true">
+                {number}
+              </span>
+              {terms.find((term) => term.slot === slot)?.label}
+            </li>
+          ))}
+        </ol>
+      )}
+
       <div style={{ padding: '2px 16px 12px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        {/* A table on a desk and a stack of cards on a phone, from one DOM:
+            `.env-table` is re-laid-out by a container query and each cell
+            carries its column heading in `data-label` for the card to print.
+            Five columns in 330 px was the choice between clipping the loss
+            column and shrinking the type below reading size. */}
+        <table className="env-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
               {['Surface', `Area, ${labels.area}`, `U, ${labels.uValue}`, `R, ${labels.rValue}`, 'Loss at current hour'].map((h) => (
@@ -399,6 +434,7 @@ export function EnvelopePanel({
               return (
                 <tr
                   key={surface.id}
+                  className="env-row"
                   onClick={() => setSelected((current) => (current === slot ? null : slot))}
                   style={{
                     cursor: 'pointer',
@@ -406,10 +442,11 @@ export function EnvelopePanel({
                     opacity: empty ? 0.55 : 1,
                   }}
                 >
-                  <td style={{ padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
+                  <td className="env-name" style={{ padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
+                    {badge(slot)}
                     {surface.label}
                   </td>
-                  <td style={cell}>
+                  <td className="env-field" data-label={`Area, ${labels.area}`} style={cell}>
                     <NumberCell
                       label={`${surface.label} area`}
                       value={units === 'IP' ? toSqFt(surface.area) : surface.area}
@@ -419,7 +456,7 @@ export function EnvelopePanel({
                       }
                     />
                   </td>
-                  <td style={cell}>
+                  <td className="env-field" data-label={`U, ${labels.uValue}`} style={cell}>
                     <NumberCell
                       label={`${surface.label} U-value`}
                       value={units === 'IP' ? toBtuU(surface.uValue) : surface.uValue}
@@ -432,7 +469,7 @@ export function EnvelopePanel({
                   {/* R is the same value seen through a reciprocal. Editing
                       either must land on the same stored U — the conversion is
                       the one place in this tool a unit bug is silent. */}
-                  <td style={cell}>
+                  <td className="env-field" data-label={`R, ${labels.rValue}`} style={cell}>
                     <NumberCell
                       label={`${surface.label} R-value`}
                       value={surface.uValue > 0 ? uToR(surface.uValue, units) : 0}
@@ -449,7 +486,7 @@ export function EnvelopePanel({
                       overstates its loss in the conservative direction and is
                       disclosed in the assumptions. Exposing it is still a UI
                       change whenever it earns one. */}
-                  <td style={{ textAlign: 'right', padding: '2px 0', borderBottom: '1px solid var(--border)', fontVariantNumeric: 'tabular-nums', color: empty ? undefined : 'var(--loss)' }}>
+                  <td className="env-loss" style={{ textAlign: 'right', padding: '2px 0', borderBottom: '1px solid var(--border)', fontVariantNumeric: 'tabular-nums', color: empty ? undefined : 'var(--loss)' }}>
                     {empty ? '—' : `${grouped(heatFlow(term?.watts ?? 0))} ${labels.heatFlow}`}
                   </td>
                 </tr>
@@ -459,14 +496,15 @@ export function EnvelopePanel({
                 in the ventilation panel rather than here, because every one of
                 them is a decision and there is no room; its LOSS is here,
                 because this is where it has to compete with the surfaces. */}
-            <tr>
-              <td style={{ padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
+            <tr className="env-row">
+              <td className="env-name" style={{ padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
+                {badge('loss-ventilation')}
                 Ventilation
               </td>
-              <td colSpan={3} style={{ ...cell, color: 'var(--muted)', fontSize: 11 }}>
+              <td colSpan={3} className="env-wide" style={{ ...cell, color: 'var(--muted)', fontSize: 11 }}>
                 {ventilationNote}
               </td>
-              <td style={{ textAlign: 'right', padding: '2px 0', borderBottom: '1px solid var(--border)', fontVariantNumeric: 'tabular-nums', color: 'var(--loss)' }}>
+              <td className="env-loss" style={{ textAlign: 'right', padding: '2px 0', borderBottom: '1px solid var(--border)', fontVariantNumeric: 'tabular-nums', color: 'var(--loss)' }}>
                 {grouped(heatFlow(ventilationWatts))} {labels.heatFlow}
               </td>
             </tr>
@@ -474,16 +512,13 @@ export function EnvelopePanel({
                 because it is a loss like the five above it and frequently the
                 largest of them, and a loss table that left out its biggest
                 entry would be the wrong table. */}
-            <tr>
-              <td style={{ padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
+            <tr className="env-row">
+              <td className="env-name" style={{ padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
+                {badge('loss-infiltration')}
                 Infiltration
               </td>
-              <td colSpan={3} style={{ ...cell, padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
-                <span
-                  role="group"
-                  aria-label="Air tightness"
-                  style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', alignItems: 'center' }}
-                >
+              <td colSpan={3} className="env-wide" style={{ ...cell, padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
+                <span role="group" aria-label="Air tightness" className="env-airtightness">
                   {/* Pick a grade if you do not know, type the number if you
                       do. Someone with a blower-door result or a specification
                       is the one user who actually knows the answer, and a
@@ -530,7 +565,7 @@ export function EnvelopePanel({
                   <span style={{ fontSize: 10, color: 'var(--muted)' }}>{labels.leakage}</span>
                 </span>
               </td>
-              <td style={{ textAlign: 'right', padding: '2px 0', borderBottom: '1px solid var(--border)', fontVariantNumeric: 'tabular-nums', color: 'var(--loss)' }}>
+              <td className="env-loss" style={{ textAlign: 'right', padding: '2px 0', borderBottom: '1px solid var(--border)', fontVariantNumeric: 'tabular-nums', color: 'var(--loss)' }}>
                 {grouped(heatFlow(infiltrationWatts))} {labels.heatFlow}
               </td>
             </tr>
@@ -538,11 +573,11 @@ export function EnvelopePanel({
                 table because it is the denominator under every per-area figure
                 the tool reports, and it was previously settable only through
                 the box helper. */}
-            <tr>
-              <td style={{ padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
+            <tr className="env-row">
+              <td className="env-name" style={{ padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
                 Gross floor area
               </td>
-              <td style={cell}>
+              <td className="env-field" data-label={`Area, ${labels.area}`} style={cell}>
                 <NumberCell
                   label="Gross floor area"
                   value={units === 'IP' ? toSqFt(envelope.floorArea) : envelope.floorArea}
@@ -566,11 +601,11 @@ export function EnvelopePanel({
                   as its denominator, so the one row in the table that is not a
                   surface is exactly where it belongs — and it reads as a
                   property of the number beside it rather than of the panel. */}
-              <td colSpan={2} style={{ ...cell, color: 'var(--muted)', fontSize: 11 }}>
+              <td colSpan={2} className="env-ratio" style={{ ...cell, color: 'var(--muted)', fontSize: 11 }}>
                 Wall-to-floor{' '}
                 <span style={{ color: 'var(--ink)' }}>{wallToFloorRatio(envelope).toFixed(2)}</span>
               </td>
-              <td style={{ textAlign: 'right', padding: '2px 0', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)' }}>
+              <td className="env-loss" style={{ textAlign: 'right', padding: '2px 0', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)' }}>
                 drives the gains
               </td>
             </tr>

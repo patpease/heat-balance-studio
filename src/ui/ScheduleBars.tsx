@@ -77,6 +77,7 @@ export function ScheduleBars({
       width={width}
       height={height}
       role="group"
+      className="schedule-bars"
       aria-label={`${label} schedule, 24 hours`}
       tabIndex={readOnly ? -1 : 0}
       style={{
