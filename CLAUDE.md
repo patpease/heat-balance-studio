@@ -150,7 +150,9 @@ number that no user ever had.
 Under 600 px **of panel width** (a container query, and `COMPACT_BELOW` in
 `chart/useWidth.ts` for the JS half), the envelope table becomes cards, the
 section drawing swaps its labels for numbered markers, and the 24-hour chart
-is drawn at the width it is shown. `docs/design-system.md` has the rules.
+is drawn at the width it is shown. Stacked (below 1100px), the envelope panel
+splits around the chart so it sits directly under the drawing it scrubs.
+`docs/design-system.md` has the rules.
 
 Two traps:
 

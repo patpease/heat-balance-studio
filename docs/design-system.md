@@ -70,6 +70,23 @@ is not a phone layout.
   screen (`src/ui/offscreen.tsx`) and shoots that. Phone and desktop exports
   are byte-identical.
 
+## Stacked, the chart sits under the drawing
+
+On a desk the section drawing and the 24-hour chart sit side by side, and
+sliding along the chart visibly moves the arrows. That is the interaction
+that makes the two one tool. Below 1100px the page stacks, so the envelope
+panel splits in two around the chart (`between` on `EnvelopePanel`):
+
+1. the drawing,
+2. the 24-hour chart,
+3. the marker key and the envelope table (cards on a phone).
+
+On a phone the drawing and the chart share one screen, and a finger sliding
+along the chart moves the arrows above it. A finger has no hover, so the chart
+also sets the hour on pointer-down. 1100px is `STACKED` in
+`ui/useMediaQuery.ts` and the `.pair` query in `styles.css`, and the two must
+agree.
+
 ## Tables: cards on a phone
 
 A table wider than its screen either clips its last column or shrinks its type

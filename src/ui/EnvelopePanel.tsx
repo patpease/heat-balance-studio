@@ -1,5 +1,5 @@
 import { useId, useMemo, useRef, useState } from 'react';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { referenceWatts } from '../chart/arrowScale';
 import { LOSS_SLOTS, markerNumbers, SectionDrawing } from '../chart/SectionDrawing';
@@ -59,6 +59,11 @@ export interface EnvelopePanelProps {
    */
   readonly onExport: (standard: ReactElement) => void;
   readonly exporting: boolean;
+  /**
+   * Rendered between the drawing and the table, splitting the panel in two.
+   * Passed only when the page is stacked; see the split below.
+   */
+  readonly between?: ReactNode;
 }
 
 const overlayButton: React.CSSProperties = {
@@ -84,6 +89,7 @@ export function EnvelopePanel({
   onChange,
   onExport,
   exporting,
+  between,
 }: EnvelopePanelProps) {
   const [selected, setSelected] = useState<SurfaceSlot | null>(null);
   const [box, setBox] = useState<BoxDimensions>(DEFAULT_BOX);
@@ -250,8 +256,9 @@ export function EnvelopePanel({
       exposedFloor: 'loss-exposed-floor',
     } as const)[s.category];
 
-  return (
-    <section ref={panelRef} className="panel env-panel cq" style={{ padding: 0, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+  // The two halves of the panel: what the drawing is, and what it is made of.
+  const drawingPart = (
+    <>
       {/* Title and actions float over the drawing instead of sitting in a bar
           above it. The bar cost 56 px and the drawing needs them more; the
           drawing's own margins are empty at the top, so nothing is covered. */}
@@ -380,7 +387,11 @@ export function EnvelopePanel({
           />
         </div>
       </div>
+    </>
+  );
 
+  const tablePart = (
+    <>
       {/* The key the markers need. Every numbered arrow is in it, gains too:
           the cards below only cover the envelope's own rows, and a dot that is
           explained nowhere on screen is worse than the 4 px word it replaced. */}
@@ -620,6 +631,43 @@ export function EnvelopePanel({
         )}
 
       </div>
+    </>
+  );
+
+  const panelStyle: React.CSSProperties = {
+    padding: 0,
+    overflow: 'hidden',
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+  };
+
+  /*
+   * Stacked, the panel comes apart around `between` — the 24-hour chart — so
+   * the chart sits directly under the drawing it scrubs. On a desk the two sit
+   * side by side and sliding along the chart visibly moves the arrows; stacked
+   * with the table between them, the drawing was a screen away from the finger
+   * doing the sliding, and the one interaction that makes this a single tool
+   * was lost. The table and its key follow the chart.
+   */
+  if (between !== undefined) {
+    return (
+      <>
+        <section ref={panelRef} className="panel env-panel cq" style={panelStyle}>
+          {drawingPart}
+        </section>
+        {between}
+        <section className="panel env-panel cq" style={{ ...panelStyle, paddingTop: 10 }}>
+          {tablePart}
+        </section>
+      </>
+    );
+  }
+
+  return (
+    <section ref={panelRef} className="panel env-panel cq" style={panelStyle}>
+      {drawingPart}
+      {tablePart}
     </section>
   );
 }

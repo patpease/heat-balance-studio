@@ -26,6 +26,7 @@ import { DEFAULT_VENTILATION } from '../model/ventilation';
 import type { Ventilation } from '../model/ventilation';
 import { ThemeIcon } from './ThemeIcon';
 import { withOffscreen } from './offscreen';
+import { STACKED, useMediaQuery } from './useMediaQuery';
 import { useTheme } from './theme';
 import type { ThemeChoice } from './theme';
 import { BalancePointBand, Verdict } from './Verdict';
@@ -100,6 +101,8 @@ export function App() {
    * co-ordination between the two.
    */
   const [detailed, setDetailed] = useState(false);
+  /** One column rather than pairs — see the split in EnvelopePanel. */
+  const stacked = useMediaQuery(STACKED);
   const [busy, setBusy] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -182,6 +185,52 @@ export function App() {
 
   const chartProps = { result, floorArea: envelope.floorArea, units, hoveredHour, onHoverHour: setHoveredHour, detailed };
 
+  // The title and the export button float over the chart rather than sitting
+  // in a bar above it. That bar cost 56 px on both panels, and the pixels are
+  // worth more to the drawing. Built once, placed by the layout below.
+  const chartPanel = (
+    <section className="panel cq" style={{ padding: 0, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+      {/* `.chart-bar` and `.chart-body` rather than inline: on a phone the
+          bar stops floating, because there the chart has no empty top
+          margin for it to float in and the buttons sat on the axis. */}
+      <div className="chart-bar">
+        <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>24-hour balance</h2>
+        <span style={{ display: 'flex', gap: 6, pointerEvents: 'auto' }}>
+          <button
+            type="button"
+            onClick={() => setDetailed((on) => !on)}
+            aria-pressed={detailed}
+            style={{
+              ...exportButton,
+              borderColor: detailed ? 'var(--gain)' : 'var(--border)',
+              background: detailed ? 'var(--panel)' : 'none',
+            }}
+          >
+            Details
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              shoot(
+                chartRef.current,
+                'heat-balance-chart.png',
+                `${site.label} · ${buildingType}`,
+                <BalanceChart {...chartProps} />,
+              )
+            }
+            disabled={busy !== null}
+            style={exportButton}
+          >
+            {busy === 'heat-balance-chart.png' ? 'Exporting…' : 'PNG'}
+          </button>
+        </span>
+      </div>
+      <div ref={chartRef} className="chart-body">
+        <BalanceChart {...chartProps} />
+      </div>
+    </section>
+  );
+
   return (
     <main className="app-main">
       {/* One bar. The studio eyebrow, name and the tool's question sit on a
@@ -263,9 +312,11 @@ export function App() {
 
       {/* The drawing and the chart are the two things a user reads together, so
           they sit side by side and stretch to the same height. The verdict used
-          to live above the chart and pushed it out of alignment. */}
-      <div className="pair">
-        <div ref={sectionRef} style={{ display: 'grid', alignContent: 'stretch' }}>
+          to live above the chart and pushed it out of alignment. Stacked, the
+          chart goes between the drawing and its table instead, so it still
+          sits against the drawing it scrubs. */}
+      {stacked ? (
+        <div ref={sectionRef} style={{ display: 'grid', gap: 7 }}>
           <EnvelopePanel
             envelope={envelope}
             gains={gains}
@@ -279,53 +330,30 @@ export function App() {
               shoot(sectionRef.current, 'heat-balance-section.png', `${site.label} · ${buildingType}`, standard)
             }
             exporting={busy === 'heat-balance-section.png'}
+            between={chartPanel}
           />
         </div>
-
-        {/* The title and the export button float over the chart rather than
-            sitting in a bar above it. That bar cost 56 px on both panels, and
-            the pixels are worth more to the drawing. */}
-        <section className="panel cq" style={{ padding: 0, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-          {/* `.chart-bar` and `.chart-body` rather than inline: on a phone the
-              bar stops floating, because there the chart has no empty top
-              margin for it to float in and the buttons sat on the axis. */}
-          <div className="chart-bar">
-            <h2 className="eyebrow" style={{ font: 'inherit', margin: 0 }}>24-hour balance</h2>
-            <span style={{ display: 'flex', gap: 6, pointerEvents: 'auto' }}>
-              <button
-                type="button"
-                onClick={() => setDetailed((on) => !on)}
-                aria-pressed={detailed}
-                style={{
-                  ...exportButton,
-                  borderColor: detailed ? 'var(--gain)' : 'var(--border)',
-                  background: detailed ? 'var(--panel)' : 'none',
-                }}
-              >
-                Details
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  shoot(
-                    chartRef.current,
-                    'heat-balance-chart.png',
-                    `${site.label} · ${buildingType}`,
-                    <BalanceChart {...chartProps} />,
-                  )
-                }
-                disabled={busy !== null}
-                style={exportButton}
-              >
-                {busy === 'heat-balance-chart.png' ? 'Exporting…' : 'PNG'}
-              </button>
-            </span>
+      ) : (
+        <div className="pair">
+          <div ref={sectionRef} style={{ display: 'grid', alignContent: 'stretch' }}>
+            <EnvelopePanel
+              envelope={envelope}
+              gains={gains}
+              ventilation={ventilation}
+              conditions={conditions}
+              designDay={designDay}
+              units={units}
+              scrubHour={hoveredHour}
+              onChange={setEnvelope}
+              onExport={(standard) =>
+                shoot(sectionRef.current, 'heat-balance-section.png', `${site.label} · ${buildingType}`, standard)
+              }
+              exporting={busy === 'heat-balance-section.png'}
+            />
           </div>
-          <div ref={chartRef} className="chart-body">
-            <BalanceChart {...chartProps} />
-          </div>
-        </section>
-      </div>
+          {chartPanel}
+        </div>
+      )}
 
       {/* The answer, condensed onto one row under the two things it reads from. */}
       <div className="pair pair-verdict">

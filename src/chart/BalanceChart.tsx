@@ -320,6 +320,9 @@ export function BalanceChart({
           touchAction: 'pan-y',
         }}
         onPointerMove={(event) => onHoverHour(hourFromEvent(event.clientX))}
+        // A finger has no hover: without this the drawing would not follow it
+        // until it had moved, and a tap would show nothing at all.
+        onPointerDown={(event) => onHoverHour(hourFromEvent(event.clientX))}
         onPointerLeave={() => onHoverHour(null)}
         onFocus={() => setFocusHour(result.worstHour)}
         onBlur={() => setFocusHour(null)}
